@@ -25,7 +25,7 @@ VITE_STAGE_TOKEN=st_…
 
 ## 3. 跑起来
 
-> ★例子的代码是照着官方例子卡（`ca44070d`）写的：**分区 id 和存档字段都要对上**。用自己的卡想先看到例子的效果，照 [example-card.md](example-card.md) 在卡里建好 8 个分区、推存档结构、填开场。
+> ★例子的代码是照着官方例子卡（`dzj-stage-example`）写的：**分区 id 和存档字段都要对上**。用自己的卡想先看到例子的效果，照 [example-card.md](example-card.md) 在卡里建好 8 个分区、推存档结构、填开场。
 
 ```bash
 npm install
