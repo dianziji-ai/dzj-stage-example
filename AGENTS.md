@@ -1,0 +1,81 @@
+# AGENTS.md · 给 AI 的开发规则
+
+你在帮作者给**电子姬平台**上的一张卡开发「舞台」：一个网页游戏界面。AI（平台那边的模型）照常按卡的提示词和分区写剧情，舞台把分区渲染成画面；聊天、存档、计费都走平台的舞台 API。
+
+本仓库是官方例子（galgame「电子姬的同居日常」）+ 舞台 SDK。作者通常是**复制这个仓库，把 `src/` 换成自己的游戏**。
+
+本文件是总规则；具体做法在 `.claude/skills/` 下按主题拆开（见文末「技能索引」）。规则冲突时以本文件为准。
+
+## 一、开工前必须做
+
+1. **完整读一遍开发手册 `docs/`**（从 `docs/README.md` 开始，每篇都读）。不许只看例子代码就开写：很多规矩例子里看不出来。
+2. **先问作者，问清楚再写代码。** 至少问这几项（作者没说的按括号里的默认）：
+   - 电脑和手机都要适配吗？（**默认两边都要**；只做竖屏）
+   - 这张卡的分区有哪些（区 id、是正文 / 数据 / 选项）？每一轮 AI 会写哪些区？
+   - 存档里要存什么？存档结构（JSON Schema）在网站编辑器「舞台 → ② 存档结构」写好了吗？（没写：你设计好写进 `src/game/state.schema.json`，**作者同意后** `npm run schema:push` 推上去；**推上去之前不写存档代码**，见 `stage-workflow` 第 3.5 步）
+   - 立绘、背景、CG 等素材都传到卡的「素材库」了吗？地址给我。
+   - 要哪些页面和玩法（对话、地图、图册、小游戏…）？
+3. **把方案给作者确认后再动手**：有哪些页面、拆哪些组件、存档字段、每轮怎么结算（`onTurn`）、附给 AI 的状态（`withState`）。
+4. 作者没给本地开发凭证就提醒他：网站上进入卡 → 工具行「开发」→ 生成凭证，贴进 `.env`（照 `.env.example`）。**不要让作者把凭证发给你，也不要把凭证写进任何会提交的文件。**
+
+## 二、铁律
+
+| 方面 | 规则 |
+|---|---|
+| **SDK** | **`packages/` 只读，一个字都不许改。** `npm test` 前会比对指纹，改了就失败。SDK 不够用：告诉作者向官方提需求，自己在 `src/` 里绕开。**不许跑 `npm run sdk:lock`**（那是官方发版用的，跑了等于掩盖改动） |
+| **React** | 函数组件 + hooks；**一个组件一个文件**，按功能分目录（`src/game/`、`src/xxx/`）；纯逻辑（存档怎么变、画面怎么解读）放 `logic.ts` 写成纯函数并配单测；数据**按分区订阅**（`useZoneText` / `useZoneData` …），不要在一个大组件里 `useStage()` 拿全部再往下传 |
+| **样式** | **Tailwind 类名优先**，直接写在组件上；全局复用的（变量、工具类、动画、质感）按主题放 `src/styles/`；只属于某个组件、Tailwind 写不动的用 `组件名.module.css` 放在组件旁边；**不许往 `src/index.css` 里加样式**（它只做引入） |
+| **适配** | 默认电脑和手机都适配；Tailwind 移动优先（先写手机，再 `lg:` 覆盖成电脑）；只做竖屏；**iOS 顶部刘海 / 底部 home 条必须让位**（`pt-safe` / `pb-safe` / `pb-composer`）；手机上的输入走全屏输入层 |
+| **素材** | **所有图片、视频都放卡的素材库**（网站编辑器「素材库」上传），用素材库给的地址；**不许外链任何别的网站**；大图用 webp；首屏要用的图交给 `StageBoot` 的 `preload` 预加载；`public/` 里的文件用 `import.meta.env.BASE_URL` 拼路径，不写 `/xxx` 绝对路径 |
+| **性能** | 动画只动 `transform` / `opacity`；不做大面积 `backdrop-filter: blur`（手机掉帧）；不让 React 每帧重渲染（动画用 CSS 或 Web Animations）；看不见就暂停；尊重「减少动态效果」；视频点了才播 |
+| **凭证** | 线上只用 `readLaunch()`；`.env` 只在本地 `npm run dev` 用；**不要删 `vite.config.ts` 里打包时清空 `.env` 的那段**；`src/stage.ts` 的写法别改 |
+| **游戏逻辑** | `onTurn` 里一律用 `zoneNum` / `zoneText` / `zoneList` / `zoneData` 安全取值（AI 不一定每轮都写每一行）；表情、场景这类「一直该有个值」的区订阅时加 `{ hold: true, complete: true }`（★只写变化量的状态区别加 hold，不然会一直显示上一轮的变化量）；存档 ≤ 64KB |
+| **交付** | `npm test`、`npx tsc -b`、`npm run lint`、`npm run pack` 全过；能开浏览器就电脑和手机各截图自检（尺寸见 `docs/mobile.md`）；把改了哪些文件、还有什么没做完 / 没验证如实告诉作者 |
+| **真实发言** | 本地连的是网站上真实的那一局：**每发一句都扣作者的能量、永久写进这一局的历史**。要发测试消息先问作者、说清楚会扣能量；能用单测（`logic.test.ts` + 真实回复做 fixture）验的就别发 |
+
+## 三、不要做的事
+
+- 不改 `packages/`；不跑 `npm run sdk:lock`。
+- 不把凭证（`st_…`）写进代码、文档、提交记录，也不打印到日志。
+- 不外链别的网站的图片、字体、脚本。
+- 不用 `alert` / `confirm` / `prompt`：自己做弹窗组件。
+- 不做横屏布局。
+- 不替作者决定「只做电脑」或「只做手机」：没问到就两边都做。
+- 不在没跑过测试的情况下说「做完了」。没有浏览器、没有开发凭证、没法截图的：照实说明哪些没验证，让作者自己看。
+- 不未经作者同意发真实消息（扣能量、写进历史）、不未经同意 `npm run schema:push`（老存档可能回到开局）。
+- 作者一时联系不上（全自动跑）：问题和方案写清楚停下等，别自己猜着把存档结构、分区这类改不回来的事做了。
+
+## 四、技能索引
+
+先读 `stage-workflow`，其余按任务读。每个技能都在 `.claude/skills/<名字>/SKILL.md`。
+
+| 技能 | 什么时候读 |
+|---|---|
+| `stage-workflow` | **每次开工先读**：完整流程（读手册 → 问作者 → 定方案 → 写 → 自检 → 交付） |
+| `stage-react` | 写组件、拆文件、接 SDK 的数据 |
+| `stage-responsive` | 做布局、电脑 / 手机适配、安全区、键盘、输入 |
+| `stage-assets` | 用图片 / 视频 / 音频 / 字体，素材库、预加载 |
+| `stage-performance` | 做动画、特效、视频，或者页面卡 |
+| `stage-game-logic` | 分区、`onTurn` 结算、存档结构、附给 AI 的状态 |
+| `stage-release` | 打包、上传、交付前自检清单 |
+| `stage-pitfalls` | 出了怪问题先查这里：踩过的坑，现象 → 原因 → 做法 |
+
+## 五、项目地图
+
+```
+AGENTS.md / CLAUDE.md   本文件（CLAUDE.md 只是引用它）
+docs/                   开发手册（必读）
+.claude/skills/         技能
+packages/               舞台 SDK（只读）
+  stage/                  @dianziji/stage：client / 会话引擎 / react
+  stage-panel/            @dianziji/stage-panel：本局面板
+src/                    游戏（作者的代码都在这里）
+  main.tsx                启动：watchViewport + <StageBoot>（预加载、游戏规则）
+  stage.ts                舞台连接（readLaunch / .env，别改）
+  App.tsx                 页面组装
+  index.css               样式入口（只做引入）
+  styles/                 全局样式
+  game/                   这张卡的内容、规则（logic.ts + 测试）、界面组件
+public/                 打包进 zip 的小文件（图标、字体、音效）
+scripts/sdk-lock.mjs    SDK 只读检查
+```

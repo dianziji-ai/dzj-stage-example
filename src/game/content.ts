@@ -6,12 +6,10 @@
 import manifest from './manifest.json'
 
 /**
- * 素材地址：上传到卡素材库（R2）后的地址表 manifest.json（建卡脚本生成，文件名是随机的）。
- * 表里还没有的（比如刚出的立绘还没传）先用本地 public/assets 里的同名文件。
+ * 素材地址：全部在卡的素材库里（网站编辑器「素材库」上传），manifest.json 记每张图的地址（按用途分组）。
+ * ★大图不打进舞台包：换成自己的卡，就把自己素材库里的地址填进 manifest.json。
  */
 const M = manifest as unknown as { bg: Record<string, string>; sprites: Record<string, string> }
-// BASE_URL：开发时是 /，打包后是 ./（上传后在 {卡id}/{版本号}/ 下，绝对路径 /assets 会去域名根上找、全 404）
-const local = (path: string) => `${import.meta.env.BASE_URL}assets/${path}`
 
 export type PlaceId = 'home' | 'street' | 'cafe' | 'arcade' | 'park' | 'rooftop'
 
@@ -35,9 +33,9 @@ export type ExprId = 'normal' | 'happy' | 'shy' | 'pout' | 'surprised' | 'sad' |
 export const EXPRESSIONS: ExprId[] = ['normal', 'happy', 'shy', 'pout', 'surprised', 'sad', 'wink', 'love']
 export const isExpr = (v: unknown): v is ExprId => EXPRESSIONS.includes(v as ExprId)
 
-export const bgUrl = (id: PlaceId) => M.bg[id] ?? local(`bg/${id}.webp`)
-export const spriteUrl = (id: ExprId) => M.sprites[id] ?? local(`sprites/${id}.webp`)
-export const MAP_URL = M.bg.map ?? local('bg/map.webp')
+export const bgUrl = (id: PlaceId) => M.bg[id] ?? ''
+export const spriteUrl = (id: ExprId) => M.sprites[id] ?? ''
+export const MAP_URL = M.bg.map ?? ''
 
 export const CHAR_NAME = '电子姬'
 /** 电子姬 logo（名牌头像；站内 logo.jpeg 缩成 96px webp，3.6KB） */

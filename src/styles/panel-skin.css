@@ -1,0 +1,17 @@
+/*
+ * 本局面板（@dianziji/stage-panel）+ SDK 提示 / 保存按钮的配色：和地图 / 图册同一套奶油风（不跟系统明暗走）。
+ * 全部变量见 docs/panel.md。
+ */
+:root {
+  --color-sp-bg: #fff8f1;
+  --color-sp-card: #ffffff;
+  --color-sp-code: #fffaf5;
+  --color-sp-line: #fbe3ea;
+  --color-sp-text: #4a2f2a;
+  --color-sp-muted: #9a7b72;
+  --color-sp-accent: #ec4899;
+  --color-sp-on-accent: #ffffff;
+  --color-sp-accent-soft: #fdf2f8;
+  --color-sp-danger: #e11d48;
+  --color-sp-ok: #059669;
+}

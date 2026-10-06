@@ -1,0 +1,85 @@
+{
+  "type": "object",
+  "properties": {
+    "location": {
+      "enum": [
+        "home",
+        "street",
+        "cafe",
+        "arcade",
+        "park",
+        "rooftop"
+      ],
+      "type": "string",
+      "default": "home"
+    },
+    "unlockedCg": {
+      "type": "array",
+      "items": {
+        "type": "integer",
+        "maximum": 8,
+        "minimum": 1
+      },
+      "default": [],
+      "uniqueItems": true
+    },
+    "day": {
+      "type": "integer",
+      "default": 1,
+      "minimum": 1
+    },
+    "love": {
+      "type": "integer",
+      "default": 20,
+      "maximum": 100,
+      "minimum": 0
+    },
+    "mood": {
+      "type": "string",
+      "default": "好奇",
+      "maxLength": 12
+    },
+    "claw": {
+      "type": "object",
+      "default": {
+        "wins": 0,
+        "coins": 5,
+        "plays": 0,
+        "collection": {}
+      },
+      "properties": {
+        "wins": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "coins": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "plays": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "collection": {
+          "type": "object",
+          "propertyNames": {
+            "enum": [
+              "chick",
+              "eggchick",
+              "pinkchick",
+              "starchick",
+              "dianji",
+              "goldchick"
+            ]
+          },
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

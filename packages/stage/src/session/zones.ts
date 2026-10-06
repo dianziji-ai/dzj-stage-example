@@ -1,6 +1,7 @@
 /**
  * 分区：把 AI 回复的原文拆成一块一块，舞台按块渲染（正文进对话框、状态进状态栏、选项变按钮…）。
- * 解析逻辑和网站聊天页是同一套（zones.gen.js 由平台源码生成），配图编号 ![](17) 会换成真图地址。
+ * 解析逻辑和网站聊天页是同一套（zones.gen.js 由平台源码生成）。
+ * ★配图编号 ![](17) 原样留在分区里，不换成地址：要不要显示、怎么显示由舞台决定（helper 见 images.ts）。
  *
  *   const z = readZones(text, snap)
  *   z['正文']   → { type: 'narrative', value: '原文 markdown' }
@@ -22,8 +23,8 @@ export type StageZone =
 export type StageZones = Record<string, StageZone>
 
 /** 原文 → 分区。流式时每来一段就可以调一次（解析容错半截标签）。 */
-export function readZones(text: string, snap: Pick<StageSnapshot, 'slots' | 'image_pack'>, reasoning?: string): StageZones {
-  const out = composeZones(snap.slots, text, { reasoning, imagePack: snap.image_pack })
+export function readZones(text: string, snap: Pick<StageSnapshot, 'slots'>, reasoning?: string): StageZones {
+  const out = composeZones(snap.slots, text, { reasoning, imagePack: null }) // 不传配图库＝编号原样保留
   const zones: StageZones = {}
   for (const [k, v] of Object.entries(out)) if (v) zones[k] = v as StageZone
   return zones

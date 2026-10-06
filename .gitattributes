@@ -1,0 +1,7 @@
+# 换行统一成 LF：SDK 只读检查（scripts/sdk-lock.mjs）按文件指纹比对，Windows 上自动转 CRLF 会误报「改过」
+* text=auto eol=lf
+*.webp binary
+*.png binary
+*.jpg binary
+*.mp3 binary
+*.woff2 binary

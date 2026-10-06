@@ -1,5 +1,5 @@
-import type { SessionOptions } from '@dianziji/stage'
-import { cgNumbers, nextSave, normalizeSave, type GameSave } from './logic'
+import { readZones, type SessionOptions } from '@dianziji/stage'
+import { cgOf, nextSave, normalizeSave, type GameSave } from './logic'
 
 /**
  * 这张卡的游戏规则，交给 <StageBoot {...rules}>（框架在对的时机调它们）：
@@ -10,10 +10,10 @@ import { cgNumbers, nextSave, normalizeSave, type GameSave } from './logic'
 export const rules: Pick<SessionOptions<GameSave>, 'normalize' | 'onTurn'> = {
   normalize(raw, snap) {
     const save = normalizeSave(raw)
-    const seen = snap.history.flatMap((m) => (m.role === 'assistant' ? cgNumbers(m.content) : []))
+    const seen = snap.history.flatMap((m) => (m.role === 'assistant' ? cgOf(readZones(m.content, snap)) : []))
     const missing = [...new Set(seen)].filter((n) => !save.unlockedCg.includes(n))
     if (missing.length) save.unlockedCg = [...save.unlockedCg, ...missing].sort((a, b) => a - b)
     return save
   },
-  onTurn: ({ raw, zones, save }) => nextSave(raw, zones, save).save,
+  onTurn: ({ zones, save }) => nextSave(zones, save).save,
 }

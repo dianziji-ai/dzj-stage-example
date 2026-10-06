@@ -5,17 +5,23 @@
   "private": true,
   "license": "UNLICENSED",
   "type": "module",
+  "engines": {
+    "node": ">=20.11"
+  },
   "workspaces": [
     "packages/*"
   ],
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "pack": "npm run build && cd dist && rm -f ../stage.zip && zip -qr ../stage.zip . && echo \"已生成 stage.zip：在网站编辑器「舞台 → 上线」上传它\"",
+    "pack": "npm run build && node scripts/pack.mjs",
     "lint": "oxlint",
     "preview": "vite preview",
+    "pretest": "node scripts/sdk-lock.mjs",
     "test": "vitest run",
-    "test:sdk": "npm test -w @dianziji/stage -w @dianziji/stage-panel"
+    "test:sdk": "node scripts/sdk-lock.mjs && npm test -w @dianziji/stage -w @dianziji/stage-panel",
+    "sdk:lock": "node scripts/sdk-lock.mjs --write",
+    "schema:push": "node scripts/schema-push.mjs"
   },
   "dependencies": {
     "@dianziji/stage": "0.1.0",

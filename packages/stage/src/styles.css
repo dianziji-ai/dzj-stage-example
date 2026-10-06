@@ -9,7 +9,7 @@
   /*
    * 舞台组件的配色（本局面板、顶部提示、保存按钮共用）。换肤：在自己的样式里覆盖（写在 import 后面），
    *   :root { --color-sp-accent: #ec4899; --color-sp-bg: #fff8f1; }
-   * 全部变量、深色 / 跟随系统明暗的写法见 packages/stage-panel/README.md「换肤」。
+   * 全部变量、深色 / 跟随系统明暗的写法见 docs/panel.md「换肤」。
    */
   --color-sp-bg: #f6f5f2; /* 面板底 */
   --color-sp-card: #ffffff; /* 卡片 / 按钮底 */

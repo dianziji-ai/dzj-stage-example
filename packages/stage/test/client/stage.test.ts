@@ -220,6 +220,21 @@ describe('请求', () => {
     expect(calls[0].init.keepalive).toBe(true)
   })
 
+  it('saveSchema：PUT /schema 整份发（null＝去掉）；不是开发凭证被拒时广播 op=schema', async () => {
+    const schema = { type: 'object' as const, properties: { love: { type: 'integer', default: 20 } } }
+    const calls = fakeFetch(json({ ok: true, state_schema: schema }), json({ error: { code: 'unauthorized', message: '只有开发凭证能改存档结构' } }, 403))
+    const s = stage()
+    const ops: string[] = []
+    s.on((e) => e.type === 'error' && ops.push(e.op))
+    expect((await s.saveSchema(schema)).state_schema).toEqual(schema)
+    expect(calls[0].init.method).toBe('PUT')
+    expect(calls[0].url).toMatch(/\/schema$/)
+    expect(JSON.parse(String(calls[0].init.body))).toEqual(schema)
+    await expect(s.saveSchema(null)).rejects.toThrow('只有开发凭证能改存档结构')
+    expect(JSON.parse(String(calls[1].init.body))).toBeNull()
+    expect(ops).toEqual(['schema'])
+  })
+
   it('gallery：GET /gallery；失败广播 op=gallery', async () => {
     const calls = fakeFetch(json({ turns: 3, previews: [], packs: [] }), json({}, 500))
     const s = stage()

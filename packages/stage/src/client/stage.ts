@@ -3,7 +3,7 @@
  * 只用这一层（Vue / 原生 JS / 自己管状态）就从 @dianziji/stage/client 引。
  */
 import { decodeToken, type TokenInfo } from './token'
-import type { StageErrorCode, StageGallery, StageSave, StageSnapshot, TurnHandlers } from './types'
+import type { StageErrorCode, StageGallery, StageSave, StageSchema, StageSnapshot, TurnHandlers } from './types'
 
 /** 流里多久一个字都没来就算失败（平台自己 90 秒会判孤儿流，这里多留一点余量） */
 const IDLE_MS = 120_000
@@ -45,7 +45,7 @@ export type Turn = {
  * 游戏不用管存档是谁改的（自己存的 / 玩家在本局面板改的），订阅一次就能跟着更新界面；
  * 提示组件（StageToaster）也是靠它把 SDK 的结果弹出来。
  */
-export type StageOp = 'load' | 'send' | 'stream' | 'save' | 'gallery' | 'turn'
+export type StageOp = 'load' | 'send' | 'stream' | 'save' | 'schema' | 'gallery' | 'turn'
 /** 谁存的：saver＝存档器自动存、manual＝手动保存、panel＝玩家在本局面板改的、app＝直接调 stage.save */
 export type SaveSource = 'saver' | 'manual' | 'panel' | 'app'
 export type StageEvent =
@@ -68,6 +68,12 @@ export type StageClient = {
    * opts.keepalive：页面关闭时也发得完；opts.source：谁存的（默认 'app'）。一般交给 createSaver 处理。
    */
   save: (state: StageSave | null, opts?: { keepalive?: boolean; source?: SaveSource }) => Promise<{ ok: true; size: number }>
+  /**
+   * 改这张卡的存档结构（游戏状态，JSON Schema；null＝去掉）。★只认开发凭证 + 卡的作者本人（玩家进游戏的凭证会被拒）：
+   * 给本地开发用，AI 设计好结构直接写进卡，不用作者去编辑器粘贴。改完 load() 读到的 state_schema 就是新的；
+   * 通不过新结构的老存档读回来是开局存档——改之前先告诉作者。
+   */
+  saveSchema: (schema: StageSchema | null) => Promise<{ ok: true; state_schema: StageSchema | null }>
   /** 图册（和网站画廊同一套解锁规则；单独一个接口，打开图册时再调） */
   gallery: () => Promise<StageGallery>
   /**
@@ -233,6 +239,10 @@ export function createStage({ api, token }: { api: string; token: string }): Sta
       const r = await call<{ ok: true; size: number }>('save', 'PUT', '/save', state, opts?.keepalive)
       emit({ type: 'save', state, source: opts?.source ?? 'app' })
       return r
+    },
+
+    saveSchema(schema) {
+      return call('schema', 'PUT', '/schema', schema)
     },
 
     on(fn) {

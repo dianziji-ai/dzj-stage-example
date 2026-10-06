@@ -18,9 +18,11 @@ import Splash from './Splash'
 /** 加载页至少露这么久，免得一闪而过 */
 const MIN_MS = 700
 
-export default function StageBoot<S>({ stage, preload, normalize, onTurn, saveDelay, children }: Omit<SessionOptions<S>, 'snapshot'> & {
+export default function StageBoot<S>({ stage, preload, normalize, onTurn, saveDelay, version, children }: Omit<SessionOptions<S>, 'snapshot'> & {
   /** 首屏要先下载好的图（背景、立绘…）；不给就只读数据 */
   preload?: (snap: StageSnapshot) => string[]
+  /** 版本 / 构建号，显示在加载页底部（官方例子：打包时自动生成「BUILD 时间戳」，见 vite.config.ts） */
+  version?: string
   children: ReactNode
 }) {
   const [session, setSession] = useState<Session<S> | null>(null)
@@ -87,7 +89,7 @@ export default function StageBoot<S>({ stage, preload, normalize, onTurn, saveDe
   return (
     <>
       {session && <SessionCtx.Provider value={session as Session<unknown>}>{children}</SessionCtx.Provider>}
-      {!gone && <Splash step={step} progress={progress} error={error} onRetry={retry} leaving={ready} />}
+      {!gone && <Splash step={step} progress={progress} error={error} onRetry={retry} leaving={ready} version={version} />}
     </>
   )
 }

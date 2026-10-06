@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { readZones, writingZone, zoneData, zoneText, type StageSnapshot } from '@dianziji/stage'
 import fx from './__fixtures__/card.json'
-import { cgNumbers, freshCgs, DEFAULT_SAVE, exprOf, nextSave, normalizeSave, placeOf, playerOf, stateForAi, thoughtOf, timeOf } from './logic'
+import schema from './state.schema.json'
+import { cgOf, freshCgs, DEFAULT_SAVE, exprOf, nextSave, normalizeSave, placeOf, playerOf, stateForAi, thoughtOf, timeOf } from './logic'
 import { placeName, withCall } from './content'
 
 // 这张卡真实的分区定义 + 开场原文（从卡数据抄出来的）
@@ -18,8 +19,8 @@ describe('开场能正确拆区', () => {
     expect(opening.action?.type).toBe('action')
     expect(opening.action?.value).toHaveLength(4)
   })
-  it('配图编号被换成了图地址', () => {
-    expect(opening.cg?.value).toContain('https://r2.example/cg1.webp')
+  it('配图编号原样留在分区里（SDK 不换地址，舞台自己用 imageUrl 取）', () => {
+    expect(opening.cg?.value).toMatch(/^(!\[\]\()?1\)?$/)
   })
 })
 
@@ -53,21 +54,21 @@ describe('正在写哪个区（SDK 的 writingZone + 这张卡的分区顺序）
 
 describe('nextSave：一轮写完更新存档', () => {
   it('开场：解锁 CG1，地点 home', () => {
-    const { save, newCg } = nextSave(fx.opening, opening, DEFAULT_SAVE)
+    const { save, newCg } = nextSave(opening, DEFAULT_SAVE)
     expect(newCg).toEqual([1])
     expect(save).toMatchObject({ location: 'home', unlockedCg: [1], day: 1 })
   })
   it('已解锁的 CG 不重复弹', () => {
-    const { newCg, save } = nextSave(fx.opening, opening, { ...DEFAULT_SAVE, unlockedCg: [1] })
+    const { newCg, save } = nextSave(opening, { ...DEFAULT_SAVE, unlockedCg: [1] })
     expect(newCg).toEqual([])
     expect(save.unlockedCg).toEqual([1])
   })
   it('去哪儿就是哪儿（地点全部开放）', () => {
-    const { save } = nextSave('', readZones('<scene>\n地点: rooftop\n</scene>', snap), DEFAULT_SAVE)
+    const { save } = nextSave(readZones('<scene>\n地点: rooftop\n</scene>', snap), DEFAULT_SAVE)
     expect(save.location).toBe('rooftop')
   })
   it('好感变化：累计、每轮最多 ±5、夹在 0–100', () => {
-    const run = (z: string, love = 20) => nextSave('', readZones(`<status>\n${z}\n</status>`, snap), { ...DEFAULT_SAVE, love })
+    const run = (z: string, love = 20) => nextSave(readZones(`<status>\n${z}\n</status>`, snap), { ...DEFAULT_SAVE, love })
     expect(run('好感变化: 3')).toMatchObject({ save: { love: 23 }, loveDelta: 3 })
     expect(run('好感变化: -2')).toMatchObject({ save: { love: 18 }, loveDelta: -2 })
     expect(run('好感变化: 20').save.love).toBe(25) // AI 给多了：夹到 +5
@@ -76,16 +77,16 @@ describe('nextSave：一轮写完更新存档', () => {
   })
   it('状态区留空：什么都不变', () => {
     const prev = { ...DEFAULT_SAVE, love: 42, mood: '害羞', day: 3 }
-    expect(nextSave('', readZones('<status>\n</status>', snap), prev)).toMatchObject({ save: { love: 42, mood: '害羞', day: 3 }, loveDelta: 0 })
+    expect(nextSave(readZones('<status>\n</status>', snap), prev)).toMatchObject({ save: { love: 42, mood: '害羞', day: 3 }, loveDelta: 0 })
   })
   it('心情变了才写；天数变化只认 +1', () => {
     const z = readZones('<status>\n心情: 吃醋\n天数变化: 1\n</status>', snap)
-    expect(nextSave('', z, DEFAULT_SAVE).save).toMatchObject({ mood: '吃醋', day: 2 })
-    expect(nextSave('', readZones('<status>\n天数变化: 5\n</status>', snap), DEFAULT_SAVE).save.day).toBe(2)
-    expect(nextSave('', readZones('<status>\n天数变化: -1\n</status>', snap), { ...DEFAULT_SAVE, day: 3 }).save.day).toBe(3)
+    expect(nextSave(z, DEFAULT_SAVE).save).toMatchObject({ mood: '吃醋', day: 2 })
+    expect(nextSave(readZones('<status>\n天数变化: 5\n</status>', snap), DEFAULT_SAVE).save.day).toBe(2)
+    expect(nextSave(readZones('<status>\n天数变化: -1\n</status>', snap), { ...DEFAULT_SAVE, day: 3 }).save.day).toBe(3)
   })
   it('旧格式「好感: 20」当直接设定值（存量开场里有）', () => {
-    expect(nextSave('', readZones('<status>\n好感: 47\n</status>', snap), DEFAULT_SAVE).save.love).toBe(47)
+    expect(nextSave(readZones('<status>\n好感: 47\n</status>', snap), DEFAULT_SAVE).save.love).toBe(47)
   })
   it('附给 AI 的状态：中文地点名 + 当前数值 + 已解锁回忆', () => {
     expect(stateForAi({ ...DEFAULT_SAVE, location: 'park', love: 50, unlockedCg: [1, 4], claw: { coins: 2, collection: { goldchick: 1, chick: 2 }, plays: 6, wins: 3 } })).toEqual({
@@ -98,17 +99,21 @@ describe('nextSave：一轮写完更新存档', () => {
     })
   })
   it('AI 送硬币：game 区「硬币: N」，每轮最多 3 枚，负数不扣', () => {
-    const coins = (n: number) => nextSave('', readZones(`<game>\n硬币: ${n}\n</game>`, snap), DEFAULT_SAVE).save.claw.coins
+    const coins = (n: number) => nextSave(readZones(`<game>\n硬币: ${n}\n</game>`, snap), DEFAULT_SAVE).save.claw.coins
     expect(coins(2)).toBe(DEFAULT_SAVE.claw.coins + 2)
     expect(coins(99)).toBe(DEFAULT_SAVE.claw.coins + 3)
     expect(coins(-5)).toBe(DEFAULT_SAVE.claw.coins)
-    expect(nextSave('', {}, DEFAULT_SAVE).save.claw).toEqual(DEFAULT_SAVE.claw) // 没写 game 区：不动
+    expect(nextSave({}, DEFAULT_SAVE).save.claw).toEqual(DEFAULT_SAVE.claw) // 没写 game 区：不动
   })
 })
 
-describe('cgNumbers / freshCgs / normalizeSave', () => {
-  it('配图编号：去重、只认 1–8、按出现顺序', () => {
-    expect(cgNumbers('![](3) 文字 ![x](1) ![](3) ![](9) ![](0)')).toEqual([3, 1])
+describe('cgOf / freshCgs / normalizeSave', () => {
+  const cgIn = (body: string) => cgOf(readZones(`<narrative>\n正文 ![](5)\n</narrative>\n<cg>\n${body}\n</cg>`, snap))
+  it('cg 区的回忆编号：只写数字；老写法 ![](3) 也认；去重、只认 1–8、按出现顺序；正文里的图不算', () => {
+    expect(cgIn('3')).toEqual([3])
+    expect(cgIn('![](3)')).toEqual([3])
+    expect(cgIn('3、1、3、9、0')).toEqual([3, 1])
+    expect(cgIn('')).toEqual([]) // 大多数回合留空
   })
   it('要弹的 CG：这次新解锁的全部（一张一张弹），按编号排；配图库里没图的跳过', () => {
     const has = (n: number) => n !== 5
@@ -158,6 +163,14 @@ describe('初始设定：名字 / 称呼', () => {
   })
   it('给 AI 的状态里地点用玩家名字（和提示词「{{user}}的房间」对上）', () => {
     expect(stateForAi(DEFAULT_SAVE, '林川').地点).toBe('林川的房间')
+  })
+})
+
+describe('存档结构（state.schema.json）和代码对得上', () => {
+  it('结构里各字段的 default 拼出来的开局存档＝DEFAULT_SAVE（只改了一边就会挂）', () => {
+    const initial = Object.fromEntries(Object.entries(schema.properties).map(([k, p]) => [k, (p as { default?: unknown }).default]))
+    expect(initial).toEqual(DEFAULT_SAVE)
+    expect(normalizeSave(initial)).toEqual(DEFAULT_SAVE)
   })
 })
 

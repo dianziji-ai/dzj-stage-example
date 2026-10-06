@@ -1,0 +1,35 @@
+/* 全局基础：页面、按钮指针、焦点描边 */
+html,
+body {
+  height: 100%;
+  overscroll-behavior: none;
+}
+
+body {
+  @apply bg-bg font-sans text-text antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* 点击（鼠标 / 手指）不出浏览器默认的焦点黑框，键盘导航（Tab 键）照常显示粉色描边 */
+button:focus:not(:focus-visible) {
+  outline: none;
+}
+button:focus-visible {
+  outline: 2px solid #f9a8d4;
+  outline-offset: 2px;
+}
+
+/* Tailwind v4 把按钮的鼠标指针默认改成了箭头：可点的一律手型，禁用的显示「不可点」 */
+button:not(:disabled),
+[role='button']:not([aria-disabled='true']),
+summary {
+  cursor: pointer;
+}
+button:disabled {
+  cursor: not-allowed;
+}
+
+/* 点击展开的摘要行（本局面板的分区卡）不出浏览器默认的焦点黑框；键盘导航照常有描边 */
+summary:focus:not(:focus-visible) {
+  outline: none;
+}

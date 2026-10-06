@@ -1,0 +1,45 @@
+/* 质感：纸面（游玩以外的页面）、玻璃（游玩页的状态栏 / 按钮 / 对话框） */
+/* 游玩以外的页面：奶油底 + 角落粉 / 鹅黄柔光（静态渐变，不用模糊，手机零负担） */
+@utility gal-paper {
+  color: #4a2f2a;
+  background:
+    radial-gradient(90% 55% at 0% 0%, #ffd9e6 0%, transparent 62%),
+    radial-gradient(80% 50% at 100% 100%, #fff0bf 0%, transparent 60%),
+    radial-gradient(60% 40% at 100% 0%, #ffe9f2 0%, transparent 70%),
+    #fff8f1;
+}
+
+/*
+ * 液态玻璃（游玩页的状态栏 / 按钮用）。
+ * ★手机上不用 backdrop-filter：顶栏下面是一直在呼吸的立绘，真模糊每帧都要重算，手机会掉帧。
+ *   靠「半透明渐变 + 顶部高光 + 内描边 + 柔和投影」做出玻璃感，开销≈普通背景色。
+ * ★只有鼠标设备（电脑）才加一层轻模糊——显卡扛得住。
+ */
+@utility glass {
+  color: #fff;
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 0.32) 0%, rgb(255 255 255 / 0.08) 48%, rgb(255 255 255 / 0.14) 100%),
+    rgb(28 16 40 / 0.38);
+  border: 1px solid rgb(255 255 255 / 0.38);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.65),
+    inset 0 -1px 1px rgb(255 255 255 / 0.12),
+    0 10px 28px -12px rgb(0 0 0 / 0.55);
+  text-shadow: 0 1px 2px rgb(0 0 0 / 0.35);
+  @media (hover: hover) and (pointer: fine) {
+    backdrop-filter: blur(10px) saturate(1.4);
+    -webkit-backdrop-filter: blur(10px) saturate(1.4);
+  }
+}
+
+/* 深玻璃：对话框 / 选项用。同样不模糊，底色更实，长段文字压在亮背景上也读得清 */
+@utility glass-strong {
+  color: #fff;
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 0.16) 0%, rgb(255 255 255 / 0.03) 40%, rgb(255 255 255 / 0.06) 100%),
+    rgb(24 14 34 / 0.74);
+  border: 1px solid rgb(255 255 255 / 0.26);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.4),
+    0 14px 36px -14px rgb(0 0 0 / 0.65);
+}

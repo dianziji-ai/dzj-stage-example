@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from 'react'
-import { withState, type SessionState } from '@dianziji/stage'
+import { imageUrl, stripImages, withState, type SessionState } from '@dianziji/stage'
 import { shallowEqual, useStage, useStageActions, useZoneData, useZoneList, useZoneText } from '@dianziji/stage/react'
 import { exprOf, freshCgs, placeOf, playerOf, stateForAi, thoughtOf, timeOf, type ClawSave, type GameSave } from './logic'
 
@@ -34,7 +34,7 @@ export function useGame() {
   const loveTick = useMemo(() => ({ delta: lastTurn ? lastTurn.next.love - lastTurn.prev.love : 0, n: lastTurn?.n ?? 0 }), [lastTurn])
 
   /** 配图库编号 → 地址（没有＝''） */
-  const cgUrl = useCallback((n: number) => snap.image_pack?.images?.find((im) => im.n === n)?.src ?? '', [snap])
+  const cgUrl = useCallback((n: number) => imageUrl(snap, n) ?? '', [snap])
   const hasCg = useCallback((n: number) => cgUrl(n) !== '', [cgUrl])
 
   // 弹出的 CG：这次结算新解锁的，一张一张弹（关一张弹下一张）；刚开局时开场自带的那张这一局只弹一次（看过记在本机）
@@ -69,7 +69,9 @@ export function useGame() {
  * （正在写哪个区 + 进度在输入栏里，用 SDK 的 useTurnProgress）
  */
 export function useDialogue() {
-  const body = useZoneText('narrative')
+  // 正文不出图：AI 万一在正文里写了 ![](编号) 也去掉（回忆 CG 只走 cg 区 → 全屏弹出）
+  const raw = useZoneText('narrative')
+  const body = useMemo(() => stripImages(raw), [raw])
   const list = useZoneList('action')
   const busy = useStage((st) => st.busy)
   return { body, choices: busy ? NONE : list }

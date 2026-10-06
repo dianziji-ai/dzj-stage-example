@@ -38,6 +38,15 @@ describe('Splash 加载页', () => {
     expect(screen.queryByText('重试')).toBeNull()
   })
 
+  it('版本号：给了就在底部显示（出错时也显示，方便确认是哪一版出的错）；没给不显示', () => {
+    const { rerender } = render(<Splash step="" progress={0.2} version="v0.1.3 · 10-07 14:20" />)
+    expect(screen.getByTestId('stage-version').textContent).toBe('v0.1.3 · 10-07 14:20')
+    rerender(<Splash step="" progress={0} error={{ title: '进不去', detail: '' }} version="v0.1.3" />)
+    expect(screen.getByTestId('stage-version').textContent).toBe('v0.1.3')
+    rerender(<Splash step="" progress={0} />)
+    expect(screen.queryByTestId('stage-version')).toBeNull()
+  })
+
   it('准备好了：淡出且不挡点击', () => {
     render(<Splash step="准备好啦！" progress={1} leaving />)
     expect(screen.getByRole('status').className).toContain('opacity-0')

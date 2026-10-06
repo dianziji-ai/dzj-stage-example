@@ -15,7 +15,7 @@ watchViewport()
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     {/* 公共启动外壳：看板娘加载页 → 读这一局 → 预加载首屏 → 建好会话交给 App；游戏规则（存档怎么变）在 rules */}
-    <StageBoot stage={stage} preload={firstScreen} {...rules}>
+    <StageBoot stage={stage} preload={firstScreen} version={__STAGE_VERSION__} {...rules}>
       <App />
     </StageBoot>
   </StrictMode>,

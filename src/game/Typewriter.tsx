@@ -1,7 +1,8 @@
 import { useEffect, useRef, type RefObject } from 'react'
 import { hideOpenMarks, renderMarkdown } from '@dianziji/stage'
+import css from './Typewriter.module.css'
 
-const CARET = '<span class="tw-caret" aria-hidden="true"></span>'
+const CARET = `<span class="${css.caret}" aria-hidden="true"></span>`
 
 /**
  * 打字机：把「一截一截到的流」匀速一个字一个字显示出来。
@@ -90,5 +91,5 @@ export default function Typewriter({ text, streaming = false, markdown = false, 
     paint()
   }
 
-  return <div ref={box} onClick={skip} className={`tw ${markdown ? 'md' : ''}`} />
+  return <div ref={box} onClick={skip} className={`${css.box} ${markdown ? 'md' : ''}`} />
 }

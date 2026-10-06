@@ -10,7 +10,7 @@
  *
  * 提示：<StageToaster /> 把 SDK 的结果（读取 / 存档失败、面板改了存档…）自动弹成顶部提示；自己也能 toast('…')。
  * 存档：会话自带存档器；<SaveIndicator /> 显示「正在保存… / 已保存」，也是手动保存按钮。（在 StageBoot 里面都不用传参数）
- * 教程：packages/stage/README.md
+ * 教程：docs/sdk-react.md
  */
 export { default as StageBoot } from './StageBoot'
 export { default as Splash } from './Splash'

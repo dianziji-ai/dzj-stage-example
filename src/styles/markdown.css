@@ -1,0 +1,46 @@
+/*
+ * AI 正文的 markdown（SDK renderMarkdown 输出的 HTML）：段内单换行保留，块之间留一点距离，对白上色。
+ * 是全局类名 .md：HTML 是 SDK 生成的字符串，没法用 CSS Modules 的类名。
+ */
+.md {
+  white-space: pre-line;
+}
+.md p + p,
+.md p + blockquote,
+.md blockquote + p,
+.md ul,
+.md ol {
+  margin-top: 0.6em;
+}
+.md strong {
+  font-weight: 700;
+  color: #fff;
+}
+.md em {
+  font-style: italic;
+}
+.md blockquote {
+  border-left: 3px solid rgb(244 114 182 / 0.65);
+  padding-left: 0.75em;
+  opacity: 0.92;
+}
+.md ul {
+  list-style: disc;
+  padding-left: 1.3em;
+}
+.md ol {
+  list-style: decimal;
+  padding-left: 1.3em;
+}
+.md code {
+  border-radius: 4px;
+  background: rgb(255 255 255 / 0.12);
+  padding: 0 0.3em;
+  font-size: 0.92em;
+}
+.md a {
+  text-decoration: underline;
+}
+.md .quote {
+  color: #fbcfe8;
+}

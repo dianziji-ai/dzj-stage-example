@@ -1,0 +1,26 @@
+/*
+ * 安全区 + 键盘遮挡：变量由 SDK 的 watchViewport() 维护（本地读系统 env()，线上 iframe 里由平台推值覆盖）。
+ * ★让位的是内容不是容器：背景铺满到屏幕边，只用这些工具类把按钮 / 输入框顶开。见 docs/mobile.md。
+ */
+:root {
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --kb: 0px;
+}
+
+/* 让位工具类：pt-safe（顶）/ pb-safe（底）/ px-safe（左右）；pb-composer＝底部安全区和键盘取大的那个 */
+@utility pt-safe {
+  padding-top: var(--safe-top);
+}
+@utility pb-safe {
+  padding-bottom: var(--safe-bottom);
+}
+@utility px-safe {
+  padding-left: var(--safe-left);
+  padding-right: var(--safe-right);
+}
+@utility pb-composer {
+  padding-bottom: calc(max(var(--safe-bottom), var(--kb)) + 0.75rem);
+}

@@ -1,6 +1,6 @@
 /**
- * 抓娃娃机（这张卡专属的小游戏，演示「舞台里能放任何玩法」；做自己的卡时整个 claw/ 可以删掉）。
- * 娃娃清单 / 稀有度 / 硬币规则。图在 public/assets/plush/{id}.webp（上传后走 manifest）。
+ * 抓娃娃机（这张卡专属的小游戏，演示「舞台里能放任何玩法」；做自己的卡时可以删掉：要一起改的地方见 docs/getting-started.md「不要的玩法」）。
+ * 娃娃清单 / 稀有度 / 硬币规则。图在卡的素材库里，地址见 game/manifest.json 的 plush。
  */
 import manifest from '../game/manifest.json'
 
@@ -30,4 +30,4 @@ export const START_COINS = 5
 export const COINS_PER_TURN_MAX = 3
 
 const M = manifest as unknown as { plush?: Record<string, string> }
-export const plushUrl = (id: PlushId) => M.plush?.[id] ?? `${import.meta.env.BASE_URL}assets/plush/${id}.webp`
+export const plushUrl = (id: PlushId) => M.plush?.[id] ?? ''

@@ -8,9 +8,10 @@
  *   ⚠ 别用「好感: +3」：YAML 会把 +3 解析成 3，正号丢了，分不清是加 3 还是等于 3。
  *
  * 分区 id（卡里定义，英文）：scene{地点,时间,天气} · face{表情} · narrative · cg · status{好感变化,心情,天数变化} · game{硬币} · action
+ * cg 区：剧情走到特别时刻，AI 只写一个回忆编号（「3」）；舞台解锁、弹出（编号 → 图走 SDK 的 imageUrl）。
  * game 区：AI 想请主人玩抓娃娃时写「硬币: 2」（每轮最多 COINS_PER_TURN_MAX 枚），舞台加进存档。
  */
-import type { StageSetup, StageUser, StageZones } from '@dianziji/stage'
+import { zoneText, type StageSetup, type StageUser, type StageZones } from '@dianziji/stage'
 import { COINS_PER_TURN_MAX, isPlush, plushName, START_COINS, type PlushId } from '../claw/data'
 import { isExpr, isPlace, placeName, type ExprId, type PlaceId } from './content'
 
@@ -60,7 +61,7 @@ export function thoughtOf(text: string): string {
 }
 
 /** 一轮写完：按这轮的分区和原文算新存档 + 本轮新解锁的 CG（按出现顺序）+ 好感实际变了多少 */
-export function nextSave(raw: string, z: StageZones, prev: GameSave): { save: GameSave; newCg: number[]; loveDelta: number } {
+export function nextSave(z: StageZones, prev: GameSave): { save: GameSave; newCg: number[]; loveDelta: number } {
   const scene = data(z, 'scene')
   const st = data(z, 'status') ?? {}
 
@@ -73,7 +74,7 @@ export function nextSave(raw: string, z: StageZones, prev: GameSave): { save: Ga
   const day = Math.max(1, dayDelta !== null ? prev.day + clamp(dayDelta, 0, 1) : (num(st['天数']) ?? prev.day))
 
   const loc = isPlace(scene?.['地点']) ? (scene!['地点'] as PlaceId) : prev.location
-  const newCg = cgNumbers(raw).filter((n) => !prev.unlockedCg.includes(n))
+  const newCg = cgOf(z).filter((n) => !prev.unlockedCg.includes(n))
   const gift = num(data(z, 'game')?.['硬币'])
   const coins = prev.claw.coins + (gift === null ? 0 : clamp(gift, 0, COINS_PER_TURN_MAX))
   return {
@@ -113,16 +114,19 @@ export function stateForAi(s: GameSave, who = '主人'): Record<string, unknown>
   }
 }
 
-/** 原文里写到的配图编号 ![](n)，1–8、去重、按出现顺序 */
 /** 这次结算新解锁、要弹出来的 CG（按编号排好；配图库里没有图的跳过，不弹黑屏） */
 export function freshCgs(prev: number[], next: number[], has: (n: number) => boolean): number[] {
   return next.filter((n) => !prev.includes(n) && has(n)).sort((a, b) => a - b)
 }
 
-export function cgNumbers(raw: string): number[] {
+/**
+ * 这一轮 cg 区写了哪些回忆编号：取区里所有整数，1–8、去重、按出现顺序。
+ * 现在的写法是只写数字（「3」）；老开场 / 老历史里的 ![](3) 里也是这个数字，一样认得。
+ */
+export function cgOf(z: StageZones): number[] {
   const out: number[] = []
-  for (const m of raw.matchAll(/!\[[^\]]*\]\((\d+)\)/g)) {
-    const n = Number(m[1])
+  for (const m of zoneText(z, 'cg').matchAll(/\d+/g)) {
+    const n = Number(m[0])
     if (n >= 1 && n <= 8 && !out.includes(n)) out.push(n)
   }
   return out

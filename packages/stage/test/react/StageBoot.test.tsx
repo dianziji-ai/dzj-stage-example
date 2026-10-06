@@ -24,6 +24,16 @@ describe('StageBoot：启动外壳', () => {
     await waitFor(() => expect(screen.getByRole('heading').textContent).toBe('测试卡'), { timeout: 3000 })
   })
 
+  it('version 传给加载页显示', () => {
+    const { stage } = fakeStage(snapOf())
+    render(
+      <StageBoot stage={stage} version="v1.2.3">
+        <h1>进来了</h1>
+      </StageBoot>,
+    )
+    expect(screen.getByTestId('stage-version').textContent).toBe('v1.2.3')
+  })
+
   it('读失败：给人话 + 重试，重试成功就进去', async () => {
     const { stage } = fakeStage(snapOf())
     const load = stage.load as ReturnType<typeof vi.fn>

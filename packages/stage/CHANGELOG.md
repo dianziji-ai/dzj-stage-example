@@ -1,9 +1,12 @@
 # @dianziji/stage
 
-官方例子的内部包（暂未发布 npm）。改了这里的代码，在下面记一笔：以后官方出新版，对照着合并。
+官方维护的版本记录（暂未发布 npm）。★作者开发时不要改这个包：不够用向官方提需求，官方出新版时整个替换。
 
 ## 0.1.0 — 2026-10-06
 
+- `stage.saveSchema(schema)`：改这张卡的存档结构（`PUT /stage/schema`，只认开发凭证 + 卡的作者）。`StageOp` 多了 `'schema'`。
+- `StageBoot` / `Splash` 加 `version`：显示在加载页底部。
+- ★`readZones` 不再把配图编号 `![](n)` 换成图片地址：编号原样留在分区里，由舞台决定怎么用。新增 helper（`@dianziji/stage`）：`imageRefs`（引用了哪些编号）、`imageUrl`（编号 → 地址，收数字 / `'3'` / `'![](3)'`）、`resolveImages`（需要时自己换成地址）、`stripImages`（去掉）。`readZones` 的第二个参数只需要 `slots`。
 - `readLaunch()`（`@dianziji/stage/client`）：线上从平台进入时读舞台地址 `#api=…&token=…`，读完擦掉；`createStage` 没有地址或 token 时不发请求，直接报 `unauthorized`「请从电子姬网站进入这张卡」。
 - README 使用教程（三层各怎么用、React 外壳 / 会话引擎 / 客户端的 API、此刻状态、出错、换肤、安全区、测试）。
 - 分三层、上层只依赖下层（`test/layers.test.ts` 守着）：新入口 `@dianziji/stage/client` 是纯客户端（`createStage` / `StageError` / `withState` / `splitState` / `decodeToken` / 全部类型，零依赖）；`@dianziji/stage` 是会话引擎（session / saver / 分区 / markdown / 安全区），并把客户端全部再导出；`@dianziji/stage/react` 不变。源码目录 `src/client`、`src/session`、`src/view`、`src/react`。

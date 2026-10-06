@@ -9,7 +9,7 @@ import mascot from './mascot-hop.webp'
 const TIPS = ['电子姬正在梳头发…', '小鸡帽戴好了吗？', '正在把舞台灯打开～', '今天也要开开心心哦']
 const TIP = TIPS[Math.floor(Math.random() * TIPS.length)]
 
-export default function Splash({ step, progress, error, onRetry, leaving }: {
+export default function Splash({ step, progress, error, onRetry, leaving, version }: {
   /** 当前在干嘛（「读取存档…」） */
   step: string
   /** 0–1 */
@@ -18,6 +18,8 @@ export default function Splash({ step, progress, error, onRetry, leaving }: {
   onRetry?: () => void
   /** 准备好了、正在淡出 */
   leaving?: boolean
+  /** 舞台的版本号（底部一行小字）：发了新版刷新一下，看它变没变就知道玩家拿到的是不是新的 */
+  version?: string
 }) {
   return (
     <div
@@ -47,8 +49,13 @@ export default function Splash({ step, progress, error, onRetry, leaving }: {
             <Bar progress={progress} done={!!leaving} />
             <div className="mt-2 text-center text-xs text-[#9a7b72]">{step}</div>
           </div>
-          <p className="absolute inset-x-0 bottom-0 pb-[max(var(--safe-bottom),24px)] text-center text-xs text-[#c2a59c]">✦ {TIP} ✦</p>
+          <p className="absolute inset-x-0 bottom-0 pb-[calc(max(var(--safe-bottom),24px)+16px)] text-center text-xs text-[#c2a59c]">✦ {TIP} ✦</p>
         </>
+      )}
+      {version && (
+        <p data-testid="stage-version" className="absolute inset-x-0 bottom-0 pb-[max(var(--safe-bottom),12px)] text-center text-[10px] tracking-wide text-[#c2a59c]/80 tabular-nums">
+          {version}
+        </p>
       )}
     </div>
   )

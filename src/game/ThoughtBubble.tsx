@@ -4,7 +4,8 @@ import { useThought } from './useGame'
 /**
  * 心声气泡：她没说出口的那句真心话，飘在立绘头旁边（云朵 + 两颗小圆点连向头）。
  *  · 这一轮写完才出现（useThought：生成中是空的），晚 0.8 秒浮出来，不抢正文；下一轮开始自然消失。
- *  · 手机：小一号，贴在头的左上方（顶栏细胶囊下面；右边是抓娃娃竖栏）；平板：以屏幕中线（她的头）为准放在头的左上方；电脑：头的右边。
+ *  · 手机：小一号，贴在头的左上方（顶栏细胶囊下面；右边是抓娃娃竖栏）；平板：以屏幕中线（她的头）为准放在头的左上方；
+ *    电脑：头的右边，★顶部至少在右上角「小鸡抓抓乐」招牌下沿之下（招牌在顶栏下 80px、高约 90px，层级比气泡高，窗口窄一点就会盖住气泡）。
  *  · 点一下收起（同一句不再出现）。
  * ★性能：半透明白底不用 blur；进场只动 transform / opacity；memo：只收一个字符串。
  */
@@ -19,7 +20,7 @@ export default memo(function ThoughtBubble() {
           key={text}
           onClick={() => setClosed(text)}
           aria-label={`心声：${text}（点一下收起）`}
-          className="pointer-events-auto absolute top-[max(15%,calc(var(--safe-top)+64px))] left-3 max-w-[min(50vw,190px)] sm:right-[calc(50%+7vh)] sm:left-auto sm:max-w-[220px] animate-[thought-in_0.5s_cubic-bezier(0.2,1.2,0.4,1)_0.8s_both] text-left lg:top-[12%] lg:right-auto lg:left-[calc(50%+12vh)] lg:max-w-[280px]"
+          className="pointer-events-auto absolute top-[max(15%,calc(var(--safe-top)+64px))] left-3 max-w-[min(50vw,190px)] sm:right-[calc(50%+7vh)] sm:left-auto sm:max-w-[220px] animate-[thought-in_0.5s_cubic-bezier(0.2,1.2,0.4,1)_0.8s_both] text-left lg:top-[max(12%,calc(var(--safe-top)+184px))] lg:right-auto lg:left-[calc(50%+12vh)] lg:max-w-[280px]"
         >
           <span className="relative block rounded-[22px] border border-white/80 bg-white/90 px-3 py-2 text-xs leading-snug text-[#8a4a6a] italic shadow-[0_8px_24px_-8px_rgba(0,0,0,0.45)] lg:px-4 lg:text-sm">
             <span className="mr-1 not-italic">💭</span>

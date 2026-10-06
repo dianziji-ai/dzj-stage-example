@@ -1,0 +1,46 @@
+/* 配色和字体：颜色只在这里定义一次，跟随系统明暗；组件里用 Tailwind 类名 bg-panel / text-muted / border-line … */
+:root {
+  --c-bg: #f6f5f2;
+  --c-panel: #ffffff;
+  --c-raised: #fbfaf8;
+  --c-text: #1d1b18;
+  --c-muted: #86817a;
+  --c-line: #e7e3dc;
+  --c-accent: #d9480f;
+  --c-accent-soft: #fde8dc;
+  --c-user: #fff1e8;
+  --c-danger: #c42b2b;
+  --c-ok: #15803d;
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --c-bg: #121110;
+    --c-panel: #1b1a18;
+    --c-raised: #22201d;
+    --c-text: #ece8e1;
+    --c-muted: #8f897f;
+    --c-line: #2e2b27;
+    --c-accent: #fb8c4a;
+    --c-accent-soft: #3a2316;
+    --c-user: #2c1d13;
+    --c-danger: #f87171;
+    --c-ok: #4ade80;
+  }
+}
+
+@theme inline {
+  --color-bg: var(--c-bg);
+  --color-panel: var(--c-panel);
+  --color-raised: var(--c-raised);
+  --color-text: var(--c-text);
+  --color-muted: var(--c-muted);
+  --color-line: var(--c-line);
+  --color-accent: var(--c-accent);
+  --color-accent-soft: var(--c-accent-soft);
+  --color-user: var(--c-user);
+  --color-danger: var(--c-danger);
+  --color-ok: var(--c-ok);
+  --font-sans: system-ui, -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}

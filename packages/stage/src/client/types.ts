@@ -97,7 +97,7 @@ export type StageSnapshot = {
   slots: StageSlot[]
   /** 存档结构（JSON Schema，编辑器「舞台」页定义）；没定义＝null，此时不能存档 */
   state_schema: StageSchema | null
-  /** 配图库：AI 写 ![](编号) 时用它换成图（readZones 自动处理）；也可以拿来做图册。没配＝null */
+  /** 配图库：AI 按编号引用的图（readZones 不换，用 imageUrl(snap, 编号) 取）；也可以拿来做图册。没配＝null */
   image_pack: StageImagePack | null
   /** 初始设定（只读；要改回平台的设定弹窗）。按 key 取值：setup.fields.find((f) => f.key === 'name')?.value */
   setup: StageSetup
