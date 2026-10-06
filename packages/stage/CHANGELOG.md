@@ -2,6 +2,10 @@
 
 官方维护的版本记录（暂未发布 npm）。★作者开发时不要改这个包：不够用向官方提需求，官方出新版时整个替换。
 
+## 0.1.1 — 2026-10-07
+
+- 新增 `useTapVideo(src, onStop?)` + `TAP_VIDEO_ATTRS`（`@dianziji/stage/react`）：两段式视频。点了才给 `<video>` 设 src、不自动播、不循环；播完 / 退出原生全屏 / 出错 / 点了 6 秒没动就清源收场。治安卓 UC / 夸克 / QQ / 微信把视频拉进原生全屏、玩家关不掉。
+
 ## 0.1.0 — 2026-10-06
 
 - 安全区：`pt-safe` / `pb-safe` / `px-safe` / `pb-composer` 和 `--safe-*` 默认值挪进 `styles.css`（作者不用自己写）；`StageBoot` 自动调 `watchViewport()`；`watchViewport` 在 iframe 里先给平台发 `stage:hello`（平台收到再推安全区，不丢第一次），不再接收 `stage:kb`（手机一律全屏输入）。

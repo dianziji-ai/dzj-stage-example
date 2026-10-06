@@ -1,6 +1,8 @@
 import { useCallback, useMemo, useState } from 'react'
 import { imageUrl, stripImages, withState, type SessionState } from '@dianziji/stage'
 import { shallowEqual, useStage, useStageActions, useZoneData, useZoneList, useZoneText } from '@dianziji/stage/react'
+import { OPENING_FILM } from './content'
+import { markSeen, seen } from './seen'
 import { exprOf, freshCgs, placeOf, playerOf, stateForAi, thoughtOf, timeOf, type ClawSave, type GameSave } from './logic'
 
 export type { ClawSave, GameSave, Status } from './logic'
@@ -44,11 +46,21 @@ export function useGame() {
     const n = history.length <= 1 ? save.unlockedCg[0] : undefined
     return { key, cg: n !== undefined && hasCg(n) && !seen(key) ? n : null }
   })
+  // 舞台开场视频：新开的一局进来先放（点了才播，可跳过）；每一局只出现一次。放完 / 跳过之后才轮到开场 CG
+  const [film, setFilm] = useState(() => {
+    const key = `gal-opening-film:${snap.card.id}:${history[0]?.id ?? 0}`
+    return OPENING_FILM && history.length <= 1 && !seen(key) ? key : null
+  })
+  const closeFilm = useCallback(() => {
+    if (film) markSeen(film)
+    setFilm(null)
+  }, [film])
+
   const [shown, setShown] = useState({ turn: 0, count: 0, opening: false })
   const fresh = useMemo(() => (lastTurn ? freshCgs(lastTurn.prev.unlockedCg, lastTurn.next.unlockedCg, hasCg) : NO_CG), [lastTurn, hasCg])
   const turnN = lastTurn?.n ?? 0
   const idx = shown.turn === turnN ? shown.count : 0
-  const cg = fresh[idx] ?? (shown.opening ? null : opening.cg)
+  const cg = film ? null : (fresh[idx] ?? (shown.opening ? null : opening.cg))
   const closeCg = useCallback(() => {
     if (fresh[idx] !== undefined) return setShown((s) => ({ ...s, turn: turnN, count: idx + 1 }))
     markSeen(opening.key)
@@ -61,7 +73,7 @@ export function useGame() {
   /** 发一句话：末尾附上此刻状态（<dj_state>，AI 看不到存档，靠它知道当前好感、地点……；附什么是这张卡自己定的） */
   const send = useCallback((text: string) => rawSend(withState(text, stateForAi(save, player.name || '主人'))), [rawSend, save, player.name])
 
-  return { ...s, player, location, time, expr, status, loveTick, cg, closeCg, updateClaw, send, retry, dismissError, loadOlder, cgUrl }
+  return { ...s, player, location, time, expr, status, loveTick, cg, closeCg, film: film ? OPENING_FILM : null, closeFilm, updateClaw, send, retry, dismissError, loadOlder, cgUrl }
 }
 
 /**
@@ -86,19 +98,3 @@ export function useThought(): string {
 
 const NONE: string[] = []
 const NO_CG: number[] = []
-
-/** 本机记一笔「看过了」（隐私模式下 localStorage 会抛：记不住就下次再弹一次，不影响玩） */
-function seen(key: string): boolean {
-  try {
-    return localStorage.getItem(key) === '1'
-  } catch {
-    return false
-  }
-}
-function markSeen(key: string) {
-  try {
-    localStorage.setItem(key, '1')
-  } catch {
-    /* 记不住就算了 */
-  }
-}

@@ -28,8 +28,9 @@ el.animate([{ transform: 'scaleX(0)' }, { transform: 'scaleX(1)' }], { duration:
 ```
 
 ## 视频
-- **两段式**：先静态展示（首帧图 + ▶），点了才播；不 `autoPlay + loop`。
-- 播完 / 出错 / 6 秒起不来 → 收场回展示页。
+- **一律用 SDK 的 `useTapVideo` + `TAP_VIDEO_ATTRS`**（见 `docs/sdk-react.md#视频usetapvideo`），别自己写 `<video autoPlay loop>`。
+- 两段式：先静态展示（封面图 `<img>` + ▶），点了才播；列表 / 图册的格子里只放封面图，不放 `<video>`。
+- 播完 / 退出原生全屏 / 出错 / 6 秒起不来 → 清源收场（hook 已做）；关闭按钮一直在。
 
 ## 自检
 - Chrome 开发者工具 → Performance，手机模拟 + CPU 降速 4×，录一段：没有长时间的红条（长任务），帧率稳定。

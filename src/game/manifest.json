@@ -37,5 +37,31 @@
         "starchick": "https://r2.picimgdzj.me/card_assets/ca44070d/assets/image/I6DOuUESTEMyJ28lhUDJ.webp",
         "dianji": "https://r2.picimgdzj.me/card_assets/ca44070d/assets/image/5nk8LatizxGV3L9qzomR.webp",
         "goldchick": "https://r2.picimgdzj.me/card_assets/ca44070d/assets/image/TAKvauSL7XyqnMqLqIY2.webp"
-    }
+    },
+    "film": {
+        "src": "https://r2.picimgdzj.me/card_assets/ca44070d/assets/video/IbLssuLNITx7me4Gxd5w.mp4",
+        "poster": "https://r2.picimgdzj.me/card_assets/ca44070d/assets/image/MeBCKh9I4ZfdGKqKm08K.webp"
+    },
+    "eggs": [
+        {
+            "name": "彩蛋 1",
+            "src": "https://r2.picimgdzj.me/card_assets/ca44070d/assets/video/8swcLX8I16P9klOOc3Yq.mp4",
+            "poster": "https://r2.picimgdzj.me/card_assets/ca44070d/assets/image/WpdnphAWMr0JTqHy0xN8.webp"
+        },
+        {
+            "name": "彩蛋 2",
+            "src": "https://r2.picimgdzj.me/card_assets/ca44070d/assets/video/COzT22JXQx9XG4PbwkZW.mp4",
+            "poster": "https://r2.picimgdzj.me/card_assets/ca44070d/assets/image/h4ykHkvEkGBCXuatb6kf.webp"
+        },
+        {
+            "name": "彩蛋 3",
+            "src": "https://r2.picimgdzj.me/card_assets/ca44070d/assets/video/reDIeXEe37aFfEJUHPuB.mp4",
+            "poster": "https://r2.picimgdzj.me/card_assets/ca44070d/assets/image/fwfLyEO4YhO9Cze1JQIb.webp"
+        },
+        {
+            "name": "彩蛋 4",
+            "src": "https://r2.picimgdzj.me/card_assets/ca44070d/assets/video/IbLssuLNITx7me4Gxd5w.mp4",
+            "poster": "https://r2.picimgdzj.me/card_assets/ca44070d/assets/image/MeBCKh9I4ZfdGKqKm08K.webp"
+        }
+    ]
 }

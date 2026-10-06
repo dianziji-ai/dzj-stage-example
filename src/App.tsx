@@ -5,10 +5,11 @@ import { useBgm, useBgmPrefs } from './audio/useBgm'
 import ClawGame from './claw/ClawGame'
 import EntryButton from './claw/EntryButton'
 import { plushName, type PlushId } from './claw/data'
-import { placeName, PLACES, spriteUrl, type PlaceId } from './game/content'
+import { EGGS, placeName, PLACES, spriteUrl, type PlaceId } from './game/content'
 import Dialogue from './game/Dialogue'
 import Hud, { type HudAction } from './game/Hud'
 import { CgViewer, GalleryPage, LogPage, MapPage } from './game/pages'
+import VideoViewer from './game/VideoViewer'
 import Scene from './game/Scene'
 import ThoughtBubble from './game/ThoughtBubble'
 import TabBar, { type Tab } from './game/TabBar'
@@ -45,6 +46,7 @@ export default function App() {
   const [page, setPage] = useState<PageId>('play')
   const [menu, setMenu] = useState(false) // 手机菜单（顶栏 ☰）
   const [view, setView] = useState<number | null>(null) // 图册里点开看的 CG
+  const [egg, setEgg] = useState<number | null>(null) // 图册里点开看的彩蛋视频（EGGS 下标）
 
   // 打开地图并让某个地点跳动高亮（从提示弹窗「去电玩城」过来）；离开地图就清掉
   const [mapFocus, setMapFocus] = useState<PlaceId | null>(null)
@@ -168,7 +170,7 @@ export default function App() {
       {page !== 'play' && page !== 'claw' && (
         <div className="gal-paper absolute inset-0 flex animate-fade-in flex-col">
           {page === 'map' && <MapPage focus={mapFocus} here={g.location} busy={g.busy} call={g.player.call} line={travelLine} onGo={travel} onBack={back} />}
-          {page === 'gallery' && <GalleryPage unlocked={g.save.unlockedCg} url={g.cgUrl} onOpen={setView} collection={g.save.claw.collection} claw={clawCta} onBack={back} />}
+          {page === 'gallery' && <GalleryPage unlocked={g.save.unlockedCg} url={g.cgUrl} onOpen={setView} onEgg={setEgg} collection={g.save.claw.collection} claw={clawCta} onBack={back} />}
           {page === 'log' && <LogPage items={log} me={g.player.name} avatar={g.player.avatar} hasMore={g.hasOlder} onMore={g.loadOlder} onBack={back} />}
           <TabBar tabs={TABS} active={page} onPick={go} />
         </div>
@@ -192,6 +194,8 @@ export default function App() {
       {/* 新解锁的 CG 自动弹；图册里点开的也用同一个查看器 */}
       {g.cg !== null && <CgViewer key={g.cg} src={g.cgUrl(g.cg)} onClose={g.closeCg} />}
       {view !== null && <CgViewer key={view} src={g.cgUrl(view)} onClose={() => setView(null)} />}
+      {egg !== null && EGGS[egg] && <VideoViewer key={egg} clip={EGGS[egg]} onClose={() => setEgg(null)} />}
+      {g.film && <VideoViewer clip={g.film} closeLabel="跳过" closeOnEnd onClose={g.closeFilm} />}
     </div>
   )
 }

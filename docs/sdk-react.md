@@ -78,6 +78,37 @@ const p     = useTurnProgress()                                     // { zone, l
 | `<TurnProgress />` | 「● 正在写 · 表情」+ 进度条；`labels={{ thought: '偷偷想心事中' }}` 换说法 |
 | `<Splash />` | 启动加载页（StageBoot 自己用；想单独用也行） |
 
+## 视频：`useTapVideo`
+
+舞台里放视频**一律用它**（开场视频、彩蛋、过场）。安卓上的 UC / 夸克 / QQ / 微信浏览器会把页面里的 `<video>` 拉进自己的原生全屏播放器，网页上的按钮全被盖住，循环播放的永远播不完：玩家关不掉。`useTapVideo` 的做法是「点了才播」：
+
+```tsx
+import { TAP_VIDEO_ATTRS, useTapVideo } from '@dianziji/stage/react'
+
+function Film({ src, poster, onClose }: { src: string; poster: string; onClose: () => void }) {
+  const { ref, playing, play, stop } = useTapVideo(src, (ended) => ended && onClose()) // 收场回调：ended＝正常播完
+  return (
+    <div className="fixed inset-0 bg-black">
+      {!playing && <img src={poster} className="absolute inset-0 size-full object-contain" />}   {/* 封面用图片 */}
+      <video {...TAP_VIDEO_ATTRS} ref={ref} className={playing ? 'size-full' : 'invisible'} />   {/* 常驻挂载、不写 src */}
+      {!playing && <button onClick={() => play()}>▶</button>}
+      <button onClick={() => { stop(); onClose() }} className="absolute top-[calc(var(--safe-top)+12px)] right-3">关闭</button>
+    </div>
+  )
+}
+```
+
+| 规矩 | 为什么 |
+|---|---|
+| `<video>` 不写 `src` / `autoPlay` / `loop`，由 `play()` 设 src | 没 src 浏览器就没东西可「嗅」；被拉进原生播放器的只可能是玩家自己点开、会播完的那一段 |
+| 封面（第一帧）用 `<img>`，**不要**用 `<video>` 显示第一帧 | 同上：列表里一排带 src 的 video 全都会被嗅到 |
+| `play()` 必须在点击回调里**同步**调用 | 算用户手势，才能带声音起播 |
+| `<video>` 在组件挂载那一刻就要渲染出来 | 事件挂载时绑一次；视频按需出现就包一层子组件（像上面的 `Film`） |
+| 关闭按钮一直在 | `stop()` 清源；原生播放器那边播完 / 退出全屏 / 出错 / 点了 6 秒没动也会自动清源收场 |
+| 解构着用（`const { ref, playing } = …`） | 整个对象带着 `ref`，lint 会把 `tv.playing` 误判成「渲染时读 ref」 |
+
+`playing`：正在播（封面该藏起来）。`play(muted?)`：起播。`stop()`：收场（清源、回到封面，回调 `ended=false`）。完整用法见官方例子 `src/game/VideoViewer.tsx`。
+
 其他导出：`preloadImages(urls)`（预先下载并解码图片，切场景前用）、`useSession()`（拿会话本体，要在 React 外调方法时用）、`useSaveStatus(saver)`（存档器状态：`idle` / `saving` / `saved` / `error`）、`toast(text, kind)` / `dismissToast(id)`。
 
 `StageToaster` / `SaveIndicator` / `TurnProgress` 只用 `sp-*` 配色变量（见 [panel.md](panel.md#换肤)），`className` 可以整个换掉外观。`Splash`（加载页）是固定的看板娘 + 奶油底，不能换皮（底部可以显示版本 / 构建号）。在 `StageBoot` 里面用不用传 `stage` / `saver`。

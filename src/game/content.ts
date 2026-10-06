@@ -9,7 +9,14 @@ import manifest from './manifest.json'
  * 素材地址：全部在卡的素材库里（网站编辑器「素材库」上传），manifest.json 记每张图的地址（按用途分组）。
  * ★大图不打进舞台包：换成自己的卡，就把自己素材库里的地址填进 manifest.json。
  */
-const M = manifest as unknown as { bg: Record<string, string>; sprites: Record<string, string> }
+/** 一段视频：src＝视频，poster＝封面图（第一帧截图）。★封面用图片，别用 <video> 显示第一帧——带 src 的 video 会被安卓浏览器嗅探、拉进关不掉的原生全屏 */
+export type Clip = { name?: string; src: string; poster: string }
+const M = manifest as unknown as { bg: Record<string, string>; sprites: Record<string, string>; film?: Clip; eggs?: Clip[] }
+
+/** 舞台开场视频（新开一局进游戏前，点了才播）；没配＝null */
+export const OPENING_FILM: Clip | null = M.film ?? null
+/** 图册里的彩蛋视频（一直开放） */
+export const EGGS: Clip[] = M.eggs ?? []
 
 export type PlaceId = 'home' | 'street' | 'cafe' | 'arcade' | 'park' | 'rooftop'
 

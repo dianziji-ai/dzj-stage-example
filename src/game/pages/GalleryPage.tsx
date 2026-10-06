@@ -1,11 +1,13 @@
 import { PLUSHIES, plushUrl, RARITY_LABEL, type PlushId } from '../../claw/data'
 import { showTip } from '../tipStore'
-import { CG_NAMES } from '../content'
+import { CG_NAMES, EGGS } from '../content'
 import Page from './Page'
 
 /** 图册：白相框 + 名字；没解锁的是小鸡剪影 + 编号（不加载图） */
-export default function GalleryPage({ unlocked, url, onOpen, collection, claw, onBack }: {
+export default function GalleryPage({ unlocked, url, onOpen, onEgg, collection, claw, onBack }: {
   onBack: () => void
+  /** 点了某个彩蛋视频（EGGS 的下标）：外面全屏播 */
+  onEgg: (i: number) => void
   unlocked: number[]
   url: (n: number) => string
   onOpen: (n: number) => void
@@ -39,6 +41,29 @@ export default function GalleryPage({ unlocked, url, onOpen, collection, claw, o
           )
         })}
       </div>
+
+      {/* 彩蛋视频：一直开放。格子里只放封面图（★不放 <video>，见 VideoViewer） */}
+      {EGGS.length > 0 && (
+        <>
+          <div className="mx-auto flex max-w-3xl items-baseline gap-2 px-5 pt-2 pb-1">
+            <span className="text-sm font-bold">🎬 彩蛋</span>
+            <span className="text-xs text-[#9a7b72]">她偷偷录的小视频</span>
+          </div>
+          <div className="mx-auto grid max-w-3xl grid-cols-3 gap-3 px-4 pt-1 pb-4 lg:grid-cols-4">
+            {EGGS.map((e, i) => (
+              <button key={e.src} onClick={() => onEgg(i)} className="relative overflow-hidden rounded-2xl bg-white p-1.5 shadow-[0_8px_20px_-10px_rgba(236,72,153,0.4)] active:scale-[0.98]">
+                <img src={e.poster} alt="" loading="lazy" decoding="async" className="aspect-[9/16] w-full rounded-xl object-cover" />
+                <span className="absolute inset-0 grid place-items-center">
+                  <span className="grid size-10 place-items-center rounded-full bg-white/85 text-pink-500 shadow">
+                    <span className="ml-0.5 border-y-[7px] border-l-[11px] border-y-transparent border-l-current" />
+                  </span>
+                </span>
+                <div className="px-1 pt-1 text-xs font-semibold">{e.name}</div>
+              </button>
+            ))}
+          </div>
+        </>
+      )}
 
       {/* 娃娃收藏柜（电玩城抓娃娃机抓到的；没抓到的是剪影，点了提示去哪儿抓） */}
       <div className="mx-auto flex max-w-3xl items-baseline gap-2 px-5 pt-2 pb-1">

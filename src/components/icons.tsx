@@ -15,6 +15,7 @@ const PATHS = {
   up: <path d="m6 15 6-6 6 6" />,
   back: <path d="m15 5-7 7 7 7" />,
   down: <path d="m6 9 6 6 6-6" />,
+  close: <path d="M6 6l12 12M18 6 6 18" />,
   hide: (
     <>
       <path d="M3 3l18 18" />
