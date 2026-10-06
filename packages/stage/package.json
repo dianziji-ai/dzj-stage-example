@@ -1,0 +1,37 @@
+{
+  "name": "@dianziji/stage",
+  "version": "0.1.0",
+  "description": "电子姬舞台 SDK：客户端（读这一局 / 发一句话收流 / 存档）+ 会话引擎 + React 外壳",
+  "private": true,
+  "license": "UNLICENSED",
+  "type": "module",
+  "scripts": {
+    "test": "vitest run --coverage",
+    "test:watch": "vitest"
+  },
+  "exports": {
+    ".": "./src/index.ts",
+    "./client": "./src/client/index.ts",
+    "./react": "./src/react/index.ts",
+    "./styles.css": "./src/styles.css"
+  },
+  "dependencies": {
+    "micromark": "^4.0.3",
+    "use-sync-external-store": "^1.7.0"
+  },
+  "peerDependencies": {
+    "react": ">=19"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@testing-library/react": "^16.3.3",
+    "@types/use-sync-external-store": "^1.7.0",
+    "@vitest/coverage-v8": "^5.0.3",
+    "jsdom": "^30.1.2",
+    "vitest": "^5.0.3"
+  }
+}

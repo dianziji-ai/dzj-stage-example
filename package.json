@@ -1,0 +1,38 @@
+{
+  "name": "dzj-stage-example",
+  "version": "0.1.0",
+  "description": "电子姬舞台官方例子：galgame「电子姬的同居日常」+ 舞台 SDK（packages/）",
+  "private": true,
+  "license": "UNLICENSED",
+  "type": "module",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "pack": "npm run build && cd dist && rm -f ../stage.zip && zip -qr ../stage.zip . && echo \"已生成 stage.zip：在网站编辑器「舞台 → 上线」上传它\"",
+    "lint": "oxlint",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:sdk": "npm test -w @dianziji/stage -w @dianziji/stage-panel"
+  },
+  "dependencies": {
+    "@dianziji/stage": "0.1.0",
+    "@dianziji/stage-panel": "0.1.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.3.3",
+    "@types/node": "^24.13.3",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.7",
+    "@vitejs/plugin-react": "^6.1.1",
+    "oxlint": "^1.81.0",
+    "tailwindcss": "^4.3.3",
+    "typescript": "~6.0.2",
+    "vite": "^8.3.0",
+    "vitest": "^5.0.3"
+  }
+}

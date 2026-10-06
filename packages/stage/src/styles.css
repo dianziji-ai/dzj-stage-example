@@ -1,0 +1,51 @@
+/*
+ * @dianziji/stage 的样式入口：舞台主样式里在 @import 'tailwindcss' 之后引一行
+ *   @import '@dianziji/stage/styles.css';
+ * Tailwind 就会扫描本包的组件（启动加载页、提示、保存按钮），并带上它们要的配色变量和动画。
+ */
+@source './';
+
+@theme {
+  /*
+   * 舞台组件的配色（本局面板、顶部提示、保存按钮共用）。换肤：在自己的样式里覆盖（写在 import 后面），
+   *   :root { --color-sp-accent: #ec4899; --color-sp-bg: #fff8f1; }
+   * 全部变量、深色 / 跟随系统明暗的写法见 packages/stage-panel/README.md「换肤」。
+   */
+  --color-sp-bg: #f6f5f2; /* 面板底 */
+  --color-sp-card: #ffffff; /* 卡片 / 按钮底 */
+  --color-sp-code: #fbfaf8; /* 代码块底 */
+  --color-sp-line: #e7e3dc; /* 分隔线 / 边框 */
+  --color-sp-text: #1d1b18;
+  --color-sp-muted: #86817a;
+  --color-sp-accent: #d9480f; /* 强调色：当前标签、主按钮、链接 */
+  --color-sp-on-accent: #ffffff; /* 强调色上的字 */
+  --color-sp-accent-soft: #fde8dc; /* 强调色的浅底：小标签 */
+  --color-sp-danger: #c42b2b;
+  --color-sp-ok: #15803d;
+
+  /* 顶部提示进场：从上面滑下来 */
+  @keyframes toast-in {
+    from {
+      transform: translateY(-12px);
+      opacity: 0;
+    }
+  }
+  /* 进度条流光：从左外扫到右外 */
+  @keyframes boot-shine {
+    from {
+      transform: translateX(-100%);
+    }
+    to {
+      transform: translateX(300%);
+    }
+  }
+  @keyframes boot-shadow {
+    0%,
+    100% {
+      transform: scaleX(1);
+    }
+    50% {
+      transform: scaleX(0.7);
+    }
+  }
+}

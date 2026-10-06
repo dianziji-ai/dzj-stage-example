@@ -1,0 +1,42 @@
+电子姬舞台官方例子及舞台 SDK 专有许可
+Copyright (c) 2026 电子姬 (dianziji). 保留所有权利。
+
+本仓库的全部内容——包括但不限于 @dianziji/stage、@dianziji/stage-panel、官方例子的源代码、
+舞台协议与接口约定、文档、美术与音频素材（以下统称「本软件」）——均为电子姬所有的专有软件，
+不是开源软件。
+
+一、允许的使用
+你可以在本地查看、运行、修改本软件，**仅用于**为电子姬平台（dianziji 及其官方域名）上的角色卡
+开发舞台，并通过电子姬平台发布。
+
+二、禁止的使用
+未经电子姬事先书面许可，不得：
+  1. 将本软件或其任何部分（含修改后的版本）用于电子姬平台以外的任何网站、应用、服务或产品；
+  2. 复制、分发、转授权、出售、出租本软件，或将其公开发布到任何其他地方；
+  3. 参照本软件的舞台协议、接口或数据格式，为其他平台实现兼容的服务端、宿主或替代品；
+  4. 移除或修改本许可及版权声明。
+
+三、其他
+本软件按「现状」提供，不附带任何明示或默示的担保。电子姬可随时修改或终止本许可。
+违反本许可的，授权自动终止，电子姬保留追究法律责任的权利。
+
+----------------------------------------------------------------------
+
+Proprietary License — Dianziji Stage SDK and Official Example
+Copyright (c) 2026 Dianziji. All rights reserved.
+
+All contents of this repository — including @dianziji/stage, @dianziji/stage-panel, the official
+example, the stage protocol and API conventions, documentation, art and audio assets
+(the "Software") — are proprietary to Dianziji. This is NOT open-source software.
+
+1. Permitted use: you may view, run and modify the Software locally SOLELY to build stages for
+   character cards on the Dianziji platform and publish them through the Dianziji platform.
+2. Prohibited without prior written permission from Dianziji:
+   (a) using the Software or any part of it (including modified versions) on any website, app,
+       service or product other than the Dianziji platform;
+   (b) copying, distributing, sublicensing, selling, renting or publicly republishing the Software;
+   (c) implementing a compatible server, host or replacement for other platforms based on the
+       Software's stage protocol, API or data formats;
+   (d) removing or altering this license or copyright notices.
+3. The Software is provided "AS IS", without warranty of any kind. Dianziji may modify or terminate
+   this license at any time. Any breach automatically terminates your rights under this license.

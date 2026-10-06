@@ -1,0 +1,329 @@
+@import 'tailwindcss';
+/* 两个内部包（packages/）的组件也用 Tailwind：引它们的样式入口，Tailwind 才会扫描到 */
+@import '@dianziji/stage/styles.css';
+@import '@dianziji/stage-panel/styles.css';
+
+/* 本局面板换肤：和地图 / 图册同一套奶油风（不跟系统明暗走） */
+:root {
+  --color-sp-bg: #fff8f1;
+  --color-sp-card: #ffffff;
+  --color-sp-code: #fffaf5;
+  --color-sp-line: #fbe3ea;
+  --color-sp-text: #4a2f2a;
+  --color-sp-muted: #9a7b72;
+  --color-sp-accent: #ec4899;
+  --color-sp-on-accent: #ffffff;
+  --color-sp-accent-soft: #fdf2f8;
+  --color-sp-danger: #e11d48;
+  --color-sp-ok: #059669;
+}
+
+/*
+ * 颜色只在这里定义一次，跟随系统明暗；组件里用 Tailwind 类名 bg-panel / text-muted / border-line …
+ * 想换配色改这几个变量就行。
+ */
+:root {
+  --c-bg: #f6f5f2;
+  --c-panel: #ffffff;
+  --c-raised: #fbfaf8;
+  --c-text: #1d1b18;
+  --c-muted: #86817a;
+  --c-line: #e7e3dc;
+  --c-accent: #d9480f;
+  --c-accent-soft: #fde8dc;
+  --c-user: #fff1e8;
+  --c-danger: #c42b2b;
+  --c-ok: #15803d;
+  color-scheme: light dark;
+
+  /* 安全区 + 键盘遮挡（sdk/viewport.ts 维护）：顶层页面默认读系统 env()，线上 iframe 里由平台推值覆盖 */
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --kb: 0px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --c-bg: #121110;
+    --c-panel: #1b1a18;
+    --c-raised: #22201d;
+    --c-text: #ece8e1;
+    --c-muted: #8f897f;
+    --c-line: #2e2b27;
+    --c-accent: #fb8c4a;
+    --c-accent-soft: #3a2316;
+    --c-user: #2c1d13;
+    --c-danger: #f87171;
+    --c-ok: #4ade80;
+  }
+}
+
+@theme inline {
+  --color-bg: var(--c-bg);
+  --color-panel: var(--c-panel);
+  --color-raised: var(--c-raised);
+  --color-text: var(--c-text);
+  --color-muted: var(--c-muted);
+  --color-line: var(--c-line);
+  --color-accent: var(--c-accent);
+  --color-accent-soft: var(--c-accent-soft);
+  --color-user: var(--c-user);
+  --color-danger: var(--c-danger);
+  --color-ok: var(--c-ok);
+  --font-sans: system-ui, -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  --animate-blink: blink 1.2s infinite ease-in-out;
+  --animate-breathe: breathe 4.5s infinite ease-in-out;
+  --animate-fade-in: fade-in 0.45s ease-out both;
+  --animate-pop: pop 0.35s ease-out;
+  --animate-tip-in: tip-in 0.28s cubic-bezier(0.2, 1.3, 0.4, 1);
+
+  @keyframes breathe {
+    0%,
+    100% {
+      transform: translateY(0) scale(1);
+    }
+    50% {
+      transform: translateY(-0.6%) scale(1.006);
+    }
+  }
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  --animate-float-up: float-up 1.6s ease-out both;
+  @keyframes float-up {
+    0% {
+      opacity: 0;
+      transform: translateY(4px);
+    }
+    15% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    100% {
+      opacity: 0;
+      transform: translateY(-14px);
+    }
+  }
+  @keyframes wiggle {
+    0%,
+    100% {
+      transform: rotate(-8deg);
+    }
+    50% {
+      transform: rotate(8deg);
+    }
+  }
+  /* 底部面板弹起（手机菜单） */
+  @keyframes sheet-up {
+    from {
+      transform: translateY(100%);
+    }
+  }
+  /* 心声气泡浮出来：从下面一点、小一点冒上来 */
+  @keyframes thought-in {
+    from {
+      transform: translateY(10px) scale(0.9);
+      opacity: 0;
+    }
+  }
+  /* 提示弹窗进场：从小一点弹到正常（略带回弹） */
+  @keyframes tip-in {
+    from {
+      transform: scale(0.85);
+      opacity: 0;
+    }
+  }
+  @keyframes pop {
+    0% {
+      transform: translateY(0);
+    }
+    40% {
+      transform: translateY(-2.5%);
+    }
+    100% {
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes blink {
+    0%,
+    80%,
+    100% {
+      opacity: 0.25;
+    }
+    40% {
+      opacity: 1;
+    }
+  }
+}
+
+/* 让位工具类：pt-safe（顶）/ pb-safe（底）/ px-safe（左右）；pb-composer＝底部安全区和键盘取大的那个 */
+@utility pt-safe {
+  padding-top: var(--safe-top);
+}
+@utility pb-safe {
+  padding-bottom: var(--safe-bottom);
+}
+@utility px-safe {
+  padding-left: var(--safe-left);
+  padding-right: var(--safe-right);
+}
+@utility pb-composer {
+  padding-bottom: calc(max(var(--safe-bottom), var(--kb)) + 0.75rem);
+}
+
+html,
+body {
+  height: 100%;
+  overscroll-behavior: none;
+}
+
+body {
+  @apply bg-bg font-sans text-text antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* 系统开了「减少动态效果」：立绘呼吸 / 晃动都停掉 */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
+
+/* 游玩以外的页面：奶油底 + 角落粉 / 鹅黄柔光（静态渐变，不用模糊，手机零负担） */
+@utility gal-paper {
+  color: #4a2f2a;
+  background:
+    radial-gradient(90% 55% at 0% 0%, #ffd9e6 0%, transparent 62%),
+    radial-gradient(80% 50% at 100% 100%, #fff0bf 0%, transparent 60%),
+    radial-gradient(60% 40% at 100% 0%, #ffe9f2 0%, transparent 70%),
+    #fff8f1;
+}
+
+/* 点击（鼠标 / 手指）不出浏览器默认的焦点黑框，键盘导航（Tab 键）照常显示粉色描边 */
+button:focus:not(:focus-visible) {
+  outline: none;
+}
+button:focus-visible {
+  outline: 2px solid #f9a8d4;
+  outline-offset: 2px;
+}
+
+/*
+ * 液态玻璃（游玩页的状态栏 / 按钮用）。
+ * ★手机上不用 backdrop-filter：顶栏下面是一直在呼吸的立绘，真模糊每帧都要重算，手机会掉帧。
+ *   靠「半透明渐变 + 顶部高光 + 内描边 + 柔和投影」做出玻璃感，开销≈普通背景色。
+ * ★只有鼠标设备（电脑）才加一层轻模糊——显卡扛得住。
+ */
+@utility glass {
+  color: #fff;
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 0.32) 0%, rgb(255 255 255 / 0.08) 48%, rgb(255 255 255 / 0.14) 100%),
+    rgb(28 16 40 / 0.38);
+  border: 1px solid rgb(255 255 255 / 0.38);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.65),
+    inset 0 -1px 1px rgb(255 255 255 / 0.12),
+    0 10px 28px -12px rgb(0 0 0 / 0.55);
+  text-shadow: 0 1px 2px rgb(0 0 0 / 0.35);
+  @media (hover: hover) and (pointer: fine) {
+    backdrop-filter: blur(10px) saturate(1.4);
+    -webkit-backdrop-filter: blur(10px) saturate(1.4);
+  }
+}
+
+/* 深玻璃：对话框 / 选项用。同样不模糊，底色更实，长段文字压在亮背景上也读得清 */
+@utility glass-strong {
+  color: #fff;
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 0.16) 0%, rgb(255 255 255 / 0.03) 40%, rgb(255 255 255 / 0.06) 100%),
+    rgb(24 14 34 / 0.74);
+  border: 1px solid rgb(255 255 255 / 0.26);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.4),
+    0 14px 36px -14px rgb(0 0 0 / 0.65);
+}
+
+/* Tailwind v4 把按钮的鼠标指针默认改成了箭头：可点的一律手型，禁用的显示「不可点」 */
+button:not(:disabled),
+[role='button']:not([aria-disabled='true']),
+summary {
+  cursor: pointer;
+}
+button:disabled {
+  cursor: not-allowed;
+}
+
+/* 打字机光标（Typewriter 塞在正文末尾）：data-caret="off" 时收起 */
+.tw-caret {
+  display: inline-block;
+  width: 2px;
+  height: 1.05em;
+  margin-left: 2px;
+  border-radius: 9999px;
+  background: #f472b6;
+  transform: translateY(0.15em);
+  animation: blink 1.2s infinite ease-in-out;
+}
+.tw[data-caret='off'] .tw-caret {
+  display: none;
+}
+
+/* AI 正文的 markdown（SDK renderMarkdown 的输出）：段内单换行保留，块之间留一点距离，对白上色 */
+.md {
+  white-space: pre-line;
+}
+.md p + p,
+.md p + blockquote,
+.md blockquote + p,
+.md ul,
+.md ol {
+  margin-top: 0.6em;
+}
+.md strong {
+  font-weight: 700;
+  color: #fff;
+}
+.md em {
+  font-style: italic;
+}
+.md blockquote {
+  border-left: 3px solid rgb(244 114 182 / 0.65);
+  padding-left: 0.75em;
+  opacity: 0.92;
+}
+.md ul {
+  list-style: disc;
+  padding-left: 1.3em;
+}
+.md ol {
+  list-style: decimal;
+  padding-left: 1.3em;
+}
+.md code {
+  border-radius: 4px;
+  background: rgb(255 255 255 / 0.12);
+  padding: 0 0.3em;
+  font-size: 0.92em;
+}
+.md a {
+  text-decoration: underline;
+}
+.md .quote {
+  color: #fbcfe8;
+}
+
+/* 点击展开的摘要行（本局面板的分区卡）不出浏览器默认的焦点黑框；键盘导航照常有描边 */
+summary:focus:not(:focus-visible) {
+  outline: none;
+}
