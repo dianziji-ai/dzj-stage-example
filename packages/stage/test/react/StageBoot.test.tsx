@@ -24,6 +24,21 @@ describe('StageBoot：启动外壳', () => {
     await waitFor(() => expect(screen.getByRole('heading').textContent).toBe('测试卡'), { timeout: 3000 })
   })
 
+  it('自动接收平台推的安全区：作者不用自己调 watchViewport，pt-safe 就有值', async () => {
+    const parent = { postMessage: vi.fn() } as unknown as Window
+    vi.spyOn(window, 'parent', 'get').mockReturnValue(parent)
+    const { stage } = fakeStage(snapOf())
+    const r = render(<StageBoot stage={stage}>{null}</StageBoot>)
+    expect(parent.postMessage).toHaveBeenCalledWith({ type: 'stage:hello' }, '*')
+    const e = new MessageEvent('message', { data: { type: 'stage:viewport', safe: { top: 59, bottom: 34 } } })
+    Object.defineProperty(e, 'source', { value: parent })
+    window.dispatchEvent(e)
+    expect(document.documentElement.style.getPropertyValue('--safe-top')).toBe('59px')
+    r.unmount()
+    vi.restoreAllMocks()
+    document.documentElement.removeAttribute('style')
+  })
+
   it('version 传给加载页显示', () => {
     const { stage } = fakeStage(snapOf())
     render(

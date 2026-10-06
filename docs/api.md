@@ -11,6 +11,7 @@
 - [PUT /stage/save · 存档](#put-stagesave--存档)
 - [PUT /stage/schema · 改存档结构](#put-stageschema--改存档结构)
 - [GET /stage/gallery · 图册](#get-stagegallery--图册)
+- [平台和舞台之间的消息](#平台和舞台之间的消息)
 - [限流](#限流)
 - [错误](#错误)
 
@@ -214,6 +215,19 @@ curl -X PUT "https://api.<网站域名>/api/v1/stage/schema" \
 | `packs[].state` | `open` 已解锁；`locked` 还没玩到轮数（还差 `rounds − turns` 轮）；`hidden` 作者没开放 |
 | `packs[].rounds` | `-1` 不公开；`0` 一直开放；`N` 玩到第 N 轮解锁 |
 | `thumb` / `src` | 缩略图（只取第一帧，做格子用）/ 原图（点开看） |
+
+## 平台和舞台之间的消息
+
+线上舞台跑在平台页面的 iframe 里，两边用 `postMessage` 传几条消息。**用 SDK（`StageBoot` / `watchViewport()`）全部自动处理**，自己从零写舞台才需要了解：
+
+| 方向 | 消息 | 什么时候 |
+|---|---|---|
+| 舞台 → 平台 | `{ "type": "stage:hello" }` | 舞台开始接收时发一次（平台收到后推一次安全区，防止错过加载时那次） |
+| 平台 → 舞台 | `{ "type": "stage:viewport", "safe": { "top": 47, "right": 0, "bottom": 34, "left": 0 } }` | 舞台发来 hello、iframe 加载完、转屏 / 窗口变化时。单位 px，是刘海、home 条要让开的距离 |
+
+- 舞台只认**父窗口**发来的消息（`event.source === window.parent`），别的来源一律不理。
+- 键盘不推：手机上一律走全屏输入层，舞台里没有会被键盘挡住的输入框。
+- 凭证不走消息：凭证在舞台地址的 `#` 后面（见上面「接口地址与鉴权」）。
 
 ## 限流
 

@@ -13,37 +13,46 @@ afterEach(() => {
   vi.restoreAllMocks()
 })
 
-describe('线上：在平台 iframe 里，由平台推安全区和键盘', () => {
-  const parent = {} as Window
-  beforeEach(() => vi.spyOn(window, 'parent', 'get').mockReturnValue(parent))
+describe('线上：在平台 iframe 里，由平台推安全区', () => {
+  const parent = { postMessage: vi.fn() } as unknown as Window & { postMessage: ReturnType<typeof vi.fn> }
+  beforeEach(() => {
+    parent.postMessage.mockClear()
+    vi.spyOn(window, 'parent', 'get').mockReturnValue(parent)
+  })
   // jsdom 的 MessageEvent 不接受假 source：直接给事件对象补上
   const send = (data: unknown, source: unknown = parent) => {
     const e = new MessageEvent('message', { data })
     Object.defineProperty(e, 'source', { value: source })
     window.dispatchEvent(e)
   }
+  const safe = () => [css('--safe-top'), css('--safe-right'), css('--safe-bottom'), css('--safe-left')]
 
-  it('stage:viewport 写四边安全区（取整、负数当 0、缺的当 0）；stage:kb 写键盘高度', () => {
+  it('开始接收时先给平台发 stage:hello（平台收到再推一次，不怕错过加载时那次）', () => {
     off = watchViewport()
-    send({ type: 'stage:viewport', safe: { top: 47.4, bottom: 34, left: -3 } })
-    expect([css('--safe-top'), css('--safe-right'), css('--safe-bottom'), css('--safe-left')]).toEqual(['47px', '0px', '34px', '0px'])
-    send({ type: 'stage:kb', px: 291.6 })
-    expect(css('--kb')).toBe('292px')
+    expect(parent.postMessage).toHaveBeenCalledWith({ type: 'stage:hello' }, '*')
   })
 
-  it('只认父窗口：别的窗口发来的、格式不对的都不理', () => {
+  it('stage:viewport 写四边安全区（取整、负数当 0、缺的当 0）', () => {
     off = watchViewport()
-    send({ type: 'stage:kb', px: 300 }, {})
-    send('stage:kb')
+    send({ type: 'stage:viewport', safe: { top: 47.4, bottom: 34, left: -3 } })
+    expect(safe()).toEqual(['47px', '0px', '34px', '0px'])
+  })
+
+  it('只认父窗口：别的窗口发来的、格式不对的、不认识的类型都不理（键盘不推，stage:kb 也不认）', () => {
+    off = watchViewport()
+    send({ type: 'stage:viewport', safe: { top: 50 } }, {})
+    send('stage:viewport')
     send(null)
+    send({ type: 'stage:kb', px: 300 })
+    expect(safe()).toEqual(['', '', '', ''])
     expect(css('--kb')).toBe('')
   })
 
   it('停止监听后不再改', () => {
     off = watchViewport()
     off()
-    send({ type: 'stage:kb', px: 300 })
-    expect(css('--kb')).toBe('')
+    send({ type: 'stage:viewport', safe: { top: 50 } })
+    expect(css('--safe-top')).toBe('')
   })
 })
 

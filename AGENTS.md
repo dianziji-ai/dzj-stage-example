@@ -70,7 +70,7 @@ packages/               舞台 SDK（只读）
   stage/                  @dianziji/stage：client / 会话引擎 / react
   stage-panel/            @dianziji/stage-panel：本局面板
 src/                    游戏（作者的代码都在这里）
-  main.tsx                启动：watchViewport + <StageBoot>（预加载、游戏规则）
+  main.tsx                启动：<StageBoot>（预加载、游戏规则；自动接收平台推的安全区）
   stage.ts                舞台连接（readLaunch / .env，别改）
   App.tsx                 页面组装
   index.css               样式入口（只做引入）

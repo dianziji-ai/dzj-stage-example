@@ -17,7 +17,7 @@ description: 舞台的电脑 / 手机适配：Tailwind 移动优先、lg 断点�
 - 电脑上也别撑满超宽屏：`mx-auto max-w-6xl`。
 
 ## ★安全区（iOS 刘海、灵动岛、home 条）
-`main.tsx` 里调了 `watchViewport()`，变量和工具类在 `src/styles/safe-area.css`：
+工具类是 SDK 自带的（`@dianziji/stage/styles.css`），`StageBoot` 自动接收平台推的安全区，**你只管用工具类**（原理见 `docs/mobile.md`：iframe 里 `env()` 恒为 0，平台量好推进来）：
 
 | 用法 | 什么时候 |
 |---|---|

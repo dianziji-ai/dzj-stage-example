@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react'
-import { createSession, type Session, type SessionOptions, type StageError, type StageSnapshot } from '..'
+import { createSession, watchViewport, type Session, type SessionOptions, type StageError, type StageSnapshot } from '..'
 import { SessionCtx } from './context'
 import { preloadImages } from './preload'
 import Splash from './Splash'
@@ -82,6 +82,9 @@ export default function StageBoot<S>({ stage, preload, normalize, onTurn, saveDe
     setStep('连接舞台…')
     setAttempt((n) => n + 1)
   }, [])
+
+  // 安全区：线上在平台 iframe 里，刘海 / home 条的高度由平台推进来（pt-safe 这些工具类才有值）。作者不用自己调
+  useEffect(() => watchViewport(), [])
 
   // 接上刷新前还在生成的那一轮（StrictMode 挂两次：卸载时停、再挂再接，会从头回放）
   useEffect(() => session?.start(), [session])

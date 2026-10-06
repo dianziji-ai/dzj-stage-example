@@ -4,6 +4,7 @@
 
 ## 0.1.0 — 2026-10-06
 
+- 安全区：`pt-safe` / `pb-safe` / `px-safe` / `pb-composer` 和 `--safe-*` 默认值挪进 `styles.css`（作者不用自己写）；`StageBoot` 自动调 `watchViewport()`；`watchViewport` 在 iframe 里先给平台发 `stage:hello`（平台收到再推安全区，不丢第一次），不再接收 `stage:kb`（手机一律全屏输入）。
 - `stage.saveSchema(schema)`：改这张卡的存档结构（`PUT /stage/schema`，只认开发凭证 + 卡的作者）。`StageOp` 多了 `'schema'`。
 - `StageBoot` / `Splash` 加 `version`：显示在加载页底部。
 - ★`readZones` 不再把配图编号 `![](n)` 换成图片地址：编号原样留在分区里，由舞台决定怎么用。新增 helper（`@dianziji/stage`）：`imageRefs`（引用了哪些编号）、`imageUrl`（编号 → 地址，收数字 / `'3'` / `'![](3)'`）、`resolveImages`（需要时自己换成地址）、`stripImages`（去掉）。`readZones` 的第二个参数只需要 `slots`。

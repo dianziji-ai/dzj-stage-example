@@ -4,13 +4,10 @@ import App from './App.tsx'
 import { bgUrl, isExpr, spriteUrl } from './game/content'
 import { normalizeSave } from './game/logic'
 import { rules } from './game/rules'
-import { readZones, watchViewport, type StageSnapshot } from '@dianziji/stage'
+import { readZones, type StageSnapshot } from '@dianziji/stage'
 import { StageBoot } from '@dianziji/stage/react'
 import './index.css'
 import { stage } from './stage'
-
-// 安全区 + 键盘遮挡 → CSS 变量 --safe-* / --kb（见 @dianziji/stage 的 viewport.ts）
-watchViewport()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

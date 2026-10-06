@@ -49,7 +49,7 @@ description: 舞台开发踩过的坑（现象 → 原因 → 做法）：白屏
 ## 样式 / 性能
 | 现象 | 原因 | 做法 |
 |---|---|---|
-| 手机顶栏被状态栏压住 | 没让位 | 顶部元素加 `pt-safe` |
+| 手机顶栏被状态栏压住 | 没让位；或者没用 `StageBoot` 也没调 `watchViewport()`（线上 iframe 里 `env()` 恒为 0，要靠平台推的值） | 顶部元素加 `pt-safe`；不用 React 的舞台启动时调一次 `watchViewport()` |
 | 手机上元素互相叠在一起 | 固定高度 + `overflow-hidden` 硬挤 | 放不下就让内容区滚动；信息多的做成抽屉 / 单独页面 |
 | 手机掉帧 | `backdrop-filter: blur`、`filter`、动画里改 `width` / `top`、大层超纹理上限 | 见 `stage-performance` |
 | 按钮鼠标指针是箭头 | Tailwind v4 默认按钮 `cursor: default` | `src/styles/base.css` 已全局补上 |
