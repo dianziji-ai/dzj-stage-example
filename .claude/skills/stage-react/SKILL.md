@@ -44,7 +44,7 @@ const { send, setSave } = useStageActions()
 | 要跨刷新、跨设备保留的游戏数据 | 存档（`setSave`），字段对上存档结构 |
 | 这一页的界面状态（弹窗开没开、选中哪个） | 组件 `useState` |
 | 好几个组件共用、不进存档的 | 小 store（`useSyncExternalStore`，例子：`tipStore.ts`） |
-| 本机偏好（音乐开关、对话框展开）、「看过了」这类小记号 | SDK 的 `local`（`local.get / set / getJSON / setJSON / remove`）：自动按卡分开、隐私模式不报错。**不许直接用 `localStorage`**——所有舞台在同一个域名下共用一个抽屉，同名的键会和别的卡互相覆盖 |
+| 本机偏好（音乐开关、对话框展开）、「看过了」这类小记号 | `localStorage`，读写都包 `try`（隐私模式会抛）。不用加卡 id 前缀：舞台上线时平台自动把每张卡的存储分开（所有舞台同一个域名，平台在 `index.html` 里注入了按卡加前缀的版本） |
 
 ## 样式
 - **Tailwind 类名优先**，直接写在组件上。

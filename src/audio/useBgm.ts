@@ -5,7 +5,6 @@ import type { SongId } from './songs'
 /** 这首曲子该放就放（换曲由播放器淡入淡出） */
 export function useBgm(song: SongId) {
   useEffect(() => {
-    bgm.restore() // 连上这一局才知道卡 id，本机记的开关 / 音量这时才读得到
     void bgm.play(song)
   }, [song])
 }

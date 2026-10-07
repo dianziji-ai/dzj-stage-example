@@ -4,28 +4,27 @@
  *  · 换曲：新曲淡入、旧曲淡出（0.8s）；渲染好的曲子缓存起来，切回来不用重渲染。
  *  · 切后台 / 锁屏：整个 AudioContext suspend（省电），回来再 resume。
  *  · 关着音乐时不建 AudioContext、不渲染曲子（不占音频硬件、不耗电）；打开那一下（本身就是点击）再建。
- *  · 开关、音量记在本机（SDK 的 local：按卡分开、隐私模式下只在这次生效）。
- *    ★local 要连上这一局（知道卡 id）才能读，所以不在加载时读：useBgm 第一次挂载时 restore()。
+ *  · 开关、音量记在本机（localStorage，读写都包 try——隐私模式下会抛）。
  */
-import { local } from '@dianziji/stage'
 import { renderSong, playSfx, type SfxId } from './synth'
 import { SONGS, type SongId } from './songs'
 
-const KEY = 'bgm'
+const KEY = 'gal-bgm'
 const FADE = 0.8
 
 type Prefs = { on: boolean; volume: number }
 
-const DEFAULT_PREFS: Prefs = { on: true, volume: 0.6 }
-
 function loadPrefs(): Prefs {
-  const p = local.getJSON<Partial<Prefs>>(KEY, {})
-  return { on: p.on !== false, volume: typeof p.volume === 'number' ? Math.min(1, Math.max(0, p.volume)) : DEFAULT_PREFS.volume }
+  try {
+    const p = JSON.parse(localStorage.getItem(KEY) || '{}')
+    return { on: p.on !== false, volume: typeof p.volume === 'number' ? Math.min(1, Math.max(0, p.volume)) : 0.6 }
+  } catch {
+    return { on: true, volume: 0.6 }
+  }
 }
 
 class Bgm {
-  prefs = DEFAULT_PREFS
-  private restored = false
+  prefs = loadPrefs()
   private ctx: AudioContext | null = null
   private master: GainNode | null = null
   private cache = new Map<SongId, Promise<AudioBuffer>>()
@@ -45,14 +44,6 @@ class Bgm {
       if (document.hidden) void this.ctx.suspend()
       else if (this.prefs.on) void this.ctx.resume()
     })
-  }
-
-  /** 读回本机记的开关 / 音量（连上这一局后调一次；之后再调不重复读） */
-  restore() {
-    if (this.restored) return
-    this.restored = true
-    this.prefs = loadPrefs()
-    this.listeners.forEach((fn) => fn())
   }
 
   /** 订阅开关 / 音量变化（给 🎵 按钮刷新用） */
@@ -117,7 +108,11 @@ class Bgm {
   }
 
   private apply() {
-    local.setJSON(KEY, this.prefs)
+    try {
+      localStorage.setItem(KEY, JSON.stringify(this.prefs))
+    } catch {
+      /* 存不了就只在这次生效 */
+    }
     // 第一次打开（之前一直关着、还没建）：开关本身是点击，直接建
     if (this.prefs.on && !this.ctx) this.start()
     else if (this.ctx && this.master) {

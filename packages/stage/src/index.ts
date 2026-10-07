@@ -16,4 +16,3 @@ export { imageRefs, imageUrl, resolveImages, stripImages } from './session/image
 export { pickZone, turnProgress, writingZone, type TurnProgress, type ZoneOptions } from './session/zonetrack'
 export { hideOpenMarks, renderMarkdown } from './view/markdown'
 export { watchViewport } from './view/viewport'
-export { local, setStorageScope, storageScope } from './session/storage'
