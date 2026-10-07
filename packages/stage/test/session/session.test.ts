@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { createSession } from '../../src/session/session'
+import { aiTurns, createSession, saidBefore } from '../../src/session/session'
 import { StageError, withState, type SaveSource, type StageClient, type StageEvent, type StageMessage, type StageSave, type StageSnapshot, type TurnHandlers } from '../../src/index'
 
 /** 假的 stage：send / resume 记下 handlers 由测试推进；save 立刻成功并广播；load 给更早的历史 */
@@ -330,6 +330,90 @@ describe('createSession', () => {
       vi.advanceTimersByTime(16)
       expect(s.getState().zones.face).toMatchObject({ value: { 表情: 'happy' } })
       s.dispose()
+    })
+
+    describe('回看（上一轮 / 下一轮）', () => {
+      // 开场（表情 normal、正文 A）→ 玩家「摸摸头」→ AI（表情 happy、正文 B）→ 玩家「再来」→ AI（只写正文 C）
+      const hist = (): StageMessage[] => [
+        { ...msg(1, 'assistant', opening), kind: 'opening' },
+        msg(2, 'user', withState('摸摸头', { 好感: 20 })),
+        msg(3, 'assistant', '<face>\n表情: happy\n</face>\n<narrative>\n正文B\n</narrative>\n<action>\n- 抱抱\n</action>'),
+        msg(4, 'user', '再来'),
+        msg(5, 'assistant', '<narrative>\n正文C\n</narrative>'),
+      ]
+      const body = (s: { getState: () => { zones: Record<string, { value: unknown }> } }) => String(s.getState().zones.narrative?.value ?? '')
+
+      it('上一轮 / 下一轮：分区和「最近写过的值」都换成那一轮的；到最新回到平时', async () => {
+        const s = createSession<Save>({ stage: fakeStage().stage, snapshot: snapZ({ history: hist() }) })
+        expect(body(s)).toContain('正文C')
+        expect(s.getState().held.face).toMatchObject({ value: { 表情: 'happy' } })
+
+        expect(await s.prevTurn()).toBe(true)
+        expect(s.getState().view).toBe(3)
+        expect(body(s)).toContain('正文B')
+        expect(s.getState().zones.action).toMatchObject({ value: ['抱抱'] })
+        expect(s.getState().closed).toMatchObject({ narrative: true, face: true })
+
+        expect(await s.prevTurn()).toBe(true)
+        expect(s.getState().view).toBe(1)
+        expect(body(s)).toContain('钻出来')
+        expect(s.getState().held.face).toMatchObject({ value: { 表情: 'normal' } }) // 截至开场：还没 happy
+        expect(await s.prevTurn()).toBe(false) // 没有更早的
+
+        expect(s.nextTurn()).toBe(true)
+        expect(s.getState().view).toBe(3)
+        expect(s.nextTurn()).toBe(true)
+        expect(s.getState().view).toBeNull()
+        expect(body(s)).toContain('正文C')
+        expect(s.getState().held.face).toMatchObject({ value: { 表情: 'happy' } })
+        expect(s.nextTurn()).toBe(false) // 已经是最新
+        s.dispose()
+      })
+
+      it('只是看：存档不动；玩家一发话自动回到最新；生成中不能翻', async () => {
+        const f = fakeStage()
+        const s = createSession<Save>({ stage: f.stage, snapshot: snapZ({ history: hist() }), onTurn })
+        await s.prevTurn()
+        expect(s.getState().save).toEqual({ love: 20 })
+        await s.send('你好')
+        expect(s.getState()).toMatchObject({ view: null, busy: true })
+        expect(await s.prevTurn()).toBe(false)
+        expect(s.viewTurn(3)).toBe(false)
+        s.dispose()
+      })
+
+      it('viewTurn：最新那条＝回到平时；不认识的 id 不动；null 回到最新', () => {
+        const s = createSession<Save>({ stage: fakeStage().stage, snapshot: snapZ({ history: hist() }) })
+        expect(s.viewTurn(5)).toBe(true)
+        expect(s.getState().view).toBeNull()
+        expect(s.viewTurn(2)).toBe(false) // 玩家的话不能回看
+        expect(s.viewTurn(99)).toBe(false)
+        expect(s.viewTurn(1)).toBe(true)
+        expect(s.viewTurn(null)).toBe(true)
+        expect(s.getState().view).toBeNull()
+        expect(body(s)).toContain('正文C')
+        s.dispose()
+      })
+
+      it('翻到已加载的最早一轮：自动往前加载再翻；回看中加载，最近写过的值按那一轮重算', async () => {
+        const old = [msg(-10, 'assistant', '<face>\n表情: sleepy\n</face>\n<narrative>\n更早\n</narrative>'), msg(-9, 'user', '早')]
+        const s = createSession<Save>({ stage: fakeStage(old).stage, snapshot: snapZ({ history: hist(), has_more: true }) })
+        await s.prevTurn()
+        await s.prevTurn()
+        expect(s.getState().view).toBe(1)
+        expect(await s.prevTurn()).toBe(true) // 已加载的最早一轮再往前：自动 loadOlder
+        expect(s.getState().view).toBe(-10)
+        expect(body(s)).toContain('更早')
+        expect(s.getState().held.face).toMatchObject({ value: { 表情: 'sleepy' } })
+        s.dispose()
+      })
+
+      it('aiTurns 不算断流的半截；saidBefore 去掉附带的状态、开场之前没有', () => {
+        const h = [...hist(), { ...msg(6, 'assistant', '半截'), status: 'error' } as StageMessage]
+        expect(aiTurns(h).map((m) => m.id)).toEqual([1, 3, 5])
+        expect(saidBefore(h, 3)).toBe('摸摸头')
+        expect(saidBefore(h, 1)).toBe('')
+      })
     })
 
     it('往前翻：更早的历史里才有的区，最近写过的值补上', async () => {

@@ -54,7 +54,7 @@ export default function Choices({ choices, busy, forceClosed = false, onExpand, 
             key={i}
             onClick={() => onPick(c)}
             disabled={busy}
-            className="glass-strong w-full animate-fade-in rounded-2xl px-4 py-2 text-sm leading-snug transition-colors hover:border-pink-300 active:bg-pink-500/40 lg:py-2.5 lg:text-[15px] [@media(max-height:520px)]:py-1.5"
+            className="glass-strong w-full animate-fade-in rounded-2xl disabled:opacity-50 px-4 py-2 text-sm leading-snug transition-colors hover:border-pink-300 active:bg-pink-500/40 lg:py-2.5 lg:text-[15px] [@media(max-height:520px)]:py-1.5"
           >
             {c}
           </button>

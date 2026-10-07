@@ -2,6 +2,11 @@
 
 官方维护的版本记录（暂未发布 npm）。★作者开发时不要改这个包：不够用向官方提需求，官方出新版时整个替换。
 
+## 0.2.0 — 2026-10-08
+
+- 新增回看「上一轮 / 下一轮」：会话 `prevTurn()` / `nextTurn()` / `viewTurn(id)` + 状态 `view`；React `useTurnCursor()`（`viewing` / `back` / `canPrev` / `canNext` / `said` / `id` / `prev` / `next` / `latest`）。回看时 `zones` / `held` 换成那一轮的，按区订阅的组件自动倒回；只是看（存档不动、不结算），生成中不能翻、发话自动回到最新，翻到已加载的最早一轮自动往前加载。
+- `StageActions` / `useStage()` 多了 `viewTurn` / `prevTurn` / `nextTurn`；`@dianziji/stage` 导出 `aiTurns`（能回看的 AI 回复）/ `saidBefore`（某轮之前玩家说的话）。
+
 ## 0.1.1 — 2026-10-07
 
 - 新增 `useTapVideo(src, onStop?)` + `TAP_VIDEO_ATTRS`（`@dianziji/stage/react`）：两段式视频。点了才给 `<video>` 设 src、不自动播、不循环；播完 / 退出原生全屏 / 出错 / 点了 6 秒没动就清源收场。治安卓 UC / 夸克 / QQ / 微信把视频拉进原生全屏、玩家关不掉。

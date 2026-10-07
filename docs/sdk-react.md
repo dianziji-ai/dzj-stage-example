@@ -78,6 +78,29 @@ const p     = useTurnProgress()                                     // { zone, l
 | `<TurnProgress />` | 「● 正在写 · 表情」+ 进度条；`labels={{ thought: '偷偷想心事中' }}` 换说法 |
 | `<Splash />` | 启动加载页（StageBoot 自己用；想单独用也行） |
 
+## 上一轮 / 下一轮：`useTurnCursor`
+
+回看之前 AI 写的每一轮。回看时 `useZone` / `useZoneText` / `useZoneData` / `useZoneList` 拿到的都是**那一轮**的分区：场景、立绘、正文、心声、状态区……全部自动倒回，组件一行不用改。
+
+```tsx
+const c = useTurnCursor()
+<button disabled={!c.canPrev} onClick={() => void c.prev()}>‹</button>
+<button disabled={!c.canNext} onClick={c.next}>›</button>
+{c.viewing && <span>往前 {c.back} 轮 · 你说：{c.said} <button onClick={c.latest}>回到最新</button></span>}
+<Typewriter key={c.id ?? 'latest'} … />   // 换一轮就重新挂载：直接显示全文，不重新打一遍字
+```
+
+| 字段 | 意思 |
+|---|---|
+| `viewing` | 正在回看（不是最新那一轮） |
+| `back` | 往前第几轮（0＝最新） |
+| `canPrev` / `canNext` | 还能往前 / 往后翻（生成中两个都是 false；已加载的最早一轮之前还有历史也算能往前，`prev()` 会自动加载） |
+| `said` | 回看的那一轮之前玩家说的话（开场＝''） |
+| `id` | 正在回看的那条 AI 回复的 id（最新＝null） |
+| `prev()` / `next()` / `latest()` | 上一轮 / 下一轮（到最新＝回到平时）/ 回到最新 |
+
+★**只是看**：存档（`save`）不倒回、不结算——顶栏的好感、硬币这类读存档的数显示的是当前值。选项这类「能点的」回看时自己置灰。玩家一发话（或 AI 开始写新一轮）自动回到最新。不用 React：会话上的 `prevTurn()` / `nextTurn()` / `viewTurn(id)`，状态看 `state.view`。
+
 ## 视频：`useTapVideo`
 
 舞台里放视频**一律用它**（开场视频、彩蛋、过场）。安卓上的 UC / 夸克 / QQ / 微信浏览器会把页面里的 `<video>` 拉进自己的原生全屏播放器，网页上的按钮全被盖住，循环播放的永远播不完：玩家关不掉。`useTapVideo` 的做法是「点了才播」：

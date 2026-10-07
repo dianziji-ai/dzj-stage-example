@@ -80,6 +80,12 @@ export type SessionState<S> = {
   closed: Record<string, boolean>
   /** AI 正在写哪个区（按卡里分区的顺序判断）；没在生成＝null */
   writing: string | null
+  /**
+   * 回看：正在看哪一条 AI 回复（history 里的 id）；null＝看最新（平时）。
+   * 回看时 zones / held 都换成「那一轮」的：按区订阅（useZone…）的组件自动倒回那一轮，不用改。
+   * ★只是看：存档不动、不结算；玩家一发话（或 AI 开始写新一轮）自动回到最新。见 viewTurn / useTurnCursor
+   */
+  view: number | null
 }
 
 export type Session<S> = {
@@ -92,6 +98,12 @@ export type Session<S> = {
   dismissError: () => void
   /** 往前翻 20 条；false＝没取到（网络错误等，界面给重试） */
   loadOlder: () => Promise<boolean>
+  /** 回看某一条 AI 回复（history 里的 id）；null＝回到最新。生成中不能回看（返回 false） */
+  viewTurn: (id: number | null) => boolean
+  /** 回看上一轮（已加载的最早一轮再往前：自动 loadOlder）；没有更早的＝false */
+  prevTurn: () => Promise<boolean>
+  /** 回看下一轮；到最新那一轮＝回到最新（view＝null） */
+  nextTurn: () => boolean
   /** 改存档（新值或函数）：本地立刻生效，存档器合并后发出去；now＝立刻发 */
   setSave: (next: S | ((save: S) => S), opts?: { now?: boolean }) => void
   /** 手动保存 */
@@ -137,6 +149,7 @@ export function createSession<S = StageSave>(opts: SessionOptions<S>): Session<S
     held: latestZones(snap.history, (raw) => readZones(raw, snap)),
     closed: {},
     writing: null,
+    view: null,
   }
   const set = (patch: Partial<SessionState<S>>) => {
     state = { ...state, ...patch }
@@ -171,6 +184,28 @@ export function createSession<S = StageSave>(opts: SessionOptions<S>): Session<S
     const all: Record<string, boolean> = {}
     for (const id of Object.keys(zones)) all[id] = true
     return { zones, closed: all, writing: null, held: latestZones(history, read, state.held) }
+  }
+
+  /** 回看第 id 条 AI 回复：这一轮的分区＝那一条；最近写过的值＝截至那一条（含）的历史里找 */
+  const viewedZones = (history: StageMessage[], id: number) => {
+    const i = history.findIndex((m) => m.id === id)
+    const zones = stabilize(read(history[i].content), state.zones)
+    const all: Record<string, boolean> = {}
+    for (const z of Object.keys(zones)) all[z] = true
+    return { zones, closed: all, writing: null, held: latestZones(history.slice(0, i + 1), read, state.held) }
+  }
+  const viewTurn: Session<S>['viewTurn'] = (id) => {
+    if (state.busy) return false
+    if (id === null) {
+      if (state.view !== null) set({ view: null, ...settledZones(state.history) })
+      return true
+    }
+    if (!aiTurns(state.history).some((m) => m.id === id)) return false
+    // 回看的正好是最新那一条＝就是平时
+    const turns = aiTurns(state.history)
+    if (turns[turns.length - 1]?.id === id) return viewTurn(null)
+    set({ view: id, ...viewedZones(state.history, id) })
+    return true
   }
 
   /** 存档交给存档器（卡没定义存档结构就只改本地） */
@@ -232,7 +267,7 @@ export function createSession<S = StageSave>(opts: SessionOptions<S>): Session<S
     const id = --tmp
     // 一点就先把这句显示出来 + 进入「生成中」（请求要等一会儿，别让画面没反应）；发失败再撤回
     // 新一轮开始：这一轮的分区清空（还没写），hold 的区用最近写过的值
-    set({ error: null, busy: true, live: '', reasoning: '', said: splitState(t).text, history: [...state.history, { id, role: 'user', kind: null, content: t, created_at: new Date().toISOString() }], zones: {}, closed: {}, writing: null })
+    set({ view: null, error: null, busy: true, live: '', reasoning: '', said: splitState(t).text, history: [...state.history, { id, role: 'user', kind: null, content: t, created_at: new Date().toISOString() }], zones: {}, closed: {}, writing: null })
     try {
       turn = await stage.send(t, handlers)
       return true
@@ -254,7 +289,8 @@ export function createSession<S = StageSave>(opts: SessionOptions<S>): Session<S
       const have = new Set(state.history.map((m) => m.id))
       const history = [...r.history.filter((m) => !have.has(m.id)), ...state.history]
       // 更早的历史里可能有最近没写过的区（比如很久没换过的场景）：最近写过的值跟着补
-      set({ history, hasOlder: r.has_more, held: latestZones(history, read, state.held) })
+      // 回看中：held 是「截至那一轮」的，按那一轮重算（更早的历史里可能有那时最近写过的值）
+      set({ history, hasOlder: r.has_more, ...(state.view !== null ? viewedZones(history, state.view) : { held: latestZones(history, read, state.held) }) })
       return true
     } catch {
       return false
@@ -273,6 +309,25 @@ export function createSession<S = StageSave>(opts: SessionOptions<S>): Session<S
     retry: () => (state.error?.retry ? send(state.error.retry) : Promise.resolve(false)),
     dismissError: () => set({ error: null }),
     loadOlder,
+    viewTurn,
+    async prevTurn() {
+      if (state.busy) return false
+      let turns = aiTurns(state.history)
+      let i = state.view === null ? turns.length - 1 : turns.findIndex((m) => m.id === state.view)
+      if (i <= 0) {
+        if (!state.hasOlder || !(await loadOlder())) return false
+        turns = aiTurns(state.history)
+        i = state.view === null ? turns.length - 1 : turns.findIndex((m) => m.id === state.view)
+        if (i <= 0) return false
+      }
+      return viewTurn(turns[i - 1].id)
+    },
+    nextTurn() {
+      if (state.view === null) return false
+      const turns = aiTurns(state.history)
+      const i = turns.findIndex((m) => m.id === state.view)
+      return viewTurn(turns[i + 1]?.id ?? null)
+    },
     setSave(next, o) {
       const save = typeof next === 'function' ? (next as (s: S) => S)(state.save) : next
       set({ save })
@@ -297,6 +352,21 @@ export function createSession<S = StageSave>(opts: SessionOptions<S>): Session<S
     saver,
     stage,
   }
+}
+
+/** 能回看的 AI 回复：写完的（断流的半截不算）、有内容的；开场也算（第 0 轮） */
+export function aiTurns(history: StageMessage[]): StageMessage[] {
+  return history.filter((m) => m.role === 'assistant' && m.content.trim() && m.status !== 'error')
+}
+
+/** 某条 AI 回复之前，玩家说的那句（已去掉 <dj_state>）；开场之前没有＝'' */
+export function saidBefore(history: StageMessage[], id: number): string {
+  const i = history.findIndex((m) => m.id === id)
+  for (let k = i - 1; k >= 0; k--) {
+    if (history[k].role === 'assistant') return ''
+    if (history[k].role === 'user') return splitState(history[k].content).text
+  }
+  return ''
 }
 
 function lastUserText(history: StageMessage[]): string {

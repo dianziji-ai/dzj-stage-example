@@ -5,9 +5,10 @@ import SendButton from '../components/SendButton'
 import Choices from './Choices'
 import { CHAR_NAME, LOGO_URL } from './content'
 import ErrorNotice, { type NoticeError } from './ErrorNotice'
-import { useTurnProgress } from '@dianziji/stage/react'
+import { useTurnCursor, useTurnProgress } from '@dianziji/stage/react'
 import { useDialogue } from './useGame'
 import { usePref } from './usePref'
+import ReviewBar from './ReviewBar'
 import Thinking from './Thinking'
 import Typewriter from './Typewriter'
 
@@ -41,6 +42,8 @@ export default function Dialogue({ said, me, busy, error, topupUrl, onSend, onDi
 }) {
   // ★正文 / 选项 / 正在写哪个区由对话框自己按区订阅：AI 写字时只有对话框更新，App 不重画
   const { body, choices } = useDialogue()
+  // 上一轮 / 下一轮：回看时正文、立绘、场景、心声都是那一轮的（SDK 换了分区），这里只管翻页按钮 + 选项置灰
+  const cursor = useTurnCursor()
   const [text, setText] = useState('')
   const [sheet, setSheet] = useState(false)
   const [mode, setMode] = usePref<Mode>('gal-dialog', 'normal', MODES)
@@ -100,7 +103,8 @@ export default function Dialogue({ said, me, busy, error, topupUrl, onSend, onDi
     <div className="absolute inset-x-0 bottom-0 z-20 flex max-h-[calc(100dvh-var(--safe-top)-148px)] flex-col justify-end px-safe pb-composer [@media(max-height:520px)]:max-h-[calc(100dvh-var(--safe-top)-64px)]">
       <div className="mx-auto flex min-h-0 w-full max-w-2xl flex-col px-3 lg:max-w-4xl">
         {/* 选项（可收起；对话框展开＝阅读模式，选项自动收成胶囊） */}
-        <Choices choices={choices} busy={busy} forceClosed={mode === 'expanded'} onExpand={() => setMode('normal')} onPick={(c) => void say(c)} />
+        {cursor.viewing && <ReviewBar back={cursor.back} said={cursor.said} me={me} onLatest={cursor.latest} />}
+        <Choices choices={choices} busy={busy || cursor.viewing} forceClosed={mode === 'expanded'} onExpand={() => setMode('normal')} onPick={(c) => void say(c)} />
 
         {error && <ErrorNotice error={error} topupUrl={topupUrl} onRetry={(t) => void say(t)} onClose={onDismissError} />}
 
@@ -118,6 +122,16 @@ export default function Dialogue({ said, me, busy, error, topupUrl, onSend, onDi
             >
               <span className="h-1 w-10 rounded-full bg-white/35" />
             </button>
+            {/* 上一轮 / 下一轮（生成中不能翻；到最新那一轮 › 置灰） */}
+            <div className="mr-1.5 flex items-center rounded-full bg-white/10 text-white/70">
+              <button onClick={() => void cursor.prev()} disabled={!cursor.canPrev} aria-label="上一轮" title="上一轮" className="grid h-7 w-8 place-items-center rounded-l-full hover:text-white disabled:opacity-30">
+                <Icon name="back" className="size-4" />
+              </button>
+              <span className="h-3.5 w-px bg-white/20" />
+              <button onClick={cursor.next} disabled={!cursor.canNext} aria-label="下一轮" title="下一轮" className="grid h-7 w-8 place-items-center rounded-r-full hover:text-white disabled:opacity-30">
+                <Icon name="back" className="size-4 rotate-180" />
+              </button>
+            </div>
             <div className="flex items-center rounded-full bg-white/10 text-white/70">
               <button
                 onClick={() => setMode(mode === 'expanded' ? 'normal' : 'expanded')}
@@ -136,7 +150,8 @@ export default function Dialogue({ said, me, busy, error, topupUrl, onSend, onDi
             ref={scroller}
             className={`${BODY_H[mode]} min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pt-1 pb-3 text-[15px] leading-7 break-words whitespace-pre-wrap [@media(max-height:520px)]:leading-6`}
           >
-            {body ? <Typewriter text={body} streaming={busy} markdown scrollEl={scroller} /> : busy ? <Thinking said={said} name={CHAR_NAME} me={me} /> : ''}
+            {/* key：换到另一轮就重新挂载＝直接显示全文（回看不重新打一遍字） */}
+            {body ? <Typewriter key={cursor.id ?? 'latest'} text={body} streaming={busy} markdown scrollEl={scroller} /> : busy ? <Thinking said={said} name={CHAR_NAME} me={me} /> : ''}
           </div>
 
           {/* 自己说（生成中这一栏变成「正在写 · 哪个区」+ 进度：反正这时也不能输入） */}
