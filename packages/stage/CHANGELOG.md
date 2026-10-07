@@ -2,6 +2,10 @@
 
 官方维护的版本记录（暂未发布 npm）。★作者开发时不要改这个包：不够用向官方提需求，官方出新版时整个替换。
 
+## 0.2.1 — 2026-10-08
+
+- 新增本机存储 `local`（`get / set / remove / getJSON / setJSON`）+ `setStorageScope` / `storageScope`：键自动加 `stage:{卡 id}:` 前缀，隐私模式不报错。`createSession` 连上这一局时自动按卡设好。所有舞台在同一个域名下，直接用 `localStorage` 会和别的卡撞名（例：照着官方例子改的卡都用 `gal-bgm`，关一张卡的音乐另一张也跟着关）。
+
 ## 0.2.0 — 2026-10-08
 
 - 新增回看「上一轮 / 下一轮」：会话 `prevTurn()` / `nextTurn()` / `viewTurn(id)` + 状态 `view`；React `useTurnCursor()`（`viewing` / `back` / `canPrev` / `canNext` / `said` / `id` / `prev` / `next` / `latest`）。回看时 `zones` / `held` 换成那一轮的，按区订阅的组件自动倒回；只是看（存档不动、不结算），生成中不能翻、发话自动回到最新，翻到已加载的最早一轮自动往前加载。

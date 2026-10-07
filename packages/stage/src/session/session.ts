@@ -1,3 +1,4 @@
+import { setStorageScope } from './storage'
 import { createSaver, type Saver } from './saver'
 import { readZones, type StageZones } from './zones'
 import { closedOf, lastAiText, latestZones, stabilize, writingZone } from './zonetrack'
@@ -123,6 +124,7 @@ const RETRY_CODES = new Set(['network', 'stream', 'error'])
 
 export function createSession<S = StageSave>(opts: SessionOptions<S>): Session<S> {
   const { stage, snapshot: snap, onTurn } = opts
+  setStorageScope(snap.card.id) // 本机存储（local）按这张卡分开
   const normalize = (raw: StageSave | null): S => (opts.normalize ? opts.normalize(raw, snap) : ((raw ?? {}) as S))
   const canSave = snap.state_schema != null
   const saver = createSaver(stage, { delay: opts.saveDelay })

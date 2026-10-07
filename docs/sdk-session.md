@@ -34,7 +34,12 @@ zoneList(zones, 'action')              // 没写 → []
 zoneData(zones, 'face')                // 没写 → {}
 renderMarkdown(md)             // markdown → 安全 HTML（原始 HTML 转义、危险链接清空；对白「」包成 <span class="quote">）
 createSaver(stage)             // 单独用存档器：save(next) / save(next, { now: true }) / saveNow() / flush()
+local.get('dialog') / local.set('dialog', 'expanded') / local.getJSON('bgm', { on: true }) / local.setJSON(…) / local.remove(…)
+                               // 本机存储（偏好、「看过了」）：键自动加 stage:{卡 id}: 前缀（所有舞台同一个域名，直接用 localStorage 会和别的卡撞名）；
+                               // 隐私模式不报错；连上这一局之前读＝null（页面一加载就要读的挪到组件挂载时）。★只防撞名不防偷看：别存凭证 / 隐私
 ```
+
+**存档和本机存储别搞混**：游戏进度（好感、地点、解锁…）进**存档**（线上，跟着这一局走，换设备也在）；`local` 只放这台设备上的小偏好，丢了无所谓。
 
 ## 配图编号
 

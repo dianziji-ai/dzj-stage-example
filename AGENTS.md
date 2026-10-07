@@ -28,6 +28,7 @@
 | **适配** | 默认电脑和手机都适配；Tailwind 移动优先（先写手机，再 `lg:` 覆盖成电脑）；只做竖屏；**iOS 顶部刘海 / 底部 home 条必须让位**（`pt-safe` / `pb-safe` / `pb-composer`）；手机上的输入走全屏输入层 |
 | **素材** | **所有图片、视频都放卡的素材库**（网站编辑器「素材库」上传），用素材库给的地址；**不许外链任何别的网站**；大图用 webp；首屏要用的图交给 `StageBoot` 的 `preload` 预加载；`public/` 里的文件用 `import.meta.env.BASE_URL` 拼路径，不写 `/xxx` 绝对路径 |
 | **性能** | 动画只动 `transform` / `opacity`；不做大面积 `backdrop-filter: blur`（手机掉帧）；不让 React 每帧重渲染（动画用 CSS 或 Web Animations）；看不见就暂停；尊重「减少动态效果」；视频点了才播 |
+| **本机存储** | 偏好、「看过了」这类小东西用 SDK 的 `local`（自动按卡分开），**不许直接用 `localStorage`**（所有舞台同一个域名、共用一个抽屉，同名键会和别的卡互相覆盖）；游戏进度一律进存档（线上）；凭证、隐私不许写进本机存储 |
 | **凭证** | 线上只用 `readLaunch()`；`.env` 只在本地 `npm run dev` 用；**不要删 `vite.config.ts` 里打包时清空 `.env` 的那段**；`src/stage.ts` 的写法别改 |
 | **游戏逻辑** | `onTurn` 里一律用 `zoneNum` / `zoneText` / `zoneList` / `zoneData` 安全取值（AI 不一定每轮都写每一行）；表情、场景这类「一直该有个值」的区订阅时加 `{ hold: true, complete: true }`（★只写变化量的状态区别加 hold，不然会一直显示上一轮的变化量）；存档 ≤ 64KB |
 | **交付** | `npm test`、`npx tsc -b`、`npm run lint`、`npm run pack` 全过；能开浏览器就电脑和手机各截图自检（尺寸见 `docs/mobile.md`）；把改了哪些文件、还有什么没做完 / 没验证如实告诉作者 |

@@ -42,13 +42,13 @@ export function useGame() {
   // 弹出的 CG：这次结算新解锁的，一张一张弹（关一张弹下一张）；刚开局时开场自带的那张这一局只弹一次（看过记在本机）
   // （图册里点开的另算，App 管）
   const [opening] = useState(() => {
-    const key = `gal-opening-cg:${snap.card.id}:${history[0]?.id ?? 0}` // 开场那条消息的 id：每一局各记各的
+    const key = `opening-cg:${history[0]?.id ?? 0}` // 开场那条消息的 id：每一局各记各的（local 自己按卡分开）
     const n = history.length <= 1 ? save.unlockedCg[0] : undefined
     return { key, cg: n !== undefined && hasCg(n) && !seen(key) ? n : null }
   })
   // 舞台开场视频：新开的一局进来先放（点了才播，可跳过）；每一局只出现一次。放完 / 跳过之后才轮到开场 CG
   const [film, setFilm] = useState(() => {
-    const key = `gal-opening-film:${snap.card.id}:${history[0]?.id ?? 0}`
+    const key = `opening-film:${history[0]?.id ?? 0}`
     return OPENING_FILM && history.length <= 1 && !seen(key) ? key : null
   })
   const closeFilm = useCallback(() => {

@@ -24,7 +24,7 @@
     "schema:push": "node scripts/schema-push.mjs"
   },
   "dependencies": {
-    "@dianziji/stage": "0.2.0",
+    "@dianziji/stage": "0.2.1",
     "@dianziji/stage-panel": "0.1.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8"
