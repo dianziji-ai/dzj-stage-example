@@ -29,11 +29,11 @@ describe('面板本体', () => {
     expect(screen.getByText('还没连上网站…')).toBeTruthy()
   })
 
-  it('七个标签所有人都能看；手机横排 + 电脑竖排两套，点哪个切到哪页', async () => {
+  it('六个标签所有人都能看（0.2.1 去掉了「历史」）；手机横排 + 电脑竖排两套，点哪个切到哪页', async () => {
     open()
     const [mobile] = screen.getAllByRole('navigation')
-    expect(within(mobile).getAllByRole('button').map((b) => b.textContent)).toEqual(['概览', '初始设定', '历史', '图册', '存档', '分区', '指南'])
-    for (const [tab, text] of [['初始设定', '填的'], ['历史', /3 条/], ['存档', '保存修改'], ['分区', /4 个分区/], ['图册', /已玩 12 轮/], ['指南', '挂 MOD'], ['概览', '这一局']] as const) {
+    expect(within(mobile).getAllByRole('button').map((b) => b.textContent)).toEqual(['概览', '初始设定', '图册', '存档', '分区', '指南'])
+    for (const [tab, text] of [['初始设定', '填的'], ['存档', '保存修改'], ['分区', /4 个分区/], ['图册', /已玩 12 轮/], ['指南', '挂 MOD'], ['概览', '这一局']] as const) {
       fireEvent.click(within(mobile).getByText(tab))
       expect(within(mobile).getByText(tab).getAttribute('aria-current')).toBe('page')
       expect(await screen.findByText(text)).toBeTruthy()

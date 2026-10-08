@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import type { StageClient, StageSnapshot } from '@dianziji/stage/client'
-import History from './tabs/History'
 import Gallery from './tabs/Gallery'
 import Guide from './tabs/Guide'
 import Overview from './tabs/Overview'
@@ -14,7 +13,6 @@ import { Avatar, Empty } from './parts'
 const TABS = [
   { id: 'overview', label: '概览', icon: '◎' },
   { id: 'setup', label: '初始设定', icon: '✎' },
-  { id: 'history', label: '历史', icon: '☰' },
   { id: 'gallery', label: '图册', icon: '▣' },
   { id: 'save', label: '存档', icon: '◆' },
   { id: 'slots', label: '分区', icon: '▦' },
@@ -109,8 +107,6 @@ export default function Panel({ stage, dev: devProp, title, onClose }: { stage: 
                 <Overview stage={stage} snap={snap} dev={dev} />
               ) : tab === 'setup' ? (
                 <Setup snap={snap} dev={dev} />
-              ) : tab === 'history' ? (
-                <History stage={stage} snap={snap} dev={dev} />
               ) : tab === 'save' ? (
                 <Save stage={stage} snap={snap} />
               ) : tab === 'gallery' ? (

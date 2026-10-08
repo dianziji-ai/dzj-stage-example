@@ -1,7 +1,7 @@
 {
   "name": "@dianziji/stage-panel",
-  "version": "0.2.0",
-  "description": "电子姬舞台面板：每个舞台都带的「本局」面板（概览 / 初始设定 / 历史消耗 / 图册 / 存档 / 分区，所有人都能看；开发凭证多出凭证细节）",
+  "version": "0.2.1",
+  "description": "电子姬舞台面板：每个舞台都带的「本局」面板（概览 / 初始设定 / 图册 / 存档 / 分区 / 指南，所有人都能看；开发凭证多出凭证细节）",
   "private": true,
   "license": "UNLICENSED",
   "type": "module",
