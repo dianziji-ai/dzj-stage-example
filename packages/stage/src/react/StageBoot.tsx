@@ -1,14 +1,14 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react'
-import { createSession, watchViewport, type Session, type SessionOptions, type StageError, type StageSnapshot } from '..'
+import { applySafeArea, createSession, type Session, type SessionOptions, type StageError, type StageSnapshot } from '..'
 import { SessionCtx } from './context'
 import { preloadImages } from './preload'
 import Splash from './Splash'
 
 /**
  * 公共启动外壳（每个舞台都该有）：包在整个 App 外面，「准备好之前」的事都归它——
- *   ① 显示看板娘加载页 ② 读这一局（stage.load）③ 预加载首屏要用的图（preload 由舞台自己给）
+ *   ① 显示看板娘加载页 ② 等网站给这一局的快照（stage.ready）③ 预加载首屏要用的图（preload 由舞台自己给）
  *   ④ 准备好淡出、把这一局交给 App（useStage 拿）⑤ 出错给原因 + 重试，不白屏。
- * 准备好后建好这一局的会话（createSession），App 里 useStage() 拿全部（一定有值，不用再自己 load）。
+ * 准备好后建好这一局的会话（createSession），App 里 useStage() 拿全部（一定有值）。安全区也在这里接好（applySafeArea）。
  * 游戏规则从这里传进去（都可选）：normalize 存档补默认、onTurn 一轮写完怎么改存档。
  *
  *   <StageBoot stage={stage} preload={(snap) => [背景图, 立绘…]} onTurn={settle}>
@@ -26,7 +26,7 @@ export default function StageBoot<S>({ stage, preload, normalize, onTurn, saveDe
   children: ReactNode
 }) {
   const [session, setSession] = useState<Session<S> | null>(null)
-  const [step, setStep] = useState('连接舞台…')
+  const [step, setStep] = useState('连接网站…')
   const [progress, setProgress] = useState(0.05)
   const [error, setError] = useState<{ title: string; detail: string } | null>(null)
   const [ready, setReady] = useState(false) // App 可以挂了（加载页开始淡出）
@@ -38,9 +38,9 @@ export default function StageBoot<S>({ stage, preload, normalize, onTurn, saveDe
     const t0 = performance.now()
     ;(async () => {
       try {
-        setStep('读取存档…')
+        setStep('连接网站…')
         setProgress(0.15)
-        const s = await stage.load({ limit: 50 })
+        const s = await stage.ready()
         if (!alive) return
         setProgress(0.4)
         const urls = preload?.(s) ?? []
@@ -79,15 +79,20 @@ export default function StageBoot<S>({ stage, preload, normalize, onTurn, saveDe
   const retry = useCallback(() => {
     setError(null)
     setProgress(0.05)
-    setStep('连接舞台…')
+    setStep('连接网站…')
     setAttempt((n) => n + 1)
   }, [])
 
-  // 安全区：线上在平台 iframe 里，刘海 / home 条的高度由平台推进来（pt-safe 这些工具类才有值）。作者不用自己调
-  useEffect(() => watchViewport(), [])
+  // 安全区：刘海 / home 条的高度由网站量好放在快照里（pt-safe 这些工具类才有值），变了跟着改。作者不用自己调
+  useEffect(() => {
+    applySafeArea(stage.snapshot()?.safe_area)
+    return stage.subscribe((snap, changed) => {
+      if (changed.includes('safe_area')) applySafeArea(snap.safe_area)
+    })
+  }, [stage])
 
-  // 接上刷新前还在生成的那一轮（StrictMode 挂两次：卸载时停、再挂再接，会从头回放）
-  useEffect(() => session?.start(), [session])
+  // 卸载时摘掉会话的监听（StrictMode 挂两次也没事：会话只在启动成功后建一次）
+  useEffect(() => () => session?.dispose(), [session])
 
   return (
     <>
@@ -101,8 +106,9 @@ export default function StageBoot<S>({ stage, preload, normalize, onTurn, saveDe
 function explain(e: unknown): { title: string; detail: string } {
   const err = e as StageError
   if (err?.code === 'unauthorized')
-    return { title: '进不去这一局', detail: import.meta.env.DEV ? 'token 无效或过期了：回网站「开发」重新生成一个，贴进 .env 再刷新。' : '登录过期了，回到网站重新进入这张卡试试。' }
-  if (err?.code === 'network') return { title: '网络开小差了', detail: '连不上舞台，检查一下网络再试试。' }
+    return { title: '请在网站里打开', detail: import.meta.env.DEV ? '本地开发要在网站里打开：进入这张卡 → 工具行「开发」→ 本地开发，填这个页面的地址。' : '回到电子姬网站，重新进入这张卡。' }
+  if (err?.code === 'version') return { title: '版本对不上', detail: err.message }
+  if (err?.code === 'network') return { title: '网络开小差了', detail: '网站没有回应，检查一下网络再试试。' }
   if (err?.code === 'maintenance') return { title: '正在维护', detail: err.message || '稍后再来哦。' }
   return { title: '加载失败', detail: err?.message || '出了点问题，再试一次？' }
 }

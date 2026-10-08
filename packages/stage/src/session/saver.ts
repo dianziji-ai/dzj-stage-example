@@ -10,7 +10,7 @@ import type { StageClient, StageError, StageSave } from '../client'
  *   saver.subscribe(() => saver.status)  // 状态：idle / saving / saved / error（React 用 useSaveStatus）
  *
  * ★同一时间只有一个请求在路上；路上的时候又来新的，等它回来再发最新那份（不会旧的后到把新的盖掉）。
- * ★页面关闭 / 切到后台：还没发的立刻用 keepalive 发出去（关了页面也能发完），不丢最后那几下。
+ * ★页面关闭 / 切到后台：还没发的立刻发出去（舞台关了外层网站还在，消息照样送到），不丢最后那几下。
  * ★失败不自动无限重试：状态变 error（界面给「重试」），下一次 save 或 saveNow 会再发。
  * ★别处整份存了存档（玩家在本局面板改了）：自动丢掉还没发的旧改动，以它为准（订阅 stage.on）。
  */
@@ -26,7 +26,7 @@ export type Saver = {
   /** 手动保存：把最后一份立刻再发一次（没存过就什么都不做） */
   saveNow: () => void
   /** 有没发的就立刻发（返回发完的 Promise） */
-  flush: (opts?: { keepalive?: boolean }) => Promise<void>
+  flush: () => Promise<void>
   /** 存档被别处整份换掉了：丢掉还没发的旧改动，以它为准（stage 上别处的保存会自动调它） */
   reset: (state: StageSave | null) => void
   readonly status: SaveStatus
@@ -48,13 +48,9 @@ export function createSaver(stage: StageClient, { delay = 800 }: { delay?: numbe
   }
 
   let manual = false // 这一发是手动保存（广播的 source 用 manual）
-  // 要不要 keepalive 记在这里，不跟着某一次调用走：路上有一个时页面要关了，等它回来接着发的那一份也得带上
-  // （否则先排队的那条链把最新的一份不带 keepalive 发出去，页面一关就丢了）
-  let keep = false
-  const send = (keepalive = false): Promise<void> => {
+  const send = (): Promise<void> => {
     clearTimeout(timer)
     timer = undefined
-    if (keepalive) keep = true
     if (inflight) return inflight.then(() => (pending !== undefined ? send() : undefined))
     if (pending === undefined) return Promise.resolve()
     const body = pending
@@ -62,10 +58,8 @@ export function createSaver(stage: StageClient, { delay = 800 }: { delay?: numbe
     set({ ...status, state: 'saving', error: undefined })
     const source = manual ? 'manual' : 'saver'
     manual = false
-    const ka = keep
-    keep = false
     inflight = stage
-      .save(body, { keepalive: ka, source })
+      .save(body, { source })
       .then(() => {
         if (pending === undefined) set({ state: 'saved', at: Date.now() })
       })
@@ -79,12 +73,12 @@ export function createSaver(stage: StageClient, { delay = 800 }: { delay?: numbe
     return inflight.then(() => (pending !== undefined && status.state !== 'error' ? send() : undefined))
   }
 
-  // 页面关闭 / 切到后台：没发的立刻发（keepalive）
+  // 页面关闭 / 切到后台：没发的立刻发
   const onHide = () => {
-    if (document.visibilityState === 'hidden' && (pending !== undefined || timer)) void send(true)
+    if (document.visibilityState === 'hidden' && (pending !== undefined || timer)) void send()
   }
   const onPageHide = () => {
-    if (pending !== undefined) void send(true)
+    if (pending !== undefined) void send()
   }
   const page = typeof window !== 'undefined' && typeof document !== 'undefined' // 非浏览器环境（测试 / SSR）没有页面事件
   if (page) {
@@ -118,7 +112,7 @@ export function createSaver(stage: StageClient, { delay = 800 }: { delay?: numbe
       if (!inflight) manual = true
       void send()
     },
-    flush: (opts) => send(opts?.keepalive),
+    flush: () => send(),
     reset,
     get status() {
       return status

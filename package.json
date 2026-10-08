@@ -20,12 +20,11 @@
     "pretest": "node scripts/sdk-lock.mjs",
     "test": "vitest run",
     "test:sdk": "node scripts/sdk-lock.mjs && npm test -w @dianziji/stage -w @dianziji/stage-panel",
-    "sdk:lock": "node scripts/sdk-lock.mjs --write",
-    "schema:push": "node scripts/schema-push.mjs"
+    "sdk:lock": "node scripts/sdk-lock.mjs --write"
   },
   "dependencies": {
-    "@dianziji/stage": "0.2.2",
-    "@dianziji/stage-panel": "0.1.0",
+    "@dianziji/stage": "0.3.0",
+    "@dianziji/stage-panel": "0.2.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8"
   },

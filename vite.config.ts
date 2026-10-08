@@ -12,10 +12,10 @@ export default defineConfig(({ command }) => ({
   plugins: [react(), tailwindcss()],
   // 相对路径：上传后放在 {卡id}/{版本号}/ 下，js / css / 图片都按相对 index.html 的位置找
   base: './',
-  // ★打包时把 .env 里的开发连接强制清空：线上 token 由平台放在 # 后面（readLaunch），
-  //   .env 的开发 token 一旦打进 js，玩家打开开发者工具就能拿去花你的能量
+  // 本地开发在网站里加载（工具行「开发」→ 本地开发）：https 的网站页面嵌 http://localhost，
+  // Chrome 的私有网络访问会先问一句，这个头回答「允许」
+  server: { headers: { 'Access-Control-Allow-Private-Network': 'true' } },
   define: {
     __STAGE_VERSION__: JSON.stringify(stageVersion(command === 'build')),
-    ...(command === 'build' ? { 'import.meta.env.VITE_STAGE_API': '""', 'import.meta.env.VITE_STAGE_TOKEN': '""' } : {}),
   },
 }))

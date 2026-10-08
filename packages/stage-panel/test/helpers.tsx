@@ -1,6 +1,6 @@
 import { cleanup } from '@testing-library/react'
 import { afterEach, vi } from 'vitest'
-import { StageError, type StageClient, type StageGallery, type StageMessage, type StageSnapshot, type TokenInfo } from '@dianziji/stage/client'
+import { StageError, type SnapshotListener, type StageClient, type StageEvent, type StageGallery, type StageMessage, type StageSave, type StageSnapshot } from '@dianziji/stage/client'
 
 /** 每个用例后卸载、还原 mock */
 export function setupPanelTests() {
@@ -19,7 +19,6 @@ export const spend = { cost: 1200, model: 'deepseek/deepseek-v3.2', channel: '�
 export const snapOf = (p: Partial<StageSnapshot> = {}): StageSnapshot => ({
   card: { id: 'card1', name: '电子姬的约会' },
   site: 'https://dianziji.ai',
-  dev: false,
   user: { id: 7, username: 'linchuan', name: '林川', avatar: 'https://cdn/a.webp' },
   asset_base: 'https://cdn',
   slots: [
@@ -38,7 +37,10 @@ export const snapOf = (p: Partial<StageSnapshot> = {}): StageSnapshot => ({
   ],
   has_more: false,
   save: { love: 20 },
-  streaming: null,
+  live: null,
+  error: null,
+  meta: { model: 'deepseek/deepseek-v3.2', channel: '线路一', dev: false },
+  safe_area: { top: 0, right: 0, bottom: 0, left: 0 },
   ...p,
 })
 
@@ -53,17 +55,38 @@ export const galleryOf = (p: Partial<StageGallery> = {}): StageGallery => ({
   ...p,
 })
 
-/** 假 stage：load / gallery / save 都是 vi.fn，默认成功 */
-export function fakeStage(snap: StageSnapshot = snapOf(), token: Partial<TokenInfo> | null = {}) {
-  const info: TokenInfo | null = token && { userId: 7, sessionId: 36933, model: 'deepseek/deepseek-v3.2', channel: '线路一', expiresAt: new Date(Date.now() + 5 * 3600_000), site: 'https://dianziji.ai', dev: false, ...token }
-  return {
-    load: vi.fn(async () => snap),
+/**
+ * 假 stage：快照在本地（push 模拟网站推 update）；older / gallery / save / open 都是 vi.fn，默认成功。
+ * save 成功会像真的一样广播 { type: 'save' }。
+ */
+export function fakeStage(snap: StageSnapshot | null = snapOf()) {
+  let cur = snap
+  const subs = new Set<SnapshotListener>()
+  const evs = new Set<(e: StageEvent) => void>()
+  const push = (patch: Partial<StageSnapshot>) => {
+    cur = { ...cur!, ...patch }
+    subs.forEach((f) => f(cur!, Object.keys(patch) as (keyof StageSnapshot)[]))
+  }
+  const stage = {
+    snapshot: () => cur,
+    subscribe: (fn: SnapshotListener) => {
+      subs.add(fn)
+      return () => subs.delete(fn)
+    },
+    older: vi.fn(async () => {}),
     gallery: vi.fn(async () => galleryOf()),
-    save: vi.fn(async () => ({ ok: true as const, size: 10 })),
-    tokenInfo: () => info,
+    save: vi.fn(async (state: StageSave | null, o?: { source?: string }) => {
+      evs.forEach((f) => f({ type: 'save', state, source: (o?.source ?? 'app') as never }))
+      return { size: 10 }
+    }),
+    open: vi.fn(() => true),
     siteUrl: (p: string) => `https://dianziji.ai${p}`,
-    on: () => () => {},
-  } as unknown as StageClient & { load: ReturnType<typeof vi.fn>; gallery: ReturnType<typeof vi.fn>; save: ReturnType<typeof vi.fn> }
+    on: (fn: (e: StageEvent) => void) => {
+      evs.add(fn)
+      return () => evs.delete(fn)
+    },
+  }
+  return Object.assign(stage as unknown as StageClient & Pick<typeof stage, 'older' | 'gallery' | 'save' | 'open'>, { push })
 }
 
 export const fail = (message: string, code: 'network' | 'invalid' = 'network') => new StageError(code, message)

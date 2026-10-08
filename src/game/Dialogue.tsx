@@ -60,13 +60,14 @@ export default function Dialogue({ said, me, busy, error, topupUrl, onSend, onDi
   }, [busy, setMode])
 
   /** 发一句：自己打的、选项、「再说一次」都走这里。发出去的正好是草稿才清草稿（点选项不吃掉打了一半的话） */
+  // ★send 要等 AI 整条回复写完才兑现：一点发送就先关输入层、清草稿（会话那边已经进入「生成中」），发失败再把话还回来
   const say = async (t: string) => {
     const line = t.trim()
     if (!line || busy) return
-    if (await onSend(line)) {
-      if (line === text.trim()) setText('')
-      setSheet(false)
-    }
+    const wasDraft = line === text.trim()
+    if (wasDraft) setText('')
+    setSheet(false)
+    if (!(await onSend(line)) && wasDraft) setText(line)
   }
 
   // 把手：松手时看拖了多少（往上展开、往下收起；已经最小再往下＝隐藏；几乎没动＝轻点切换）

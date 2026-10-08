@@ -2,6 +2,7 @@ import { act, fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import Gallery from '../../src/tabs/Gallery'
 import { fail, fakeStage, galleryOf, setupPanelTests } from '../helpers'
+import type { StageGallery } from '@dianziji/stage/client'
 
 setupPanelTests()
 
@@ -62,7 +63,7 @@ describe('图册', () => {
 
   it('请求回来前关掉：不报错、不改状态', async () => {
     const stage = fakeStage()
-    let resolve!: (v: unknown) => void
+    let resolve!: (v: StageGallery) => void
     stage.gallery.mockReturnValueOnce(new Promise((r) => (resolve = r)))
     const { unmount } = render(<Gallery stage={stage} />)
     unmount()

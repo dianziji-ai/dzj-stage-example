@@ -31,11 +31,7 @@
 
 ## 存档结构
 
-仓库里的 `src/game/state.schema.json` 就是这张卡的存档结构（字段：`location` 地点、`unlockedCg` 已解锁的回忆、`day` 天数、`love` 好感、`mood` 心情、`claw` 抓娃娃）。拿到自己卡的开发凭证后：
-
-```bash
-npm run schema:push     # 把它写进你的卡（要开发凭证 + 你是卡的作者）
-```
+仓库里的 `src/game/state.schema.json` 就是这张卡的存档结构（字段：`location` 地点、`unlockedCg` 已解锁的回忆、`day` 天数、`love` 好感、`mood` 心情、`claw` 抓娃娃）。把它整份粘进你的卡：编辑器「舞台 → ② 存档结构」保存。
 
 ## 开场
 

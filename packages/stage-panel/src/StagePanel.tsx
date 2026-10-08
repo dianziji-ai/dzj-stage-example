@@ -11,14 +11,14 @@ const Panel = lazy(load)
  *
  *   <StagePanel stage={stage} />                              右下角一颗「本局」按钮
  *   <StagePanel stage={stage} button={false} />               不要按钮，在自己的菜单里调 openStagePanel()
- *   <StagePanel stage={stage} dev={import.meta.env.DEV} />    本地开发时也显示 token 细节（开发 token 不用传，自动显示）
+ *   <StagePanel stage={stage} dev={import.meta.env.DEV} />    强制显示开发信息（在网站「本地开发」里打开时不用传，自动显示）
  *
  * 所有人都能看全部内容（概览 / 初始设定 / 历史消耗 / 图册 / 存档 / 存档结构 / 分区）；
- * 存档玩家可以自己改（后端按存档结构校验；改了会经 stage.on 广播 { type: 'save', source: 'panel' }，游戏订阅它更新界面）；dev 为 true 或 token 是开发 token 时，概览多出 token 细节。
+ * 存档玩家可以自己改（后端按存档结构校验；改了会经 stage.on 广播 { type: 'save', source: 'panel' }，游戏订阅它更新界面）；dev 为 true 或网站说这是本地开发（meta.dev）时，概览多出结构细节。
  */
 export default function StagePanel({ stage, dev, button = true, title = '本局', buttonClassName = 'right-3 bottom-3' }: {
   stage: StageClient
-  /** 强制显示开发信息（一般传 import.meta.env.DEV）；不传就看 token 是不是开发 token */
+  /** 强制显示开发信息（一般传 import.meta.env.DEV）；不传就看快照的 meta.dev */
   dev?: boolean
   /** 要不要那颗悬浮按钮；false＝自己放入口，调 openStagePanel() */
   button?: boolean

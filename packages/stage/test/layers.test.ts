@@ -28,7 +28,7 @@ describe('分层', () => {
 
   it('client 入口不需要任何第三方包', async () => {
     const mod = await import('../src/client')
-    expect(Object.keys(mod).sort()).toEqual(['StageError', 'createStage', 'decodeToken', 'readLaunch', 'splitState', 'withState'])
+    expect(Object.keys(mod).sort()).toEqual(['PROTOCOL', 'STAGE_TOOLS', 'StageError', 'createStage', 'isBridgeMessage', 'splitState', 'withState'])
   })
 
   it('根入口带上客户端的全部导出', async () => {

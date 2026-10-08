@@ -8,13 +8,13 @@ import { CopyButton, Empty, Field, Json } from '../parts'
  * ★存的时候标 source: 'panel'：SDK 会广播这次保存，游戏订阅 stage.on 就能换掉内存里那份、更新界面
  *   （面板不用知道游戏界面长什么样）；存档器也会自动丢掉还没发的旧改动。
  */
-export default function Save({ stage, snap, onSaved }: { stage: StageClient; snap: StageSnapshot; onSaved: () => void }) {
+export default function Save({ stage, snap }: { stage: StageClient; snap: StageSnapshot }) {
   const original = JSON.stringify(snap.save, null, 2)
   const [text, setText] = useState(original)
   const [result, setResult] = useState<{ ok: boolean; msg: string } | null>(null)
   const [busy, setBusy] = useState(false)
 
-  if (snap.save === null) return <Empty>这张卡还没定义存档结构，没有存档</Empty>
+  if (!snap.state_schema) return <Empty>这张卡还没定义存档结构，没有存档</Empty>
 
   const save = async () => {
     let value: StageSave
@@ -28,8 +28,8 @@ export default function Save({ stage, snap, onSaved }: { stage: StageClient; sna
     setResult(null)
     try {
       await stage.save(value, { source: 'panel' }) // 发出去是压缩的 JSON（这里排版只是为了好读）
+      setText(JSON.stringify(value, null, 2)) // 存好的就是现在显示的那份
       setResult({ ok: true, msg: '已保存' })
-      onSaved()
     } catch (e) {
       setResult({ ok: false, msg: (e as StageError).message })
     } finally {

@@ -53,7 +53,7 @@
 /*
  * 安全区：刘海、灵动岛、home 条要让开的距离（px）。贴着屏幕边的东西用这几个工具类，其余什么都不用管：
  *   pt-safe（顶）/ pb-safe（底）/ px-safe（左右）/ pb-composer（底部输入条：安全区和键盘取大的再加 12px）
- * 本地开发读系统的 env()；线上舞台在平台 iframe 里，env() 恒为 0，由平台量好推进来覆盖（watchViewport，StageBoot 自动调）。
+ * 舞台在网站 iframe 里，env() 恒为 0：网站量好放进快照（safe_area），StageBoot 写进这几个变量（applySafeArea），作者不用管。
  * ★让位的是内容不是容器：背景铺满到屏幕边，只用 padding 把按钮、文字顶开。
  */
 :root {

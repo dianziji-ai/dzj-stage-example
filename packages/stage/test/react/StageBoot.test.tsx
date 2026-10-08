@@ -24,18 +24,14 @@ describe('StageBoot：启动外壳', () => {
     await waitFor(() => expect(screen.getByRole('heading').textContent).toBe('测试卡'), { timeout: 3000 })
   })
 
-  it('自动接收平台推的安全区：作者不用自己调 watchViewport，pt-safe 就有值', async () => {
-    const parent = { postMessage: vi.fn() } as unknown as Window
-    vi.spyOn(window, 'parent', 'get').mockReturnValue(parent)
-    const { stage } = fakeStage(snapOf())
+  it('安全区跟着快照走：作者不用自己管，pt-safe 就有值；网站推了新的就跟着改', async () => {
+    const { stage, push } = fakeStage(snapOf({ safe_area: { top: 59, right: 0, bottom: 34, left: 0 } }))
+    await stage.ready()
     const r = render(<StageBoot stage={stage}>{null}</StageBoot>)
-    expect(parent.postMessage).toHaveBeenCalledWith({ type: 'stage:hello' }, '*')
-    const e = new MessageEvent('message', { data: { type: 'stage:viewport', safe: { top: 59, bottom: 34 } } })
-    Object.defineProperty(e, 'source', { value: parent })
-    window.dispatchEvent(e)
     expect(document.documentElement.style.getPropertyValue('--safe-top')).toBe('59px')
+    act(() => push({ safe_area: { top: 20, right: 0, bottom: 0, left: 0 } }))
+    expect(document.documentElement.style.getPropertyValue('--safe-top')).toBe('20px')
     r.unmount()
-    vi.restoreAllMocks()
     document.documentElement.removeAttribute('style')
   })
 
@@ -51,8 +47,8 @@ describe('StageBoot：启动外壳', () => {
 
   it('读失败：给人话 + 重试，重试成功就进去', async () => {
     const { stage } = fakeStage(snapOf())
-    const load = stage.load as ReturnType<typeof vi.fn>
-    load.mockRejectedValueOnce(new StageError('network', '网络连接失败'))
+    const ready = stage.ready as ReturnType<typeof vi.fn>
+    ready.mockRejectedValueOnce(new StageError('network', '网络连接失败'))
     render(
       <StageBoot stage={stage}>
         <h1>进来了</h1>
@@ -61,11 +57,11 @@ describe('StageBoot：启动外壳', () => {
     await waitFor(() => expect(screen.getByText('网络开小差了')).toBeTruthy())
     fireEvent.click(screen.getByText('重试'))
     await waitFor(() => expect(screen.getByRole('heading').textContent).toBe('进来了'), { timeout: 3000 })
-    expect(load).toHaveBeenCalledTimes(2)
+    expect(ready).toHaveBeenCalledTimes(2)
   })
 
   it('游戏规则传进去：onTurn 在 AI 写完时结算', async () => {
-    const { stage, sent } = fakeStage(snapOf())
+    const { stage, done } = fakeStage(snapOf())
     function App() {
       const g = useStage<{ love: number }>()
       return (
@@ -81,7 +77,7 @@ describe('StageBoot：启动外壳', () => {
     )
     await waitFor(() => expect(screen.getByTestId('b').textContent).toBe('20'), { timeout: 3000 })
     await act(async () => fireEvent.click(screen.getByTestId('b')))
-    act(() => sent[0].h.onDone!('<narrative>\n好呀\n</narrative>'))
+    act(() => done('<narrative>\n好呀\n</narrative>'))
     expect(screen.getByTestId('b').textContent).toBe('23')
   })
 
@@ -107,16 +103,16 @@ describe('StageBoot：启动外壳', () => {
     vi.unstubAllGlobals()
   })
 
-  it('出错说人话：token 失效 / 维护 / 其他', async () => {
+  it('出错说人话：不在网站里 / 维护 / 其他', async () => {
     const cases: [StageError | Error, string, string][] = [
-      [new StageError('unauthorized', 'x', 401), '进不去这一局', 'token 无效或过期了'], // 测试跑的是开发模式：提示回网站重新生成
+      [new StageError('unauthorized', 'x'), '请在网站里打开', '工具行「开发」→ 本地开发'], // 测试跑的是开发模式：教作者怎么在网站里打开
       [new StageError('maintenance', '十点恢复'), '正在维护', '十点恢复'],
       [new StageError('error', '服务器炸了'), '加载失败', '服务器炸了'],
       [new Error(''), '加载失败', '出了点问题'],
     ]
     for (const [err, title, detail] of cases) {
       const { stage } = fakeStage(snapOf())
-      ;(stage.load as ReturnType<typeof vi.fn>).mockRejectedValueOnce(err)
+      ;(stage.ready as ReturnType<typeof vi.fn>).mockRejectedValueOnce(err)
       const r = render(<StageBoot stage={stage}>{null}</StageBoot>)
       await waitFor(() => expect(screen.getByText(title)).toBeTruthy())
       expect(screen.getByRole('status').textContent).toContain(detail)

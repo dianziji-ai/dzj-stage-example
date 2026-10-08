@@ -16,24 +16,15 @@ npm run pack       # 打包 + 压成 stage.zip
 
 ```
 玩家点开卡 → 新游戏 / 读档 → 初始设定 → 开场 → 进入舞台
-  → 平台弹授权框（每次进入都弹）：这张卡的舞台要读头像 / ID / 用户名、以玩家身份在这一局聊天、读写这一局存档
-  → 玩家同意 → 平台签 6 小时的凭证，放在舞台地址 # 后面
-  → 舞台 readLaunch() 读出来（读完从地址栏擦掉），开始玩
+  → 网站页面里开一个 iframe 加载舞台
+  → 舞台发 ready，网站推这一局的快照（init）
+  → 开始玩：舞台有事请网站做（发话、存档、图册…），网站把变化推回来（update）
 ```
 
-凭证过期了，玩家刷新页面就会重签。
-
-## ★凭证安全（必看）
-
-- **线上只用 `readLaunch()`**，不读 `.env`：Vite 打包会把 `.env` 写进 js，玩家打开开发者工具就能拿走你的开发凭证。
-- `vite.config.ts` 打包时会把 `VITE_STAGE_API` / `VITE_STAGE_TOKEN` 强制清空，双保险，**别删这段**。
-- `src/stage.ts` 的写法照抄：
+舞台和网站之间只有这座桥（[bridge.md](bridge.md)）。**舞台没有凭证**：不连后端、不调接口，线上和本地开发都一样，打包产物里也没有任何凭证。`src/stage.ts` 就一行，别改：
 
 ```ts
-export const stage = createStage(
-  readLaunch() ??
-    (import.meta.env.DEV ? { api: import.meta.env.VITE_STAGE_API, token: import.meta.env.VITE_STAGE_TOKEN } : { api: '', token: '' }),
-)
+export const stage = createStage()
 ```
 
 ## ★路径

@@ -9,7 +9,7 @@ setupReactTests()
 
 describe('useStage / useStageActions', () => {
   it('选择器：只取好感的组件，AI 写字时不重画；存档变了才画', async () => {
-    const { session, sent, wrap } = withSession()
+    const { session, wrap, delta } = withSession()
     let renders = 0
     function Love() {
       return <b data-testid="love">{useStage((s: { save: { love: number } }) => s.save.love)}</b>
@@ -23,7 +23,7 @@ describe('useStage / useStageActions', () => {
     await act(() => session.send('你好'))
     const before = renders
     for (const t of ['她', '她笑', '她笑了']) {
-      act(() => sent[0].h.onDelta!(`<narrative>\n${t}`, ''))
+      act(() => delta(`<narrative>\n${t}`))
       await frame()
     }
     expect(renders).toBe(before)
@@ -44,7 +44,7 @@ describe('useStage / useStageActions', () => {
     render(<All />, { wrapper: wrap })
     expect(screen.getByTestId('send').textContent).toBe('测试卡·空闲')
     await act(async () => fireEvent.click(screen.getByTestId('send')))
-    expect(sent[0].text).toBe('去公园')
+    expect(sent[0]).toBe('去公园')
     expect(screen.getByTestId('send').textContent).toBe('测试卡·生成中')
   })
 

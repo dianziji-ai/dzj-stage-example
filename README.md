@@ -5,32 +5,30 @@
 
 React 19 + Vite + Tailwind CSS v4。电脑、手机都适配（只做竖屏）。
 
-> 舞台＝一张卡的画面：AI 照常按卡的提示词和分区写剧情，舞台把分区渲染成画面，聊天、存档、计费都走电子姬平台。
+> 舞台＝一张卡的画面：AI 照常按卡的提示词和分区写剧情，舞台把分区渲染成画面，聊天、存档、计费都走电子姬平台。舞台是网站页面里的一个 iframe，和网站之间只靠 postMessage 说话（[舞台桥](docs/bridge.md)），不连后端、没有凭证。
 
 ## 三分钟跑起来
 
-1. 网站上进入你的卡（新游戏走完开场），工具行 **「开发」→ 生成凭证**。
-2. 把弹窗里的两行贴进项目根目录的 `.env`（照 `.env.example`）。
-3. ```bash
+1. ```bash
    npm install
    npm run dev
    ```
+2. 网站上进入你的卡（新游戏走完开场），工具行 **「开发」→ 本地开发**，填 `http://localhost:5173` 开启。
+3. 网站里这张卡的舞台就换成了你本机的页面，改代码立刻热更新。聊天、存档、换模型、MOD 都是网站真实那一套。（只认本机地址；直接打开 localhost 会提示「请在网站里打开」。）
 
-在这里发的消息，回到网站上同一局里也能看到。
-
-> ★例子的代码是照着官方例子卡的分区和存档结构写的。用自己的卡跑，先照 [官方例子卡](docs/example-card.md) 建好 8 个分区、`npm run schema:push` 推存档结构，不然对话框是空的。上线：`npm run pack` 生成 `stage.zip`；目前由平台管理员上传（把 zip 和卡 id 发给管理员），见 [上线](docs/deploy.md)。
+> ★例子的代码是照着官方例子卡的分区和存档结构写的。用自己的卡跑，先照 [官方例子卡](docs/example-card.md) 建好 8 个分区、把 `src/game/state.schema.json` 粘进编辑器「舞台 → ② 存档结构」，不然对话框是空的。上线：`npm run pack` 生成 `stage.zip`；目前由平台管理员上传（把 zip 和卡 id 发给管理员），见 [上线](docs/deploy.md)。
 
 ## 目录
 
 **开发手册（[docs/](docs/README.md)）**
 
-- [上手](docs/getting-started.md)：准备卡、拿开发凭证、改成你自己的卡、项目结构
+- [上手](docs/getting-started.md)：准备卡、在网站里打开本机页面、改成你自己的卡、项目结构
 - [官方例子卡](docs/example-card.md)：例子对应的 8 个分区和存档结构，想看到例子的效果先照它建
-- [上线](docs/deploy.md)：打包上传、玩家怎么进来、★凭证安全、★路径、自检清单
+- [上线](docs/deploy.md)：打包上传、玩家怎么进来、★路径、自检清单
 - [电脑 / 手机](docs/mobile.md)：断点、安全区、键盘、布局
 - [存档与此刻状态](docs/state.md)：存档结构、onTurn 结算、附给 AI 的状态
 - SDK：[React 外壳](docs/sdk-react.md) · [会话引擎](docs/sdk-session.md) · [客户端](docs/sdk-client.md) · [本局面板](docs/panel.md)
-- [HTTP 接口](docs/api.md) · [错误码](docs/errors.md)
+- [舞台桥（postMessage 协议）](docs/bridge.md) · [错误码](docs/errors.md)
 
 **用 AI 开发**
 
@@ -51,12 +49,11 @@ AGENTS.md        AI 总规则
 
 | 命令 | 作用 |
 |---|---|
-| `npm run dev` | 本地开发（读 `.env` 的凭证） |
+| `npm run dev` | 本地开发（在网站里打开：工具行「开发」→ 本地开发） |
 | `npm test` | 游戏自己的测试 |
 | `npm run test:sdk` | SDK 的测试 + 检查 `packages/` 有没有被改过 |
 | `npm run lint` | 代码检查 |
-| `npm run pack` | 打包成 `stage.zip`（加载页底部显示构建号 `BUILD 时间戳`；`.env` 文件本身不动，但打包产物里不含它的值）。注意是 `npm run pack`，不是 npm 自带的 `npm pack` |
-| `npm run schema:push` | 把 `src/game/state.schema.json`（存档结构）写进网站上这张卡（要开发凭证） |
+| `npm run pack` | 打包成 `stage.zip`（加载页底部显示构建号 `BUILD 时间戳`）。注意是 `npm run pack`，不是 npm 自带的 `npm pack` |
 
 ## 版权
 

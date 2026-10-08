@@ -26,7 +26,6 @@ dist-ssr
 # 舞台 token：能在这一局里聊天、花你的能量，绝不提交
 .env
 .env.*
-!.env.example
 
 # npm run pack 的产物（上传用，不进仓库）
 stage.zip

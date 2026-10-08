@@ -1,29 +1,25 @@
-import { useMemo, useState } from 'react'
-import { StageError, type StageClient, type StageMessage, type StageSnapshot, type StageSpend } from '@dianziji/stage/client'
+import { useState } from 'react'
+import { StageError, type StageClient, type StageSnapshot, type StageSpend } from '@dianziji/stage/client'
 import { btnSoft, clock, mono, muted, shortModel, tokens } from '../ui'
 
 /**
  * 历史：每一轮的原文 + 这一轮花了多少（同聊天页「本轮消耗」）。
- * 打开时是最近 20 条；「更早的」往前翻（每次 20 条，拼在前面）。点面板「刷新」重新开始。
+ * 就是快照里的历史；「更早的」请网站往前读，读到的一起推过来。
  */
 export default function History({ stage, snap, dev }: { stage: StageClient; snap: StageSnapshot; dev: boolean }) {
-  const [older, setOlder] = useState<StageMessage[]>([])
-  const [more, setMore] = useState(snap.has_more)
   const [loading, setLoading] = useState(false)
   const [err, setErr] = useState('')
-  const list = useMemo(() => [...older, ...snap.history], [older, snap.history])
+  const list = snap.history
+  const more = snap.has_more
   const total = list.reduce((n, m) => n + (m.spend?.cost ?? 0), 0)
 
+  // 请网站读更早的：读到的随快照的 history 推过来（面板跟着刷新）
   const loadMore = async () => {
-    const first = list[0]
-    if (!first || loading) return
+    if (loading) return
     setLoading(true)
     setErr('')
     try {
-      const r = await stage.load({ before: first.id, limit: 20 })
-      const have = new Set(list.map((m) => m.id))
-      setOlder((o) => [...r.history.filter((m) => !have.has(m.id)), ...o])
-      setMore(r.has_more)
+      await stage.older()
     } catch (e) {
       setErr(e instanceof StageError ? e.message : '加载失败，再试一次')
     } finally {

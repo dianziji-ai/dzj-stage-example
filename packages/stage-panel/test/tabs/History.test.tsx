@@ -30,32 +30,26 @@ describe('历史', () => {
     expect(screen.getAllByText('—').length).toBeGreaterThanOrEqual(3)
   })
 
-  it('往前翻：拼在前面、去重、更早没有了按钮消失', async () => {
+  it('往前翻：请网站读，读到的随快照推过来；读的时候按钮不能连点', async () => {
     const stage = fakeStage()
-    stage.load.mockResolvedValueOnce(snapOf({ history: [msg(0, 'user', '更早的一句'), msg(1, 'assistant', '重复的')], has_more: false }))
-    const { container } = render(<History stage={stage} snap={snapOf({ has_more: true })} dev={false} />)
+    let done!: () => void
+    stage.older.mockImplementationOnce(() => new Promise<void>((r) => (done = r)))
+    render(<History stage={stage} snap={snapOf({ has_more: true })} dev={false} />)
     expect(screen.getByText(/更早还有/)).toBeTruthy()
-    await act(async () => fireEvent.click(screen.getByText('↑ 更早的 20 条')))
-    expect(stage.load).toHaveBeenCalledWith({ before: 1, limit: 20 })
-    expect(container.querySelectorAll('details')).toHaveLength(4)
-    expect(container.querySelector('pre')?.textContent).toBe('更早的一句')
-    expect(screen.queryByText('↑ 更早的 20 条')).toBeNull()
+    fireEvent.click(screen.getByText('↑ 更早的 20 条'))
+    expect((screen.getByText('加载中…') as HTMLButtonElement).disabled).toBe(true)
+    await act(async () => done())
+    expect(stage.older).toHaveBeenCalledTimes(1)
+    expect(screen.getByText('↑ 更早的 20 条')).toBeTruthy()
   })
 
   it('往前翻失败：给原因，按钮还在可以再点', async () => {
     const stage = fakeStage()
-    stage.load.mockRejectedValueOnce(fail('网络连接失败')).mockRejectedValueOnce(new Error('x'))
+    stage.older.mockRejectedValueOnce(fail('网络连接失败')).mockRejectedValueOnce(new Error('x'))
     render(<History stage={stage} snap={snapOf({ has_more: true })} dev={false} />)
     await act(async () => fireEvent.click(screen.getByText('↑ 更早的 20 条')))
     expect(screen.getByText('网络连接失败')).toBeTruthy()
     await act(async () => fireEvent.click(screen.getByText('↑ 更早的 20 条')))
     expect(screen.getByText('加载失败，再试一次')).toBeTruthy()
-  })
-
-  it('一条都没有：不请求更早的', async () => {
-    const stage = fakeStage()
-    render(<History stage={stage} snap={snapOf({ history: [], has_more: true })} dev={false} />)
-    await act(async () => fireEvent.click(screen.getByText('↑ 更早的 20 条')))
-    expect(stage.load).not.toHaveBeenCalled()
   })
 })

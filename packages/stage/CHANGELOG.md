@@ -2,6 +2,23 @@
 
 官方维护的版本记录（暂未发布 npm）。★作者开发时不要改这个包：不够用向官方提需求，官方出新版时整个替换。
 
+## 0.3.0 — 2026-10-08
+
+★舞台和网站之间改成一座桥（postMessage）：**舞台不连后端、没有凭证**。网站把这一局的快照推进来，舞台有事请网站去做。聊天、流式、扣费、换模型、MOD、记忆、回溯、重生全是网站现成的那一套——在网站输入框发的话、在对话模式里回溯 / 编辑 / 删除、换了模型，舞台都立刻跟上。协议见 `docs/bridge.md`、`src/client/protocol.ts`。
+
+- `createStage()` 不要参数（`src/stage.ts` 就一行）。新增 `ready()`（等网站给第一份快照，3 秒没有＝不在网站里）、`snapshot()`、`subscribe(fn(snap, changed))`、`stop()`、`regenerate()`、`older()`；`send(text)` 开始生成（「在生成」已推到舞台）就 resolve，没发出去（能量不够这类）直接 reject；之后的流式 / 写完 / 失败都看快照的 `live` / `history` / `error`。
+- 快照新增 `live { said, text, reasoning } | null`、`error`、`meta { model, channel, dev }`、`safe_area`；去掉 `streaming`、`dev`。
+- 会话：一轮从 `live` 有值开始、`live` 变 null 结束（谁发起的都一样，网站输入框发的也结算）；历史整份跟着网站换（回溯 / 编辑 / 删除后自动跟上，回看的那条没了就回到最新）。新增 `session.stop()` / `session.regenerate()`；`loadOlder()` 改为请网站读。
+- 删掉：`readLaunch`、`decodeToken`、`tokenInfo`、`load`、`resume`、`saveSchema`、`watchViewport`（改为 `applySafeArea(area)`，StageBoot 自动跟快照）、存档器的 `keepalive`。`StageOp` 去掉 `connect`、`load`，`StageToaster` 默认弹 `older` / `save` / `gallery` / `turn`。
+- `StageBoot`：「连接网站…」；不在网站里打开时说明本地开发要在网站里打开。
+- 修：分区解析（`zones.gen.js`）里整份读取 `import.meta.env`，Vite 打包时会把本机 `.env` 里所有 `VITE_` 开头的值一起塞进舞台包；现在生成时替换成空对象，包里不再带任何环境变量。
+
+## 0.2.3 — 2026-10-08
+
+- 新增 `stage.open(tool)`：请网站打开它自己的工具——`model` 换模型 / 调参数、`mod` 挂 MOD、`session` 本局（设定、存档、图册、消费记录）、`memory` 记忆、`chat` 切到对话模式。舞台不用自己做这些面板。只在网站里打开舞台时有效，单独打开 localhost 返回 false。
+- 本地开发改为在网站里调：工具行「开发」→ 本地开发，填本机地址，网站里的舞台就加载你本机的页面（凭证由网站自动传入，热更新照常）。例子工程的开发服务器加了 `Access-Control-Allow-Private-Network` 头。
+- **去掉 `.env` 凭证这条路**：`src/stage.ts` 只认 `readLaunch()`；删 `.env.example`、`vite.config.ts` 里打包清空凭证那段、`npm run schema:push`（存档结构改为粘进网站编辑器「舞台 → ② 存档结构」）。直接打开 localhost 会提示去网站里打开。
+
 ## 0.2.2 — 2026-10-08
 
 - 撤掉 0.2.1 的 `local`：本机存储按卡分开改由**平台**做——舞台上传时平台往 `index.html` 注入一小段脚本，把页面里的 `localStorage` / `sessionStorage` 换成自动加 `stage:{卡 id}:` 前缀的版本。作者照常写 `localStorage`，不用学新东西，已经打好的包重新上传就生效。

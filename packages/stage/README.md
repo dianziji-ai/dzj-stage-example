@@ -1,14 +1,14 @@
 # @dianziji/stage · 舞台 SDK
 
-电子姬舞台的 SDK：客户端（读这一局 / 发一句话收流 / 存档 / 图册）+ 会话引擎 + React 外壳。
+电子姬舞台的 SDK：客户端（和外层网站之间的桥：快照、发一句话、存档、图册、打开网站工具）+ 会话引擎 + React 外壳。舞台不连后端、没有凭证，协议见 [docs/bridge.md](../../docs/bridge.md)。
 
 > ★**只读**：作者开发时不要改这个目录。不够用向官方提需求；官方出新版时整个 `packages/` 替换。`npm run test:sdk` 会检查有没有被改过。
 
 | 入口 | 是什么 | 文档 |
 |---|---|---|
 | `@dianziji/stage/react` | React 外壳：`StageBoot`、`useStage`、`useZone…`、现成组件 | [docs/sdk-react.md](../../docs/sdk-react.md) |
-| `@dianziji/stage` | 会话引擎：`createSession`、`createSaver`、`readZones`、`renderMarkdown`、`watchViewport` | [docs/sdk-session.md](../../docs/sdk-session.md) |
-| `@dianziji/stage/client` | 客户端：`createStage`、`readLaunch`、`StageError`、`withState`、全部类型（零依赖） | [docs/sdk-client.md](../../docs/sdk-client.md) |
+| `@dianziji/stage` | 会话引擎：`createSession`、`createSaver`、`readZones`、`renderMarkdown`、`applySafeArea` | [docs/sdk-session.md](../../docs/sdk-session.md) |
+| `@dianziji/stage/client` | 客户端：`createStage`、`StageError`、`withState`、全部类型（零依赖） | [docs/sdk-client.md](../../docs/sdk-client.md) |
 
 样式入口：主样式里 `@import 'tailwindcss'` 之后引 `@import '@dianziji/stage/styles.css';`。
 

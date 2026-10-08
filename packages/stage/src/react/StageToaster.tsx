@@ -3,13 +3,13 @@ import type { StageClient, StageOp } from '..'
 import { SessionCtx } from './context'
 import { dismissToast, toast, toastStore } from './toast'
 
-/** 默认替哪些操作弹失败提示：发消息 / 收流的失败游戏一般自己在对话框里讲，不重复 */
-const DEFAULT_OPS: StageOp[] = ['load', 'save', 'gallery', 'turn']
+/** 默认替哪些操作弹失败提示：发消息 / 停止 / 重生的失败游戏一般自己在对话框里讲，不重复 */
+const DEFAULT_OPS: StageOp[] = ['older', 'save', 'gallery', 'turn']
 
 /**
  * SDK 的结果自动变成顶部提示：App 里放一个就行，不用知道游戏界面长什么样。
-   *   <StageToaster />                                       读取 / 存档 / 图册失败、游戏规则（onTurn）出错 + 玩家在本局面板改了存档（StageBoot 里面不用传 stage）
- *   <StageToaster stage={stage} ops={['load','save','send','stream','gallery']} />   全部失败都提示
+  *   <StageToaster />                                       读更早的 / 存档 / 图册失败、游戏规则（onTurn）出错 + 玩家在本局面板改了存档（StageBoot 里面不用传 stage）
+ *   <StageToaster stage={stage} ops={['send','stop','regenerate','older','save','gallery','open','turn']} />   全部失败都提示
  * 自己也能弹：toast('抓到啦！', 'ok')。
  * 位置：顶部居中（让刘海），手机电脑一样；只动 transform / opacity。
  */

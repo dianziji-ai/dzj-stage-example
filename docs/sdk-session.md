@@ -5,12 +5,14 @@ React 外壳（[sdk-react.md](sdk-react.md)）就是包了它；不用 React 也
 ```ts
 import { createSession } from '@dianziji/stage'
 
-const snap = await stage.load({ limit: 50 })
+const snap = await stage.ready()   // 等网站给这一局的快照
 const session = createSession({ stage, snapshot: snap, normalize, onTurn })
 session.subscribe(() => render(session.getState()))
-session.start()                    // 刷新前那一轮还在生成：接着收（返回停止函数）
-await session.send('我推开门')
-session.dispose()                  // 不用了：停收流、退订
+await session.send('我推开门')      // 成功发出去＝true（之后看 live / error）
+await session.stop()                // 停止生成（已经写出来的字保留）
+await session.regenerate()          // 重新生成最后一条 AI 回复（消耗能量；生成中 / 没有可重生的＝false）
+await session.loadOlder()           // 请网站读更早的
+session.dispose()                   // 不用了：退订
 ```
 
 它替你做掉的：
@@ -18,10 +20,10 @@ session.dispose()                  // 不用了：停收流、退订
 | | |
 |---|---|
 | 发消息 | 点了先显示这句、进入生成中；发失败撤回；同一时间只有一轮 |
-| 收流 | 写完自动进历史；断线 / 2 分钟没回应 / 上游出错都会结束这一轮并给 `error` |
+| 跟着网站走 | 网站推来的快照谁发起的都一样（舞台、网站输入框、快捷指令、重生）：`live` 有值＝这一轮开始，变回 `null`＝结束；写完的回复随 `history` 进来，失败按 `error.code` 给「再说一次」；网站那边回溯 / 编辑 / 删除 / 读更早的，`history` 整份换成新的（回看的那条没了就回到最新）；进来时那一轮还在生成就接着显示。规则见 [bridge.md](bridge.md#一轮什么时候写完) |
 | 分区 | 每帧最多解析一次；内容没变的区是同一个对象；记下写完没有、最近写过的值、正在写哪个区 |
-| 存档 | `setSave` 本地立刻生效；存档器合并连续改动、同一时间只发一个、关页面 / 切后台用 keepalive 发完；别处（本局面板）存了自动换成新的 |
-| 结算 | `onTurn` 在 AI 写完那一刻算一次，结果在 `lastTurn` |
+| 存档 | `setSave` 本地立刻生效；存档器合并连续改动、同一时间只发一个、关页面 / 切后台立刻发出去（舞台关了外层网站还在，消息照样送到）；别处（本局面板）存了自动换成新的 |
+| 结算 | `onTurn` 在这一轮结束、没出错时算一次（网站输入框发的那一轮也算），结果在 `lastTurn`；进来之前已经写完的轮不补算 |
 | 回看 | `prevTurn()` / `nextTurn()` / `viewTurn(id)`：`zones` / `held` 换成那一轮的（`view`＝正在看的那条 AI 回复的 id，null＝最新）；只是看，存档不动；生成中不能翻、玩家一发话自动回到最新；翻到已加载的最早一轮自动往前加载 |
 
 其他工具：

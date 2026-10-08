@@ -4,14 +4,14 @@
 
 ## `<StageBoot>`
 
-包在整个 App 外面，「准备好之前」的事都归它：看板娘加载页 → 读这一局 → 预加载首屏图 → 建好会话 → 淡出交给 App；出错给人话 + 重试，不白屏。刷新时上一轮还在生成会自动接着收。还会自动接收平台推的安全区（`pt-safe` 这些工具类才有值，见 [mobile.md](mobile.md#安全区刘海灵动岛home-条)）。
+包在整个 App 外面，「准备好之前」的事都归它：看板娘加载页（「连接网站…」）→ 等网站给这一局的快照（`stage.ready()`）→ 预加载首屏图 → 建好会话 → 淡出交给 App；出错给人话 + 重试，不白屏（不在网站里打开时显示「请在网站里打开」）。进来时那一轮还在生成会接着显示。还会自动把快照里的安全区写成 `--safe-*` 变量（`applySafeArea`，启动时 + 每次变化；`pt-safe` 这些工具类才有值，见 [mobile.md](mobile.md#安全区刘海灵动岛home-条)）。
 
 | 参数 | 说明 |
 |---|---|
-| `stage` | `createStage(...)` 的结果 |
+| `stage` | `createStage()` 的结果（例子里 `src/stage.ts` 的 `stage`） |
 | `preload?(snap)` | 返回首屏要先下好的图片地址（解码完再进，第一帧不闪）；单张最多等 5 秒，坏图跳过 |
 | `normalize?(raw, snap)` | 读回来的存档过一遍：补默认值、丢非法值。玩家在本局面板改了存档也会过一遍 |
-| `onTurn?({ raw, zones, save, snap })` | **游戏规则**：AI 这一轮写完那一刻调一次，返回新存档（返回 `undefined`＝不变）。抛错不会卡住游戏：这一轮存档不变，顶部提示「这一轮的状态没算上」 |
+| `onTurn?({ raw, zones, save, snap })` | **游戏规则**：AI 这一轮写完那一刻调一次（谁发起的都一样，网站输入框发的也算），返回新存档（返回 `undefined`＝不变）。抛错不会卡住游戏：这一轮存档不变，顶部提示「这一轮的状态没算上」 |
 | `saveDelay?` | 存档器合并连续改动的时间，默认 800ms |
 | `version?` | 版本 / 构建号，显示在加载页底部（官方例子：打包时自动生成 `BUILD 时间戳`） |
 
@@ -32,17 +32,17 @@ const { send, setSave } = useStageActions()          // 只要方法：引用永
 
 | 字段 | 说明 |
 |---|---|
-| `snap` | 启动时读到的这一局：卡、分区、初始设定、玩家、配图库、图床地址… |
+| `snap` | 这一局的最新快照：卡、分区、初始设定、玩家、配图库、图床地址、模型（`meta`）… |
 | `history` | 已拿到的历史（正序） |
 | `hasOlder` | 更早还有 |
-| `live` | 正在生成这一轮的原文；没在生成＝`null` |
+| `live` / `reasoning` | 正在生成这一轮的原文（刚发出去还没来字＝`''`）；没在生成＝`null`。`reasoning`＝思维链（多数舞台用不到） |
 | `busy` / `said` | 正在生成 / 玩家刚说的那句（等回复时显示） |
 | `error` | `{ error: StageError, retry?: string }`：`retry` 有值＝可以「再说一次」 |
 | `save` / `canSave` | 存档 / 卡有没有定义存档结构（没有就只改本地） |
 | `lastTurn` | 最近一次结算 `{ prev, next, n, raw, zones }`：比较 `prev` / `next` 做「好感 +3」「解锁 CG」动效 |
 | `zones` / `held` / `closed` / `writing` | 分区追踪（一般用下面的 `useZone…`） |
 
-方法：`send(text)`（返回发没发出去）、`retry()`、`dismissError()`、`loadOlder()`（往前翻 20 条）、`setSave(next | fn, { now? })`、`saveNow()`（手动保存）、`readZones(raw)`。
+方法：`send(text)`（返回发没发出去）、`retry()`、`dismissError()`、`loadOlder()`（请网站读更早的一页）、`setSave(next | fn, { now? })`、`saveNow()`（手动保存）、`readZones(raw)`；`stage`（客户端本体，`stage.open('model')` 这类从它调）、`saver`。停止生成 / 重新生成在会话本体上：`useSession().stop()` / `useSession().regenerate()`。
 
 ## 按分区订阅
 
@@ -73,7 +73,7 @@ const p     = useTurnProgress()                                     // { zone, l
 
 | 组件 | 作用 |
 |---|---|
-| `<StageToaster />` | SDK 的结果自动弹成顶部提示：读取 / 存档 / 图册 / 结算出错，玩家在面板改了存档。`ops={[...]}` 改要提示哪些操作；自己也能 `toast('抓到啦！', 'ok')` |
+| `<StageToaster />` | SDK 的结果自动弹成顶部提示：默认读更早的 / 存档 / 图册 / 结算（`older` / `save` / `gallery` / `turn`）出错，玩家在面板改了存档。`ops={[...]}` 改要提示哪些操作；自己也能 `toast('抓到啦！', 'ok')` |
 | `<SaveIndicator />` | 「正在保存… / ✓ 已保存 / ⚠ 没存上 · 重试」，平时是手动保存按钮。`quiet`：平时不显示，只在存档时冒小图标 |
 | `<TurnProgress />` | 「● 正在写 · 表情」+ 进度条；`labels={{ thought: '偷偷想心事中' }}` 换说法 |
 | `<Splash />` | 启动加载页（StageBoot 自己用；想单独用也行） |

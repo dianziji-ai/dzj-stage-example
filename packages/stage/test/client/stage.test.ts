@@ -1,305 +1,251 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { createStage, StageError } from '../../src/index'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { createStage, PROTOCOL, StageError, type StageEvent, type StageSnapshot } from '../../src/index'
 
-/** 假 EventSource：测试里手动推事件 */
-class FakeES {
-  static last: FakeES
-  static CLOSED = 2
-  readyState = 0
-  onmessage: ((e: { data: string }) => void) | null = null
-  onerror: (() => void) | null = null
-  listeners: Record<string, ((e: { data: string }) => void)[]> = {}
-  closed = false
-  constructor() {
-    FakeES.last = this
-  }
-  addEventListener(name: string, fn: (e: { data: string }) => void) {
-    ;(this.listeners[name] ??= []).push(fn)
-  }
-  close() {
-    this.closed = true
-    this.readyState = 2
-  }
-  emit(name: string, data = '{}') {
-    if (name === 'message') this.onmessage?.({ data })
-    else this.listeners[name]?.forEach((f) => f({ data }))
+const SITE = 'https://site.test'
+
+/** 假的外层网站：记下舞台发来的消息；deliver 模拟网站往舞台发消息 */
+function fakeSite() {
+  const sent: { m: { type: string; id?: string; method?: string; args?: unknown; sdk?: string }; o: string }[] = []
+  const parent = { postMessage: (m: never, o: string) => sent.push({ m, o }) } as unknown as Window
+  const ls = new Set<(e: unknown) => void>()
+  const self = {
+    addEventListener: (_t: string, f: (e: unknown) => void) => ls.add(f),
+    removeEventListener: (_t: string, f: (e: unknown) => void) => ls.delete(f),
+  } as unknown as Window
+  const deliver = (data: unknown, o: { origin?: string; source?: unknown } = {}) =>
+    ls.forEach((f) => f({ data, origin: o.origin ?? SITE, source: o.source === undefined ? parent : o.source }))
+  const requests = () => sent.filter((x) => x.m.type === 'request').map((x) => x.m)
+  return {
+    sent,
+    parent,
+    self,
+    deliver,
+    init: (snap: StageSnapshot) => deliver({ dzj: 'stage', v: PROTOCOL, type: 'init', snapshot: snap }),
+    update: (patch: Partial<StageSnapshot>) => deliver({ dzj: 'stage', v: PROTOCOL, type: 'update', patch }),
+    requests,
+    lastRequest: () => requests().at(-1)!,
+    reply: (id: string, data?: unknown) => deliver({ dzj: 'stage', v: PROTOCOL, type: 'response', id, ok: true, data }),
+    refuse: (id: string, code: string, message: string) => deliver({ dzj: 'stage', v: PROTOCOL, type: 'response', id, ok: false, error: { code, message } }),
   }
 }
 
-const stage = () => createStage({ api: 'https://api.example.com/api/v1/stage', token: 'st_x' })
-
-beforeEach(() => {
-  vi.stubGlobal('EventSource', FakeES)
-  vi.useFakeTimers()
+export const snapOf = (p: Partial<StageSnapshot> = {}): StageSnapshot => ({
+  card: { id: 'c1', name: '卡' },
+  site: SITE,
+  user: null,
+  asset_base: 'https://img.test',
+  slots: [],
+  state_schema: null,
+  image_pack: null,
+  setup: { text: '', fields: [] },
+  history: [{ id: 1, role: 'assistant', kind: 'opening', content: '开场' }],
+  has_more: false,
+  save: null,
+  live: null,
+  error: null,
+  meta: { model: 'm', channel: 'c', dev: false },
+  safe_area: { top: 0, right: 0, bottom: 0, left: 0 },
+  ...p,
 })
-afterEach(() => {
-  vi.useRealTimers()
-  vi.unstubAllGlobals()
-})
 
-describe('收流', () => {
-  it('正常：增量拼起来，done 只回调一次', async () => {
-    const h = { onDelta: vi.fn(), onDone: vi.fn(), onFail: vi.fn() }
-    const t = stage().resume({ turn_id: 't', stream_url: 'u' }, h)
-    FakeES.last.emit('message', '{"c":"你"}')
-    FakeES.last.emit('message', '{"c":"好"}')
-    FakeES.last.emit('done')
-    FakeES.last.emit('done')
-    expect(h.onDelta).toHaveBeenLastCalledWith('你好', '好')
-    expect(h.onDone).toHaveBeenCalledTimes(1)
-    expect(await t.finished).toBe('你好')
-    expect(FakeES.last.closed).toBe(true)
+async function connected() {
+  const site = fakeSite()
+  const stage = createStage({ parent: site.parent, self: site.self })
+  const ready = stage.ready()
+  site.init(snapOf())
+  await ready
+  return { site, stage }
+}
+
+afterEach(() => vi.useRealTimers())
+
+describe('握手', () => {
+  it('ready：先发 ready（目标 *，只带 SDK 版本），收到 init 就拿到快照；之后只往那个网站发', async () => {
+    const site = fakeSite()
+    const stage = createStage({ parent: site.parent, self: site.self })
+    expect(stage.snapshot()).toBeNull()
+    const p = stage.ready()
+    expect(site.sent[0]).toMatchObject({ m: { type: 'ready', dzj: 'stage', v: PROTOCOL }, o: '*' })
+    site.init(snapOf())
+    expect((await p).card.id).toBe('c1')
+    expect(stage.snapshot()?.card.id).toBe('c1')
+    void stage.send('你好').catch(() => {})
+    expect(site.sent.at(-1)).toMatchObject({ m: { type: 'request', method: 'send' }, o: SITE })
   })
-  it('回调里抛错：这一轮照样结束（finished 照常给结果），错误只打日志', async () => {
+
+  it('不在网站里（没有外层窗口）：ready 直接失败，说请在网站里打开', async () => {
+    const site = fakeSite()
+    const stage = createStage({ self: site.self })
+    await expect(stage.ready()).rejects.toMatchObject({ code: 'unauthorized', message: '请在电子姬网站里打开这张卡' })
+  })
+
+  it('外层网站一直不给快照：3 秒后失败；期间隔一会儿重发 ready', async () => {
+    vi.useFakeTimers()
+    const site = fakeSite()
+    const stage = createStage({ parent: site.parent, self: site.self })
+    const p = stage.ready()
+    const fail = expect(p).rejects.toMatchObject({ code: 'unauthorized' })
+    await vi.advanceTimersByTimeAsync(3100)
+    await fail
+    expect(site.sent.filter((x) => x.m.type === 'ready').length).toBeGreaterThan(3)
+  })
+
+  it('只认外层网站、只认桥上的消息、只认第一次 init 的来源、只认同一版协议', async () => {
+    const { site, stage } = await connected()
+    const seen: string[] = []
+    stage.subscribe((_s, changed) => seen.push(changed.join(',')))
+    site.deliver({ dzj: 'stage', v: PROTOCOL, type: 'update', patch: { has_more: true } }, { source: {} })
+    site.deliver({ dzj: 'stage', v: PROTOCOL, type: 'update', patch: { has_more: true } }, { origin: 'https://evil.test' })
+    site.deliver({ type: 'update', patch: { has_more: true } })
     const err = vi.spyOn(console, 'error').mockImplementation(() => {})
-    const t = stage().resume({ turn_id: 't', stream_url: 'u' }, { onDone: () => { throw new Error('作者的 bug') } })
-    FakeES.last.emit('message', '{"c":"好"}')
-    FakeES.last.emit('done')
-    expect(await t.finished).toBe('好')
-    expect(FakeES.last.closed).toBe(true)
+    site.deliver({ dzj: 'stage', v: PROTOCOL + 1, type: 'update', patch: { has_more: true } })
     expect(err).toHaveBeenCalled()
-    err.mockRestore()
-  })
-  it('上游出错：fail → stream 错误、可重试', async () => {
-    const h = { onFail: vi.fn() }
-    const t = stage().resume({ turn_id: 't', stream_url: 'u' }, h)
-    FakeES.last.emit('fail', '{"message":"上游超时"}')
-    const e = h.onFail.mock.calls[0][0] as StageError
-    expect(e.code).toBe('stream')
-    expect(e.message).toBe('上游超时')
-    expect(e.retryable).toBe(true)
-    await expect(t.finished).rejects.toBeInstanceOf(StageError)
-  })
-  it('连接断了（浏览器放弃重连）：network，不再卡在生成中', () => {
-    const h = { onFail: vi.fn(), onDone: vi.fn() }
-    stage().resume({ turn_id: 't', stream_url: 'u' }, h)
-    FakeES.last.readyState = 2
-    FakeES.last.onerror?.()
-    expect(h.onFail.mock.calls[0][0].code).toBe('network')
-    expect(h.onDone).not.toHaveBeenCalled()
-  })
-  it('连续 3 次连不上：network；中间收到数据就清零', () => {
-    const h = { onFail: vi.fn() }
-    stage().resume({ turn_id: 't', stream_url: 'u' }, h)
-    FakeES.last.onerror?.()
-    FakeES.last.onerror?.()
-    FakeES.last.emit('message', '{"c":"a"}')
-    FakeES.last.onerror?.()
-    FakeES.last.onerror?.()
-    expect(h.onFail).not.toHaveBeenCalled()
-    FakeES.last.onerror?.()
-    expect(h.onFail).toHaveBeenCalledTimes(1)
-  })
-  it('2 分钟一个字都没来：network；有字来就续命', () => {
-    const h = { onFail: vi.fn() }
-    stage().resume({ turn_id: 't', stream_url: 'u' }, h)
-    vi.advanceTimersByTime(100_000)
-    FakeES.last.emit('message', '{"c":"a"}')
-    vi.advanceTimersByTime(100_000)
-    expect(h.onFail).not.toHaveBeenCalled()
-    vi.advanceTimersByTime(30_000)
-    expect(h.onFail.mock.calls[0][0].code).toBe('network')
-  })
-  it('坏数据跳过；主动 close 不触发任何回调', () => {
-    const h = { onDelta: vi.fn(), onDone: vi.fn(), onFail: vi.fn() }
-    const t = stage().resume({ turn_id: 't', stream_url: 'u' }, h)
-    FakeES.last.emit('message', 'not json')
-    t.close()
-    FakeES.last.emit('done')
-    vi.advanceTimersByTime(200_000)
-    expect(h.onDelta).not.toHaveBeenCalled()
-    expect(h.onDone).not.toHaveBeenCalled()
-    expect(h.onFail).not.toHaveBeenCalled()
+    expect(seen).toEqual([])
+    expect(stage.snapshot()?.has_more).toBe(false)
   })
 })
 
-describe('错误与网站地址', () => {
-  it('retryable：能量 / token 再试没用', () => {
-    expect(new StageError('insufficient', '').retryable).toBe(false)
-    expect(new StageError('unauthorized', '').retryable).toBe(false)
-    expect(new StageError('busy', '').retryable).toBe(true)
-  })
-  it('siteUrl：网站地址用 load() 返回的 site（签 token 时的域名），不从接口地址猜', async () => {
-    const s = stage()
-    expect(s.siteUrl('/recharge')).toBe('/recharge') // 还没 load：只给路径
-    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ site: 'http://localhost:5173', history: [] }), { status: 200 })))
-    await s.load()
-    expect(s.siteUrl('/recharge')).toBe('http://localhost:5173/recharge')
-    expect(s.siteUrl('chat/c1?s=2')).toBe('http://localhost:5173/chat/c1?s=2')
-    vi.unstubAllGlobals()
-  })
-})
-
-describe('事件广播 stage.on', () => {
-  afterEach(() => vi.unstubAllGlobals())
-
-  it('存好了：广播 save（带 source）；失败：广播 error（带是哪个操作）', async () => {
-    const s = stage()
-    const got: unknown[] = []
-    s.on((e) => got.push(e.type === 'save' ? { type: e.type, source: e.source, state: e.state } : { type: e.type, op: e.op, code: e.error.code }))
-
-    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ ok: true, size: 9 }), { status: 200 })))
-    await s.save({ hp: 1 }, { source: 'panel' })
-    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ error: { code: 'invalid', message: '存档不符合存档结构' } }), { status: 422 })))
-    await expect(s.save({ hp: -1 })).rejects.toThrow('存档不符合存档结构')
-    vi.stubGlobal('fetch', vi.fn(async () => Promise.reject(new TypeError('offline'))))
-    await expect(s.load()).rejects.toThrow()
-
-    expect(got).toEqual([
-      { type: 'save', source: 'panel', state: { hp: 1 } },
-      { type: 'error', op: 'save', code: 'invalid' },
-      { type: 'error', op: 'load', code: 'network' },
-    ])
-  })
-
-  it('取消订阅后收不到；订阅方自己抛错不影响别人', async () => {
-    const s = stage()
-    const a = vi.fn(() => {
-      throw new Error('订阅方的 bug')
-    })
-    const b = vi.fn()
-    s.on(a)
-    const off = s.on(b)
-    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ ok: true, size: 1 }), { status: 200 })))
-    await s.save({})
+describe('快照', () => {
+  it('update 只给变了的几项：合进镜像，告诉订阅方变了哪些；空的不通知', async () => {
+    const { site, stage } = await connected()
+    const fn = vi.fn()
+    const off = stage.subscribe(fn)
+    site.update({ live: { said: '你好', text: '<正文>她', reasoning: '' } })
+    expect(fn).toHaveBeenLastCalledWith(expect.objectContaining({ live: { said: '你好', text: '<正文>她', reasoning: '' }, card: { id: 'c1', name: '卡' } }), ['live'])
+    site.update({})
+    expect(fn).toHaveBeenCalledTimes(1)
     off()
-    await s.save({})
-    expect(a).toHaveBeenCalledTimes(2)
-    expect(b).toHaveBeenCalledTimes(1)
+    site.update({ has_more: true })
+    expect(fn).toHaveBeenCalledTimes(1)
+  })
+
+  it('换局 / 读档：网站再发一次 init，整份换掉', async () => {
+    const { site, stage } = await connected()
+    const fn = vi.fn()
+    stage.subscribe(fn)
+    site.init(snapOf({ card: { id: 'c2', name: '别的局' } }))
+    expect(stage.snapshot()?.card.id).toBe('c2')
+    expect(fn.mock.calls[0][1]).toContain('history')
+  })
+
+  it('订阅方自己抛错：只打日志，不影响别的订阅方', async () => {
+    const { site, stage } = await connected()
+    const err = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const ok = vi.fn()
+    stage.subscribe(() => {
+      throw new Error('坏')
+    })
+    stage.subscribe(ok)
+    site.update({ has_more: true })
+    expect(ok).toHaveBeenCalled()
+    expect(err).toHaveBeenCalled()
   })
 })
 
 describe('请求', () => {
-  afterEach(() => vi.unstubAllGlobals())
-  /** 记下每次请求，按顺序回放给定的响应 */
-  function fakeFetch(...responses: Response[]) {
-    const calls: { url: string; init: RequestInit }[] = []
-    vi.stubGlobal('fetch', vi.fn(async (url: string, init: RequestInit) => {
-      calls.push({ url, init })
-      return responses.shift() ?? new Response('{}', { status: 200 })
-    }))
-    return calls
-  }
-  const json = (body: unknown, status = 200, headers: Record<string, string> = {}) => new Response(JSON.stringify(body), { status, headers })
-
-  it('带 token；接口地址末尾的 / 去掉；load 的分页参数拼进查询', async () => {
-    const calls = fakeFetch(json({ site: '', history: [] }), json({ site: '', history: [] }))
-    const s = createStage({ api: 'https://api.example.com/api/v1/stage//', token: 'st_abc' })
-    await s.load()
-    await s.load({ limit: 20, before: 99 })
-    expect(calls[0].url).toBe('https://api.example.com/api/v1/stage')
-    expect(calls[1].url).toBe('https://api.example.com/api/v1/stage?limit=20&before=99')
-    expect((calls[0].init.headers as Record<string, string>).Authorization).toBe('Bearer st_abc')
-    expect(calls[0].init.method).toBe('GET')
-    expect(calls[0].init.body).toBeUndefined()
-  })
-
-  it('send：POST 原文，拿到回合就开始收流', async () => {
-    const calls = fakeFetch(json({ turn_id: 't9', stream_url: 'https://s/t9' }))
-    const t = await stage().send('我推开门', {})
-    expect(calls[0].url).toMatch(/\/messages$/)
-    expect(JSON.parse(String(calls[0].init.body))).toEqual({ text: '我推开门' })
-    expect(t.id).toBe('t9')
-    expect(FakeES.last.closed).toBe(false)
-  })
-
-  it('send 失败（比如能量不足）：抛 StageError，不开流', async () => {
-    fakeFetch(json({ error: { code: 'insufficient', message: '能量不够了' } }, 402))
-    const before = FakeES.last
-    const e = await stage().send('你好').catch((x) => x)
-    expect(e).toBeInstanceOf(StageError)
-    expect([e.code, e.status, e.retryable]).toEqual(['insufficient', 402, false])
-    expect(FakeES.last).toBe(before)
-  })
-
-  it('save：PUT /save，整份发；keepalive 透传（关页面时也发得完）', async () => {
-    const calls = fakeFetch(json({ ok: true, size: 9 }))
-    expect(await stage().save({ hp: 1 }, { keepalive: true })).toEqual({ ok: true, size: 9 })
-    expect(calls[0].init.method).toBe('PUT')
-    expect(calls[0].url).toMatch(/\/save$/)
-    expect(calls[0].init.keepalive).toBe(true)
-  })
-
-  it('saveSchema：PUT /schema 整份发（null＝去掉）；不是开发凭证被拒时广播 op=schema', async () => {
-    const schema = { type: 'object' as const, properties: { love: { type: 'integer', default: 20 } } }
-    const calls = fakeFetch(json({ ok: true, state_schema: schema }), json({ error: { code: 'unauthorized', message: '只有开发凭证能改存档结构' } }, 403))
-    const s = stage()
-    const ops: string[] = []
-    s.on((e) => e.type === 'error' && ops.push(e.op))
-    expect((await s.saveSchema(schema)).state_schema).toEqual(schema)
-    expect(calls[0].init.method).toBe('PUT')
-    expect(calls[0].url).toMatch(/\/schema$/)
-    expect(JSON.parse(String(calls[0].init.body))).toEqual(schema)
-    await expect(s.saveSchema(null)).rejects.toThrow('只有开发凭证能改存档结构')
-    expect(JSON.parse(String(calls[1].init.body))).toBeNull()
-    expect(ops).toEqual(['schema'])
-  })
-
-  it('gallery：GET /gallery；失败广播 op=gallery', async () => {
-    const calls = fakeFetch(json({ turns: 3, previews: [], packs: [] }), json({}, 500))
-    const s = stage()
-    const ops: string[] = []
-    s.on((e) => e.type === 'error' && ops.push(e.op))
-    expect((await s.gallery()).turns).toBe(3)
-    expect(calls[0].url).toMatch(/\/gallery$/)
-    await expect(s.gallery()).rejects.toThrow('请求失败（500）') // 服务器没给说明：用状态码兜底
-    expect(ops).toEqual(['gallery'])
-  })
-
-  it('太快了：带上 Retry-After 秒数；返回的不是 JSON 也不崩', async () => {
-    fakeFetch(json({ error: { code: 'rate_limited', message: '慢一点' } }, 429, { 'Retry-After': '7' }), new Response('<html>502</html>', { status: 502 }))
-    const a = await stage().load().catch((x) => x)
-    expect([a.code, a.retryAfter, a.retryable]).toEqual(['rate_limited', 7, true])
-    const b = await stage().load().catch((x) => x)
-    expect([b.code, b.status]).toEqual(['error', 502])
-  })
-})
-
-describe('其余方法', () => {
-  it('思维链单独回调，不混进正文', () => {
-    const h = { onDelta: vi.fn(), onReasoning: vi.fn() }
-    stage().resume({ turn_id: 't', stream_url: 'u' }, h)
-    FakeES.last.emit('message', '{"r":"想"}')
-    FakeES.last.emit('message', '{"r":"想想"}')
-    FakeES.last.emit('message', '{"c":"好"}')
-    expect(h.onReasoning).toHaveBeenLastCalledWith('想想想', '想想')
-    expect(h.onDelta).toHaveBeenCalledTimes(1)
-    expect(h.onDelta).toHaveBeenLastCalledWith('好', '好')
-  })
-
-  it('fail 没带说明：用默认文案', () => {
-    const h = { onFail: vi.fn() }
-    stage().resume({ turn_id: 't', stream_url: 'u' }, h)
-    FakeES.last.emit('fail', 'oops')
-    expect(h.onFail.mock.calls[0][0].message).toBe('生成失败')
-  })
-
-  it('report：SDK 外的错误走同一条广播', () => {
-    const s = stage()
-    const got = vi.fn()
-    s.on(got)
-    const err = new StageError('error', '结算出错')
-    s.report('turn', err)
-    expect(got).toHaveBeenCalledWith({ type: 'error', op: 'turn', error: err })
-  })
-
-  it('tokenInfo：解 token；格式不对＝null', () => {
-    expect(stage().tokenInfo()).toBeNull()
-    const payload = btoa(JSON.stringify({ u: 1, s: 42, m: 'm', c: 'c', e: 1 }))
-    expect(createStage({ api: 'x', token: `st_${payload}.sig` }).tokenInfo()?.sessionId).toBe(42)
-  })
-})
-
-describe('没拿到连接', () => {
-  afterEach(() => vi.unstubAllGlobals())
-  it('没 token / 没地址：不发请求，直接报 unauthorized（告诉玩家从网站进）', async () => {
-    const fetch = vi.fn()
-    vi.stubGlobal('fetch', fetch)
-    for (const conn of [{ api: 'https://api', token: '' }, { api: '', token: 'st_x' }, { api: undefined as unknown as string, token: undefined as unknown as string }]) {
-      const e = await createStage(conn).load().catch((x) => x)
-      expect([e.code, e.message]).toEqual(['unauthorized', '没有拿到进入凭证：请从电子姬网站进入这张卡'])
+  it('send / stop / regenerate / older / gallery：发 request，网站回 ok 就 resolve', async () => {
+    const { site, stage } = await connected()
+    const cases: [() => Promise<unknown>, string, unknown][] = [
+      [() => stage.send('你好'), 'send', { text: '你好' }],
+      [() => stage.stop(), 'stop', undefined],
+      [() => stage.regenerate(), 'regenerate', undefined],
+      [() => stage.older(), 'older', undefined],
+    ]
+    for (const [call, method, args] of cases) {
+      const p = call()
+      const r = site.lastRequest()
+      expect(r).toMatchObject({ method, args })
+      site.reply(r.id!)
+      await expect(p).resolves.toBeUndefined()
     }
-    expect(fetch).not.toHaveBeenCalled()
+    const g = stage.gallery()
+    site.reply(site.lastRequest().id!, { turns: 3, previews: [], packs: [] })
+    await expect(g).resolves.toEqual({ turns: 3, previews: [], packs: [] })
+  })
+
+  it('网站拒了：抛 StageError（code / 中文原因），同时广播一次 error', async () => {
+    const { site, stage } = await connected()
+    const events: StageEvent[] = []
+    stage.on((e) => events.push(e))
+    const p = stage.send('你好')
+    site.refuse(site.lastRequest().id!, 'insufficient', '能量不够')
+    await expect(p).rejects.toMatchObject({ code: 'insufficient', message: '能量不够' })
+    expect(events[0]).toMatchObject({ type: 'error', op: 'send', error: { code: 'insufficient' } })
+    expect((events[0] as { error: StageError }).error.retryable).toBe(false)
+  })
+
+  it('网站 15 秒没回：network（能再试）', async () => {
+    vi.useFakeTimers()
+    const { stage } = await connected()
+    const p = stage.stop()
+    const fail = expect(p).rejects.toMatchObject({ code: 'network' })
+    await vi.advanceTimersByTimeAsync(15_100)
+    await fail
+  })
+
+  it('还没连上就请求：unauthorized，不发消息', async () => {
+    const site = fakeSite()
+    const stage = createStage({ parent: site.parent, self: site.self })
+    stage.on(() => {})
+    await expect(stage.send('你好')).rejects.toMatchObject({ code: 'unauthorized' })
+    expect(site.requests()).toEqual([])
+  })
+
+  it('存档：存好了广播 save（带上是谁存的）', async () => {
+    const { site, stage } = await connected()
+    const events: StageEvent[] = []
+    stage.on((e) => events.push(e))
+    const p = stage.save({ hp: 3 }, { source: 'panel' })
+    expect(site.lastRequest()).toMatchObject({ method: 'save', args: { state: { hp: 3 } } })
+    site.reply(site.lastRequest().id!, { size: 8 })
+    await expect(p).resolves.toEqual({ size: 8 })
+    expect(events).toEqual([{ type: 'save', state: { hp: 3 }, source: 'panel' }])
+  })
+
+  it('dispose：还没回的请求失败，之后的消息不再理', async () => {
+    const { site, stage } = await connected()
+    const p = stage.stop()
+    stage.dispose()
+    await expect(p).rejects.toMatchObject({ code: 'network' })
+    const fn = vi.fn()
+    stage.subscribe(fn)
+    site.update({ has_more: true })
+    expect(fn).not.toHaveBeenCalled()
   })
 })
 
+describe('打开网站工具 open / 网站地址 siteUrl', () => {
+  it('连上之后：发 open 请求，返回 true；不认识的工具名不发', async () => {
+    const { site, stage } = await connected()
+    expect(stage.open('model')).toBe(true)
+    expect(site.lastRequest()).toMatchObject({ method: 'open', args: { tool: 'model' } })
+    const n = site.requests().length
+    expect(stage.open('wallet' as never)).toBe(false)
+    expect(site.requests().length).toBe(n)
+  })
+
+  it('还没连上：false', () => {
+    const site = fakeSite()
+    expect(createStage({ parent: site.parent, self: site.self }).open('mod')).toBe(false)
+  })
+
+  it('siteUrl：连上前只给路径，连上后拼网站地址', async () => {
+    const site = fakeSite()
+    const stage = createStage({ parent: site.parent, self: site.self })
+    expect(stage.siteUrl('recharge')).toBe('/recharge')
+    const p = stage.ready()
+    site.init(snapOf())
+    await p
+    expect(stage.siteUrl('/recharge')).toBe(`${SITE}/recharge`)
+  })
+})
+
+describe('report', () => {
+  it('SDK 之外的失败也走同一条广播', async () => {
+    const { stage } = await connected()
+    const fn = vi.fn()
+    stage.on(fn)
+    stage.report('turn', new StageError('error', '规则出错'))
+    expect(fn).toHaveBeenCalledWith({ type: 'error', op: 'turn', error: expect.any(StageError) })
+  })
+})

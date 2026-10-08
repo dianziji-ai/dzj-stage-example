@@ -28,11 +28,11 @@
 
 ### 背后是怎么做的（了解即可）
 
-浏览器只把刘海、home 条的高度（`env(safe-area-inset-*)`）告诉**最外层的页面**，iframe 里永远是 0。舞台线上就跑在平台页面的 iframe 里，所以：
+浏览器只把刘海、home 条的高度（`env(safe-area-inset-*)`）告诉**最外层的页面**，iframe 里永远是 0。舞台（线上和本地开发都一样）就跑在网站页面的 iframe 里，所以：
 
-1. 平台在外层量出真实高度，发消息推给舞台（`stage:viewport`，格式见 [api.md](api.md#平台和舞台之间的消息)）。
-2. SDK 收到后写进 `--safe-*` 变量，工具类用的就是它们。`StageBoot` 启动时自动开始接收；不用 React 的舞台自己调一次 `watchViewport()`。
-3. 本地 `npm run dev` 时舞台就是最外层页面，直接读系统的 `env()`。
+1. 网站在外层量出真实高度，放进快照的 `safe_area`（`{ top, right, bottom, left }`，px），转屏 / 窗口变化时用 `update` 推新的（见 [bridge.md](bridge.md#快照字段)）。
+2. SDK 的 `applySafeArea(area)` 把它写进 `--safe-*` 变量，工具类用的就是它们。`StageBoot` 启动时和每次变化都自动调，作者不用管；不用 React 的舞台自己订阅：`stage.subscribe((s, changed) => changed.includes('safe_area') && applySafeArea(s.safe_area))`。
+3. 还没拿到快照之前，`--safe-*` 的默认值是系统的 `env()`（`@dianziji/stage/styles.css` 里写好了）。
 
 前提：`index.html` 的 `<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">` 要带 `viewport-fit=cover`，不然 iOS 的 `env()` 恒为 0。官方例子已经写好，别删。
 

@@ -1,6 +1,4 @@
-import type { StageError } from './stage'
-
-/** 舞台 API 的数据形状（照后端 StageApiController 写；那边改了，这里跟着改）。 */
+/** 舞台拿到的数据形状：网站经桥推过来的快照（见 protocol.ts、docs/bridge.md）。网站那边改了，这里跟着改。 */
 
 export type StageRole = 'user' | 'assistant' | 'system'
 
@@ -38,8 +36,6 @@ export type StageSpend = {
 /** 卡的分区结构（只列舞台常用的字段，其余原样透传） */
 export type StageSlot = { zone: string; kind?: string; label?: string; [k: string]: unknown }
 
-export type StageStreaming = { turn_id: string; stream_url: string }
-
 export type StageSave = Record<string, unknown>
 
 /** 配图库里的一张图：n＝编号（AI 写 ![](n)），src＝地址，g＝属于哪些组（组名） */
@@ -61,7 +57,7 @@ export type StageSetup = { text: string; fields: { key: string; label: string; v
 export type StageGalleryImage = { src: string; thumb: string }
 
 /**
- * GET /api/v1/stage/gallery 的返回：和网站画廊同一套规则。
+ * 图册（stage.gallery()）：和网站画廊同一套规则。
  * turns＝这个人在这张卡所有会话累计的 AI 回复数（开场、失败不算）；相册 rounds：-1 不公开 / 0 一直开放 / N 玩到第 N 轮解锁。
  * 锁着（locked）和没开放（hidden）的相册只有名字、张数、门槛，没有图片地址。
  */
@@ -83,29 +79,45 @@ export type StageGallery = {
 /** 玩家的公开资料 */
 export type StageUser = { id: number; username: string; name: string; avatar: string }
 
-/** GET /api/v1/stage 的返回 */
+/** 正在生成的这一轮：said＝玩家说的那句（已去掉 <dj_state>），text＝到目前为止的原文，reasoning＝思维链（多数舞台用不到） */
+export type StageLive = { said: string; text: string; reasoning: string }
+
+/** 这一轮失败：code 决定给什么按钮；retry＝能「再说一次」的那句原话（连接 / 上游出错时才有）；retryAfter＝太频繁时要等的秒数 */
+export type StageTurnError = { code: StageErrorCode; message: string; retry?: string | null; retryAfter?: number }
+
+/** 这一局用的模型（只用来显示，换模型由网站管）；dev＝作者本人在本地开发 */
+export type StageMeta = { model: string; channel: string; dev: boolean }
+
+/** 刘海 / home 条占的像素（舞台在 iframe 里，CSS 的 env() 恒为 0，由网站量好推进来） */
+export type SafeArea = { top: number; right: number; bottom: number; left: number }
+
+/** 这一局的快照：网站 init 时整份给，之后 update 只给变了的那几项 */
 export type StageSnapshot = {
   card: { id: string; name: string }
-  /** 玩家所在的网站地址（如 https://dianziji.ai）：拼站内链接用（stage.siteUrl） */
+  /** 网站地址（如 https://dianziji.ai）：拼站内链接用（stage.siteUrl） */
   site: string
-  /** 开发 token（编辑器「开发」签的）：本局面板多出存档编辑、token 细节 */
-  dev: boolean
-  /** 玩家：只有展示用的几项（id / 用户名 / 昵称 / 头像地址），每次读取都是最新的 */
+  /** 玩家：只有展示用的几项 */
   user: StageUser | null
   /** 卡素材的图床地址：卡里写的 {{asset}}/卡id/assets/… 把 {{asset}} 换成它就是完整地址 */
   asset_base: string
   slots: StageSlot[]
-  /** 存档结构（JSON Schema，编辑器「舞台」页定义）；没定义＝null，此时不能存档 */
+  /** 存档结构（JSON Schema，编辑器「舞台 → ② 存档结构」定义）；没定义＝null，此时不能存档 */
   state_schema: StageSchema | null
-  /** 配图库：AI 按编号引用的图（readZones 不换，用 imageUrl(snap, 编号) 取）；也可以拿来做图册。没配＝null */
+  /** 配图库：AI 按编号引用的图（readZones 不换，用 imageUrl(snap, 编号) 取）。没配＝null */
   image_pack: StageImagePack | null
-  /** 初始设定（只读；要改回平台的设定弹窗）。按 key 取值：setup.fields.find((f) => f.key === 'name')?.value */
+  /** 初始设定（只读；要改回网站的设定）。按 key 取值：setup.fields.find((f) => f.key === 'name')?.value */
   setup: StageSetup
+  /** 最近的历史（正序，库里原文，{{asset}} 已展开）。读更早的：stage.older() */
   history: StageMessage[]
   has_more: boolean
+  /** 舞台存档（只在 init 里给：之后只有舞台自己存，网站不会再推） */
   save: StageSave | null
-  /** 有正在生成的回合时不为空：连 stream_url 会从头回放再接着收 */
-  streaming: StageStreaming | null
+  /** 正在生成＝这一轮；没在生成＝null。谁发的都一样（舞台、网站输入框、快捷指令、重生） */
+  live: StageLive | null
+  /** 上一轮失败＝原因；没有＝null。玩家再发一句时网站会清掉 */
+  error: StageTurnError | null
+  meta: StageMeta
+  safe_area: SafeArea
 }
 
 export type StageErrorCode =
@@ -119,14 +131,4 @@ export type StageErrorCode =
   | 'error'
   | 'network'
   | 'stream'
-
-export type TurnHandlers = {
-  /** 每来一段正文：text＝到目前为止的完整原文，chunk＝这一段 */
-  onDelta?: (text: string, chunk: string) => void
-  /** 思维链增量（多数舞台用不到） */
-  onReasoning?: (text: string, chunk: string) => void
-  /** 这一轮完成：text＝完整原文 */
-  onDone?: (text: string) => void
-  /** 这一轮失败（不扣费）：err.code 区分原因，err.retryable 能不能原样再试 */
-  onFail?: (err: StageError) => void
-}
+  | 'version'

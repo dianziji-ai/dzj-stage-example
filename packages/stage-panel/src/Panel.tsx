@@ -1,15 +1,16 @@
-import { useCallback, useEffect, useState } from 'react'
-import { StageError, type StageClient, type StageSnapshot } from '@dianziji/stage/client'
+import { useEffect, useState } from 'react'
+import type { StageClient, StageSnapshot } from '@dianziji/stage/client'
 import History from './tabs/History'
 import Gallery from './tabs/Gallery'
+import Guide from './tabs/Guide'
 import Overview from './tabs/Overview'
 import Save from './tabs/Save'
 import Setup from './tabs/Setup'
 import Slots from './tabs/Slots'
-import { btnSoft, muted } from './ui'
+import { muted } from './ui'
 import { Avatar, Empty } from './parts'
 
-/** 所有人都看得到全部标签（系统内置的预览）、都能改存档；开发 token（或传 dev）只多出 token 细节和消息 id、设定 key 这类开发信息 */
+/** 所有人都看得到全部标签（系统内置的预览）、都能改存档；本地开发（快照 meta.dev，或传 dev）只多出结构细节和消息 id、设定 key 这类开发信息 */
 const TABS = [
   { id: 'overview', label: '概览', icon: '◎' },
   { id: 'setup', label: '初始设定', icon: '✎' },
@@ -17,40 +18,36 @@ const TABS = [
   { id: 'gallery', label: '图册', icon: '▣' },
   { id: 'save', label: '存档', icon: '◆' },
   { id: 'slots', label: '分区', icon: '▦' },
+  { id: 'guide', label: '指南', icon: '？' },
 ] as const
 type TabId = (typeof TABS)[number]['id']
 
 /**
  * 面板本体（StagePanel 第一次打开时才下载）：电脑居中弹窗（左侧竖排标签，点遮罩关），手机全屏（顶部让刘海、底部让 home 条）。
- * 每次打开都重新读一遍这一局（看到的就是此刻的数据），「刷新」再读一次。Esc 关闭。
+ * 数据就是网站推来的快照（stage.snapshot / subscribe），打开就是此刻的样子、之后跟着变。Esc 关闭。
  */
 export default function Panel({ stage, dev: devProp, title, onClose }: { stage: StageClient; dev?: boolean; title: string; onClose: () => void }) {
-  const [snap, setSnap] = useState<StageSnapshot | null>(null)
-  const [err, setErr] = useState('')
+  const [base, setBase] = useState<StageSnapshot | null>(() => stage.snapshot())
+  // 存档：快照里的只是进来时那份；之后存过（游戏自己存、本局面板改）以存好的为准
+  const [saved, setSaved] = useState<{ v: StageSnapshot['save'] } | null>(null)
   const [tab, setTab] = useState<TabId>('overview')
-  const [loading, setLoading] = useState(true)
 
-  // 只在回来时改状态（打开时 loading 初值就是 true）；「刷新」按钮先把 loading 打开再调它
-  const fetchSnap = useCallback(
+  useEffect(
     () =>
-      stage
-        .load({ limit: 20 })
-        .then((s) => {
-          setSnap(s)
-          setErr('')
-        })
-        .catch((e) => setErr(e instanceof StageError ? e.message : '读取失败'))
-        .finally(() => setLoading(false)),
+      stage.subscribe((s, changed) => {
+        setBase(s)
+        if (changed.includes('save')) setSaved(null) // 网站推了新存档：以它为准
+      }),
     [stage],
   )
-  const load = () => {
-    setLoading(true)
-    void fetchSnap()
-  }
-
-  useEffect(() => {
-    void fetchSnap()
-  }, [fetchSnap])
+  useEffect(
+    () =>
+      stage.on((e) => {
+        if (e.type === 'save') setSaved({ v: e.state })
+      }),
+    [stage],
+  )
+  const snap = base && saved ? { ...base, save: saved.v } : base
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
@@ -58,7 +55,7 @@ export default function Panel({ stage, dev: devProp, title, onClose }: { stage: 
     return () => window.removeEventListener('keydown', onKey)
   }, [onClose])
 
-  const dev = devProp || !!snap?.dev
+  const dev = devProp || !!snap?.meta.dev
 
   const nav = (vertical: boolean) =>
     TABS.map((t) => {
@@ -92,9 +89,6 @@ export default function Panel({ stage, dev: devProp, title, onClose }: { stage: 
               <div className="text-[15px] font-semibold lg:text-base">{title}</div>
               {snap && <div className={`truncate text-[11px] ${muted}`}>{snap.card.name}{snap.user ? ` · ${snap.user.name || snap.user.username}` : ''}</div>}
             </div>
-            <button className={btnSoft} onClick={load} disabled={loading}>
-              {loading ? '读取中…' : '刷新'}
-            </button>
             <button onClick={onClose} aria-label="关闭" className="grid size-9 place-items-center rounded-full text-lg text-sp-muted hover:bg-sp-card hover:text-sp-text">
               ✕
             </button>
@@ -108,17 +102,9 @@ export default function Panel({ stage, dev: devProp, title, onClose }: { stage: 
           <nav className="hidden w-44 shrink-0 flex-col gap-0.5 overflow-y-auto border-r border-sp-line p-3 lg:flex">{nav(true)}</nav>
 
           <div className="min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain pr-[var(--safe-right,env(safe-area-inset-right))] pb-[var(--safe-bottom,env(safe-area-inset-bottom))] pl-[var(--safe-left,env(safe-area-inset-left))]">
-            {/* key＝快照：刷新后各页的本地状态（翻出来的旧历史、改了一半的存档）跟着重来 */}
-            <div key={snap ? `${snap.history[0]?.id}-${snap.history.at(-1)?.id}-${JSON.stringify(snap.save)}` : 'none'} className="space-y-3 p-4 lg:p-6">
-              {err ? (
-                <div className="space-y-3 py-6 text-center">
-                  <p className="text-sp-danger">{err}</p>
-                  <button className={btnSoft} onClick={load}>
-                    再试一次
-                  </button>
-                </div>
-              ) : !snap ? (
-                <Empty>读取中…</Empty>
+            <div className="space-y-3 p-4 lg:p-6">
+              {!snap ? (
+                <Empty>还没连上网站…</Empty>
               ) : tab === 'overview' ? (
                 <Overview stage={stage} snap={snap} dev={dev} />
               ) : tab === 'setup' ? (
@@ -126,9 +112,11 @@ export default function Panel({ stage, dev: devProp, title, onClose }: { stage: 
               ) : tab === 'history' ? (
                 <History stage={stage} snap={snap} dev={dev} />
               ) : tab === 'save' ? (
-                <Save stage={stage} snap={snap} onSaved={load} />
+                <Save stage={stage} snap={snap} />
               ) : tab === 'gallery' ? (
                 <Gallery stage={stage} />
+              ) : tab === 'guide' ? (
+                <Guide stage={stage} snap={snap} />
               ) : (
                 <Slots snap={snap} />
               )}

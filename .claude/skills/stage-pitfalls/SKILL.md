@@ -1,20 +1,18 @@
 ---
 name: stage-pitfalls
-description: 舞台开发踩过的坑（现象 → 原因 → 做法）：白屏、404、凭证泄漏、表情闪、结算崩、弹窗没反应、音乐不响、存档存不进、本地连不上、样式乱、动画卡。遇到怪问题、或交付前过一遍时用。
+description: 舞台开发踩过的坑（现象 → 原因 → 做法）：白屏、404、进不去、表情闪、结算崩、弹窗没反应、音乐不响、存档存不进、本地连不上、样式乱、动画卡。遇到怪问题、或交付前过一遍时用。
 ---
 
 # 踩过的坑
 
 每条都是真实出过的问题。遇到对应现象先看这里。
 
-## 上线 / 凭证 / 路径
+## 上线 / 本地开发 / 路径
 | 现象 | 原因 | 做法 |
 |---|---|---|
-| 打包出来的 js 里有自己的开发凭证 | Vite 打包会把 `.env` 写进代码 | 线上只用 `readLaunch()`；`vite.config.ts` 打包时清空 `VITE_STAGE_*`，别删那段 |
 | 上传后图片 / 图标全 404 | 写了 `/assets/x.webp` 绝对路径；舞台在 `{卡id}/{版本号}/` 下 | `public/` 的文件用 `` `${import.meta.env.BASE_URL}assets/x.webp` `` |
-| 线上加载页显示「进不去这一局 · 登录过期了，回到网站重新进入这张卡试试」 | 凭证过期（6 小时）；或直接打开了舞台地址没走平台；或 `#` 里的凭证在 `readLaunch()` 之前被别的代码清掉了 | 从网站进入卡、刷新；别在 `readLaunch()` 之前改 `location.hash` |
-| 本地加载页显示「进不去这一局 · token 无效或过期了」 | `.env` 没配凭证 / 凭证过期（开发凭证 7 天）/ 换了模型线路 | 网站上「开发」重新生成凭证贴进 `.env`，刷新 |
-| 本地加载页显示「网络开小差了」 | `.env` 的 `VITE_STAGE_API` 地址不对、或连不上 | 地址照网站「开发」弹窗里给的那行抄 |
+| 加载页显示「请在网站里打开」 | 舞台 3 秒没等到网站推来的快照：直接打开了 localhost 或舞台地址，没在网站里 | 线上：从网站进入这张卡；本地：在网站里打开（工具行「开发」→ 本地开发，填本机地址开启） |
+| 网站里开了本地开发，舞台一片空白 / 连不上 | `npm run dev` 没跑，或地址端口不对；Safari 拦了 https 页面里的 http://localhost | 先跑 `npm run dev`、核对端口；换 Chrome |
 
 ## 画面 / 数据
 | 现象 | 原因 | 做法 |
@@ -50,7 +48,7 @@ description: 舞台开发踩过的坑（现象 → 原因 → 做法）：白屏
 ## 样式 / 性能
 | 现象 | 原因 | 做法 |
 |---|---|---|
-| 手机顶栏被状态栏压住 | 没让位；或者没用 `StageBoot` 也没调 `watchViewport()`（线上 iframe 里 `env()` 恒为 0，要靠平台推的值） | 顶部元素加 `pt-safe`；不用 React 的舞台启动时调一次 `watchViewport()` |
+| 手机顶栏被状态栏压住 | 没让位；或者没用 `StageBoot` 也没自己调 `applySafeArea`（iframe 里 `env()` 恒为 0，要靠网站放进快照的 `safe_area`） | 顶部元素加 `pt-safe`；不用 React 的舞台订阅快照，`safe_area` 变了就 `applySafeArea(snap.safe_area)`（见 `docs/mobile.md`） |
 | 手机上元素互相叠在一起 | 固定高度 + `overflow-hidden` 硬挤 | 放不下就让内容区滚动；信息多的做成抽屉 / 单独页面 |
 | 手机掉帧 | `backdrop-filter: blur`、`filter`、动画里改 `width` / `top`、大层超纹理上限 | 见 `stage-performance` |
 | 按钮鼠标指针是箭头 | Tailwind v4 默认按钮 `cursor: default` | `src/styles/base.css` 已全局补上 |

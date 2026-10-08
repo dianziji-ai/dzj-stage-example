@@ -9,7 +9,7 @@ setupReactTests()
 
 describe('按区订阅：只有变了的区才重画', () => {
   it('AI 写正文时：订阅正文的组件跟着变，订阅表情的组件一次都不画', async () => {
-    const { session, sent, wrap } = withSession()
+    const { session, wrap, delta } = withSession()
     // 用 React 官方的 Profiler 数每块真正提交了几次渲染
     const renders = { face: 0, body: 0 }
     const count = (id: string) => () => void (renders[id as 'face' | 'body'] += 1)
@@ -35,15 +35,14 @@ describe('按区订阅：只有变了的区才重画', () => {
     expect(screen.getByTestId('face').textContent).toBe('normal')
 
     await act(() => session.send('你好'))
-    const h = sent[0].h
-    act(() => h.onDelta!('<face>\n表情: happy\n</face>\n<narrative>\n她', ''))
+    act(() => delta('<face>\n表情: happy\n</face>\n<narrative>\n她'))
     await frame()
     expect(screen.getByTestId('face').textContent).toBe('happy')
     const faceAfter = renders.face
     const bodyAfter = renders.body
 
     for (const t of ['她笑', '她笑了', '她笑了。']) {
-      act(() => h.onDelta!(`<face>\n表情: happy\n</face>\n<narrative>\n${t}`, ''))
+      act(() => delta(`<face>\n表情: happy\n</face>\n<narrative>\n${t}`))
       await frame()
     }
     expect(screen.getByTestId('body').textContent).toContain('她笑了。')
@@ -52,32 +51,32 @@ describe('按区订阅：只有变了的区才重画', () => {
   })
 
   it('表情写到一半（complete）：先保持上一次的，写完才换', async () => {
-    const { session, sent, wrap } = withSession()
+    const { session, wrap, delta } = withSession()
     function Face() {
       const z = useZone('face', { hold: true, complete: true })
       return <i data-testid="face">{z?.type === 'data' ? String((z.value as Record<string, unknown>)['表情']) : '-'}</i>
     }
     render(<Face />, { wrapper: wrap })
     await act(() => session.send('你好'))
-    act(() => sent[0].h.onDelta!('<face>\n表情: hap', ''))
+    act(() => delta('<face>\n表情: hap'))
     await frame()
     expect(screen.getByTestId('face').textContent).toBe('normal') // 半截不给，hold 上一次的
-    act(() => sent[0].h.onDelta!('<face>\n表情: happy\n</face>', ''))
+    act(() => delta('<face>\n表情: happy\n</face>'))
     await frame()
     expect(screen.getByTestId('face').textContent).toBe('happy')
   })
 
   it('正在写哪个区：跟着流变，写完回到 null', async () => {
-    const { session, sent, wrap } = withSession()
+    const { session, wrap, delta, done } = withSession()
     function Writing() {
       return <i data-testid="w">{useWritingZone() ?? 'none'}</i>
     }
     render(<Writing />, { wrapper: wrap })
     await act(() => session.send('你好'))
-    act(() => sent[0].h.onDelta!('<face>\n</face>\n<narrative>\n她', ''))
+    act(() => delta('<face>\n</face>\n<narrative>\n她'))
     await frame()
     expect(screen.getByTestId('w').textContent).toBe('narrative')
-    act(() => sent[0].h.onDone!('<narrative>\n好\n</narrative>'))
+    act(() => done('<narrative>\n好\n</narrative>'))
     expect(screen.getByTestId('w').textContent).toBe('none')
   })
 
@@ -112,7 +111,7 @@ describe('按区订阅：只有变了的区才重画', () => {
   })
 
   it('useZoneList：选项一条一条；还没写到＝同一个空数组', async () => {
-    const { session, sent, wrap } = withSession()
+    const { session, wrap, done } = withSession()
     const seen: string[][] = []
     function L() {
       const list = useZoneList('action')
@@ -124,7 +123,7 @@ describe('按区订阅：只有变了的区才重画', () => {
     expect(seen[0]).toEqual([])
     expect(seen[0]).toBe(seen[1])
     await act(() => session.send('你好'))
-    act(() => sent[0].h.onDone!('<narrative>\n好\n</narrative>\n<action>\n- 摸摸头\n- 去公园\n</action>'))
+    act(() => done('<narrative>\n好\n</narrative>\n<action>\n- 摸摸头\n- 去公园\n</action>'))
     expect(screen.getByTestId('l').textContent).toBe('摸摸头|去公园')
   })
 })

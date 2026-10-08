@@ -8,7 +8,7 @@ import { withSession, setupReactTests } from './helpers'
 setupReactTests()
 
 describe('StageToaster：SDK 的结果自动弹成提示', () => {
-  it('默认：读取 / 存档 / 图册 / 结算出错弹；发消息出错不弹（游戏自己讲）；面板改了存档弹「存档已更新」', async () => {
+  it('默认：读更早的 / 存档 / 图册 / 结算出错弹；发消息出错不弹（游戏自己讲）；面板改了存档弹「存档已更新」', async () => {
     const { emit, wrap } = withSession()
     render(<StageToaster />, { wrapper: wrap })
     act(() => emit({ type: 'error', op: 'save', error: new StageError('invalid', '存档不符合存档结构：hp') }))
@@ -24,7 +24,7 @@ describe('StageToaster：SDK 的结果自动弹成提示', () => {
   it('提示会自己消失；点了也能关', async () => {
     const { emit, wrap } = withSession()
     render(<StageToaster />, { wrapper: wrap })
-    act(() => emit({ type: 'error', op: 'load', error: new StageError('network', '网络连接失败') }))
+    act(() => emit({ type: 'error', op: 'older', error: new StageError('network', '网络连接失败') }))
     act(() => void vi.advanceTimersByTime(4100))
     expect(screen.queryByText('网络连接失败')).toBeNull()
     act(() => emit({ type: 'save', state: {}, source: 'panel' }))

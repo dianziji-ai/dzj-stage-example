@@ -4,11 +4,11 @@ import { StageError, type SaveSource, type StageClient, type StageEvent, type St
 
 /** 假的 stage：记下每次 save 的内容，手动决定什么时候回来 */
 function fakeStage() {
-  const calls: { body: unknown; keepalive?: boolean; source?: SaveSource; done: (ok: boolean) => void }[] = []
+  const calls: { body: unknown; source?: SaveSource; done: (ok: boolean) => void }[] = []
   const subs = new Set<(e: StageEvent) => void>()
   const stage = {
-    save: (body: unknown, opts?: { keepalive?: boolean; source?: SaveSource }) =>
-      new Promise((ok, fail) => calls.push({ body, keepalive: opts?.keepalive, source: opts?.source, done: (y) => (y ? ok({ ok: true, size: 1 }) : fail(new StageError('network', '断了'))) })),
+    save: (body: unknown, opts?: { source?: SaveSource }) =>
+      new Promise((ok, fail) => calls.push({ body, source: opts?.source, done: (y) => (y ? ok({ ok: true, size: 1 }) : fail(new StageError('network', '断了'))) })),
     on: (fn: (e: StageEvent) => void) => {
       subs.add(fn)
       return () => subs.delete(fn)
@@ -97,13 +97,13 @@ describe('createSaver', () => {
     s.dispose()
   })
 
-  it('页面切到后台：没发的立刻用 keepalive 发', () => {
+  it('页面切到后台：没发的立刻发', () => {
     const { stage, calls } = fakeStage()
     const s = createSaver(stage)
     s.save({ a: 1 })
     doc.visibilityState = 'hidden'
     doc.dispatchEvent(new Event('visibilitychange'))
-    expect(calls).toEqual([expect.objectContaining({ body: { a: 1 }, keepalive: true })])
+    expect(calls).toEqual([expect.objectContaining({ body: { a: 1 } })])
     s.dispose()
   })
 
@@ -152,14 +152,14 @@ describe('createSaver · 边角', () => {
     doc.visibilityState = 'visible'
   })
 
-  it('关页面（pagehide）：没发的立刻用 keepalive 发；没有没发的就不发', () => {
+  it('关页面（pagehide）：没发的立刻发；没有没发的就不发', () => {
     const { stage, calls } = fakeStage()
     const s = createSaver(stage)
     window.dispatchEvent(new Event('pagehide'))
     expect(calls).toHaveLength(0)
     s.save({ a: 1 })
     window.dispatchEvent(new Event('pagehide'))
-    expect(calls).toEqual([expect.objectContaining({ body: { a: 1 }, keepalive: true })])
+    expect(calls).toEqual([expect.objectContaining({ body: { a: 1 } })])
     s.dispose()
   })
 
@@ -180,18 +180,18 @@ describe('createSaver · 边角', () => {
     s.dispose()
   })
 
-  it('flush：有没发的立刻发（可带 keepalive）；路上有一个就等它回来再发最新的', async () => {
+  it('flush：有没发的立刻发；路上有一个就等它回来再发最新的', async () => {
     const { stage, calls } = fakeStage()
     const s = createSaver(stage)
     await s.flush()
     expect(calls).toHaveLength(0)
     s.save({ a: 1 }, { now: true })
     s.save({ a: 2 })
-    const done = s.flush({ keepalive: true })
+    const done = s.flush()
     expect(calls).toHaveLength(1)
     calls[0].done(true)
     await tick()
-    expect(calls[1]).toMatchObject({ body: { a: 2 }, keepalive: true })
+    expect(calls[1]).toMatchObject({ body: { a: 2 } })
     calls[1].done(true)
     await done
     expect(s.status.state).toBe('saved')
@@ -234,7 +234,7 @@ describe('createSaver · 关页面时路上有一个', () => {
     vi.unstubAllGlobals()
   })
 
-  it('等它回来接着发的最新那份也带 keepalive（不然页面一关就丢）', async () => {
+  it('等它回来接着发最新那份（不丢最后那几下）', async () => {
     const { stage, calls } = fakeStage()
     const s = createSaver(stage)
     s.save({ a: 1 }, { now: true })
@@ -242,11 +242,7 @@ describe('createSaver · 关页面时路上有一个', () => {
     window.dispatchEvent(new Event('pagehide'))
     calls[0].done(true)
     await tick()
-    expect(calls.map((c) => [c.body, c.keepalive])).toEqual([[{ a: 1 }, false], [{ a: 2 }, true]])
-    calls[1].done(true)
-    await tick()
-    s.save({ a: 3 }, { now: true })
-    expect(calls[2].keepalive).toBe(false) // 用过就清：之后的普通存档不带
+    expect(calls.map((c) => c.body)).toEqual([{ a: 1 }, { a: 2 }])
     s.dispose()
   })
 })

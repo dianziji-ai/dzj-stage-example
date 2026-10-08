@@ -1,5 +1,19 @@
 # 更新记录
 
+## 内测版 v0.2.0-beta — 2026-10-09
+
+★舞台和网站之间改成一座桥（postMessage）：**舞台不连后端、没有凭证、不调任何接口**。网站把这一局的快照推进来，舞台有事请网站去做；聊天、生成、扣费、换模型、MOD、记忆、回溯、重生、存档落库全是网站现成的那一套。在网站输入框发的话、在对话模式里回溯 / 编辑 / 删除、换了模型，舞台都立刻跟上。协议见 [docs/bridge.md](docs/bridge.md)。
+
+| 包 / 部分 | 版本 | 详细记录 |
+|---|---|---|
+| `@dianziji/stage` 舞台 SDK | 0.3.0 | [packages/stage/CHANGELOG.md](packages/stage/CHANGELOG.md) |
+| `@dianziji/stage-panel` 本局面板 | 0.2.0 | [packages/stage-panel/CHANGELOG.md](packages/stage-panel/CHANGELOG.md) |
+
+- **本地开发**：`npm run dev` → 网站上进入你的卡，工具行「开发」→ 填本机地址（如 `http://localhost:5173`），网站里的舞台就加载你本机的页面，热更新照常。没有凭证、没有 `.env`，直接打开 localhost 会提示去网站里打开。
+- **去掉的**：凭证（`readLaunch` / `.env` / 舞台地址 `#token=`）、舞台 HTTP 接口（`/api/v1/stage*`，平台已下线）、`npm run schema:push`（存档结构粘进网站编辑器「舞台 → ② 存档结构」）、`docs/api.md`（换成 [docs/bridge.md](docs/bridge.md)）。
+- **新增**：`stop()` 停止生成、`regenerate()` 重新生成、`subscribe()` 订阅快照；网站版本和舞台 SDK 版本对不上时直接说明是哪边太旧。
+- **已上传的旧版舞台**要用新 SDK 重新 `npm run pack` 上传，旧包连不上新网站。
+
 ## 内测版 v0.1.0-beta — 2026-10-07
 
 电子姬「舞台引擎」开启内测。舞台＝一张卡的画面：AI 照常按卡的提示词和分区写剧情，舞台把分区渲染成画面，聊天、存档、计费都走电子姬平台。本仓库是官方例子 + 舞台 SDK。

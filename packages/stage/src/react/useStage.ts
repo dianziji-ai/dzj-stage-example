@@ -5,7 +5,7 @@ import { SessionCtx } from './context'
 
 /** useStage() 拿到的东西：这一局的状态 + 能做的事 */
 export type StageApi<S> = SessionState<S> &
-  Pick<Session<S>, 'send' | 'retry' | 'dismissError' | 'loadOlder' | 'viewTurn' | 'prevTurn' | 'nextTurn' | 'setSave' | 'saveNow' | 'readZones' | 'stage' | 'saver'>
+  Pick<Session<S>, 'send' | 'stop' | 'regenerate' | 'retry' | 'dismissError' | 'loadOlder' | 'viewTurn' | 'prevTurn' | 'nextTurn' | 'setSave' | 'saveNow' | 'readZones' | 'stage' | 'saver'>
 
 /** 拿 StageBoot 建好的会话本体（一般用 useStage；要在 React 外面调方法时才用它） */
 export function useSession<S = StageSave>(): Session<S> {
@@ -15,7 +15,7 @@ export function useSession<S = StageSave>(): Session<S> {
 }
 
 /** useStageActions() 拿到的：只有方法（引用永远不变，用它的组件不会因为状态变化重渲染） */
-export type StageActions<S> = Pick<Session<S>, 'send' | 'retry' | 'dismissError' | 'loadOlder' | 'viewTurn' | 'prevTurn' | 'nextTurn' | 'setSave' | 'saveNow' | 'readZones' | 'stage' | 'saver'>
+export type StageActions<S> = Pick<Session<S>, 'send' | 'stop' | 'regenerate' | 'retry' | 'dismissError' | 'loadOlder' | 'viewTurn' | 'prevTurn' | 'nextTurn' | 'setSave' | 'saveNow' | 'readZones' | 'stage' | 'saver'>
 
 /**
  * 舞台的状态。两种用法：
@@ -45,5 +45,5 @@ function identity<S>(st: SessionState<S>): SessionState<S> {
 /** 只要方法（send / setSave / retry…）：引用不变，用它的组件不会因为状态变化重渲染 */
 export function useStageActions<S = StageSave>(): StageActions<S> {
   const s = useSession<S>()
-  return useMemo(() => ({ send: s.send, retry: s.retry, dismissError: s.dismissError, loadOlder: s.loadOlder, viewTurn: s.viewTurn, prevTurn: s.prevTurn, nextTurn: s.nextTurn, setSave: s.setSave, saveNow: s.saveNow, readZones: s.readZones, stage: s.stage, saver: s.saver }), [s])
+  return useMemo(() => ({ send: s.send, stop: s.stop, regenerate: s.regenerate, retry: s.retry, dismissError: s.dismissError, loadOlder: s.loadOlder, viewTurn: s.viewTurn, prevTurn: s.prevTurn, nextTurn: s.nextTurn, setSave: s.setSave, saveNow: s.saveNow, readZones: s.readZones, stage: s.stage, saver: s.saver }), [s])
 }

@@ -1,7 +1,7 @@
 /**
  * @dianziji/stage —— 舞台 SDK。分三层，上层只依赖下层：
  *
- *   @dianziji/stage/client   客户端：createStage（读这一局 / 发一句话收流 / 存档 / 图册），零依赖
+ *   @dianziji/stage/client   客户端：createStage（和外层网站之间的桥：快照、发一句话、存档、图册、打开网站工具），零依赖
  *   @dianziji/stage          会话引擎：createSession（乐观发送、重试、分区跟踪）、存档器、分区解析、markdown
  *   @dianziji/stage/react    React 外壳：StageBoot、useStage、useZone、提示与存档指示
  *
@@ -15,4 +15,4 @@ export { readZones, zoneData, zoneList, zoneNum, zoneText, type StageZone, type 
 export { imageRefs, imageUrl, resolveImages, stripImages } from './session/images'
 export { pickZone, turnProgress, writingZone, type TurnProgress, type ZoneOptions } from './session/zonetrack'
 export { hideOpenMarks, renderMarkdown } from './view/markdown'
-export { watchViewport } from './view/viewport'
+export { applySafeArea } from './view/viewport'
