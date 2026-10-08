@@ -8,7 +8,7 @@ import type { StageErrorCode, StageGallery, StageSave, StageSnapshot } from './t
 
 declare const __SDK_VERSION__: string | undefined
 /** 握手时报给网站的 SDK 版本（排查用） */
-const SDK_VERSION = typeof __SDK_VERSION__ === 'string' ? __SDK_VERSION__ : '0.3.0'
+const SDK_VERSION = typeof __SDK_VERSION__ === 'string' ? __SDK_VERSION__ : '0.3.1'
 
 /** 等网站的第一份快照最多等多久：超时＝不在网站里打开（比如直接打开了 localhost） */
 const READY_MS = 3000

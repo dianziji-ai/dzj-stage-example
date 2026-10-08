@@ -78,6 +78,23 @@ const p     = useTurnProgress()                                     // { zone, l
 | `<TurnProgress />` | 「● 正在写 · 表情」+ 进度条；`labels={{ thought: '偷偷想心事中' }}` 换说法 |
 | `<Splash />` | 启动加载页（StageBoot 自己用；想单独用也行） |
 
+## 换图不闪：`<CrossfadeImage>`
+
+立绘、背景这类会换的图都用它，别直接换 `<img src>`（新图没下完就上屏＝闪一下、半张图；透明底的立绘叠着淡入＝重影）。
+
+```tsx
+// 背景：新图盖在旧图上淡入（不透明的图用 over，过程中画面不变暗）
+<CrossfadeImage src={bgUrl} mode="over" duration={450} className="absolute inset-0" imgClassName="size-full object-cover" />
+// 立绘：交叉淡化（新图淡入、旧图同时淡出，透明底不重影）
+<CrossfadeImage src={spriteUrl} className="h-full" imgClassName="h-full w-auto max-w-none object-contain object-bottom" />
+```
+
+- 新图**下载 + 解码完**才上屏，没好之前一直显示原来那张；第一张也是解码完才淡入。
+- 连着换好几次：只显示最后要的那张。加载失败：保留原来那张，调 `onError(src)`。
+- `className` / `style` 给外层（定位、尺寸），`imgClassName` 给每张图（照写一张普通 `<img>` 那样）；所有图叠在外层同一个网格格子里。
+- `mode`：`cross`（默认，立绘）/ `over`（背景）；`duration` 毫秒，默认 300；系统开了「减少动态效果」直接换。只动 `opacity`，淡完旧图撤掉。
+- 想换得更快：空闲时先把下一批图下载好（例子里 `Scene.tsx` 先拉 8 张表情），换的时候就不用等。
+
 ## 上一轮 / 下一轮：`useTurnCursor`
 
 回看之前 AI 写的每一轮。回看时 `useZone` / `useZoneText` / `useZoneData` / `useZoneList` 拿到的都是**那一轮**的分区：场景、立绘、正文、心声、状态区……全部自动倒回，组件一行不用改。

@@ -33,7 +33,7 @@ const LOGO = '/brand/logo.webp'                             // ✗ 上传后在 
 ## 加载
 - 首屏要用的图（第一张背景、立绘）交给 `StageBoot` 的 `preload`：解码完才进游戏，第一帧不闪。只放首屏的，别把全部素材都塞进去。
 - 其余的图：`loading="lazy" decoding="async"`；切换场景前可以用 `preloadImages([...])` 预先解码下一张。
-- 图片加载完再淡入，别让玩家看见一半。
+- 会换的图（立绘、背景、CG）一律用 SDK 的 `<CrossfadeImage>`（见 `docs/sdk-react.md`）：解码完才上屏、交叉淡化，不闪不重影。别自己换 `<img src>`。
 
 ## 字体
 - 默认用系统字体栈（`src/styles/theme.css` 的 `--font-sans`）。

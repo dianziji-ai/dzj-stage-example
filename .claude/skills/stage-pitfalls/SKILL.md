@@ -19,6 +19,7 @@ description: 舞台开发踩过的坑（现象 → 原因 → 做法）：白屏
 |---|---|---|
 | 选项按钮永远不出来，也不报错 | 卡里选项区的 id 不叫 `action`（SDK 只认这个 id 是选项区） | 网站编辑器「分区」页把选项区的 id 改成 `action` |
 | AI 写字时表情、场景闪一下半截值或消失 | 订阅时没加选项 | 表情 / 场景 / 状态类的区：`useZoneData(id, { hold: true, complete: true })` |
+| 换立绘 / 背景时闪一下、半张图，或淡入时看得见旧立绘（重影） | 直接换 `<img src>`：新图没解码完就上屏；透明底的图叠着淡入 | 用 SDK 的 `<CrossfadeImage>`：立绘默认交叉淡化，背景 `mode="over"` |
 | AI 写字时整个页面都卡 | 在顶层 `useStage()` 拿全部往下传，每个字整棵树重画 | 按分区订阅；顶栏用选择器 + `shallowEqual`；只要方法用 `useStageActions()` |
 | 结算偶尔报错、状态没算上 | 直接读 `zones.xxx.value.yyy`，AI 那一轮没写 | `zoneNum` / `zoneText` / `zoneList` / `zoneData` 安全取值 |
 | 存档存不进（`invalid`） | 值超出存档结构的范围 / 类型不对 / 卡没定义存档结构 | 结算时 `clamp`；对照网站上的存档结构；`message` 里写了哪个字段不对 |

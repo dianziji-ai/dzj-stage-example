@@ -6,12 +6,12 @@
 
 | 包 / 部分 | 版本 | 详细记录 |
 |---|---|---|
-| `@dianziji/stage` 舞台 SDK | 0.3.0 | [packages/stage/CHANGELOG.md](packages/stage/CHANGELOG.md) |
+| `@dianziji/stage` 舞台 SDK | 0.3.1 | [packages/stage/CHANGELOG.md](packages/stage/CHANGELOG.md) |
 | `@dianziji/stage-panel` 本局面板 | 0.2.0 | [packages/stage-panel/CHANGELOG.md](packages/stage-panel/CHANGELOG.md) |
 
 - **本地开发**：`npm run dev` → 网站上进入你的卡，工具行「开发」→ 填本机地址（如 `http://localhost:5173`），网站里的舞台就加载你本机的页面，热更新照常。没有凭证、没有 `.env`，直接打开 localhost 会提示去网站里打开。
 - **去掉的**：凭证（`readLaunch` / `.env` / 舞台地址 `#token=`）、舞台 HTTP 接口（`/api/v1/stage*`，平台已下线）、`npm run schema:push`（存档结构粘进网站编辑器「舞台 → ② 存档结构」）、`docs/api.md`（换成 [docs/bridge.md](docs/bridge.md)）。
-- **新增**：`stop()` 停止生成、`regenerate()` 重新生成、`subscribe()` 订阅快照；网站版本和舞台 SDK 版本对不上时直接说明是哪边太旧。
+- **新增**：`stop()` 停止生成、`regenerate()` 重新生成、`subscribe()` 订阅快照；网站版本和舞台 SDK 版本对不上时直接说明是哪边太旧；`<CrossfadeImage>` 换立绘 / 背景不闪、交叉淡化。
 - **已上传的旧版舞台**要用新 SDK 重新 `npm run pack` 上传，旧包连不上新网站。
 
 ## 内测版 v0.1.0-beta — 2026-10-07
