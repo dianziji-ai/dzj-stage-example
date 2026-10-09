@@ -15,7 +15,7 @@ export default function InputSheet({ value, onChange, onSend, onClose, disabled 
 }) {
   const canSend = !!value.trim() && !disabled
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-bg pt-safe px-safe lg:hidden">
+    <div data-no-advance className="fixed inset-0 z-50 flex flex-col bg-bg pt-safe px-safe lg:hidden">
       <div className="relative flex h-14 shrink-0 items-center justify-between px-4">
         <button onClick={onClose} className="py-2 text-muted">
           取消

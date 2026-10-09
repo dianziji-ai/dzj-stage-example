@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import { bgm } from './audio/bgm'
 import { PLACE_SONG } from './audio/songs'
 import { useBgm, useBgmPrefs } from './audio/useBgm'
@@ -17,6 +17,7 @@ import TabBar, { type Tab } from './game/TabBar'
 import TipHost from './game/Tip'
 import GameMenu from './game/GameMenu'
 import { showTip } from './game/tipStore'
+import { usePlayGestures } from './game/gestures'
 import { useGame, usePack, useThought } from './game/useGame'
 import { useOnline } from './game/useOnline'
 import { stage } from './stage'
@@ -147,10 +148,16 @@ export default function App() {
     void g.send(travelLine(id))
   }
 
+  // 鼠标手势：右键藏起全部界面（只看背景和立绘）/ 再右键回来；左键点空白处翻下一句（对话框把它的「下一句」交上来）
+  const advance = useRef<() => void>(() => {})
+  const gestures = usePlayGestures({ enabled: page === 'play' && !menu && view === null && egg === null, advance: () => advance.current() })
+
   return (
-    <div className="fixed inset-0 overflow-hidden bg-black text-white select-none">
+    <div className="fixed inset-0 overflow-hidden bg-black text-white select-none" onClick={gestures.onClick} onContextMenu={gestures.onContextMenu}>
       <div className={page === 'play' ? 'contents' : 'hidden'}>
         <Scene bg={bg} sprite={sprite} preload={sprites} talking={g.busy} />
+        {/* 背景立绘以外的界面都在这一层：右键藏起来时整层淡出、不接点击 */}
+        <div className={`absolute inset-0 transition-opacity duration-300 ${gestures.bare ? 'pointer-events-none opacity-0' : ''}`}>
         {/* 心声：她没说出口的那句，写完才浮出来 */}
         {atEnd && <ThoughtBubble />}
         <Hud user={hudUser} place={g.location} call={g.player.call} time={g.time} love={g.status.好感} loveTick={g.loveTick} mood={g.status.心情} day={g.status.天数} coins={g.save.claw.coins} onStatus={showStatus} actions={actions} onMore={openMenu} musicOn={music.on} onMusic={toggleMusic} />
@@ -173,7 +180,8 @@ export default function App() {
             </span>
           </div>
         </div>
-        <Dialogue me={g.player.name} call={g.player.call} busy={g.busy} error={g.error} topupUrl={stage.siteUrl('/recharge')} onSend={g.send} onDismissError={g.dismissError} onFocus={setLook} onEnd={setAtEnd} active={page === 'play'} />
+        <Dialogue me={g.player.name} call={g.player.call} busy={g.busy} error={g.error} topupUrl={stage.siteUrl('/recharge')} onSend={g.send} onDismissError={g.dismissError} onFocus={setLook} onEnd={setAtEnd} active={page === 'play' && !gestures.bare} advanceRef={advance} />
+        </div>
       </div>
 
       {page === 'claw' && <ClawGame claw={g.save.claw} busy={g.busy} call={g.player.call} onUpdate={g.updateClaw} onGift={giftPlush} onLeave={leaveClaw} />}

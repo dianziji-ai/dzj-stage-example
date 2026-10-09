@@ -21,7 +21,7 @@ export default function TipHost() {
 
   if (!tip) return null
   return (
-    <div className="fixed inset-0 z-[80] grid place-items-center px-6" role="alertdialog" aria-modal="true" aria-label={tip.title}>
+    <div className="fixed inset-0 z-[80] grid place-items-center px-6" role="alertdialog" aria-modal="true" aria-label={tip.title} data-no-advance>
       <button aria-label="关闭" tabIndex={-1} onClick={hideTip} className="absolute inset-0 animate-fade-in cursor-default bg-black/40" />
       {/* key＝标题：新提示顶掉旧的时重播进场动画 */}
       <div
