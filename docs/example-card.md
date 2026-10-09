@@ -104,6 +104,16 @@ AI 看不到存档。每句话发出去之前，用 `withState(话, stateForAi(�
 
 地图页（`MapPage`）是另一个入口：点地点直接替玩家说「（和电子姬一起去 X）」。
 
+## 6. 快捷指令（`src/game/ShortcutTray.tsx`）
+
+快捷指令**不写在舞台里**，配在卡上（网站编辑器「快捷指令」）。舞台用 `useShortcuts()` 从快照的 `shortcuts` 读，对话模式用的也是同一份，作者改一处两边都变。
+
+- 卡上一条都没配：⚡ 按钮不出现。
+- 每条有个 `mode`：`fill`（缺省）填进输入框等玩家改完再发，手机上顺手打开全屏输入；`send` 点了直接发。
+- 例子卡配了 8 条：前 7 条是 `fill`（打游戏、去各个地点、跳时间），最后一条「摸摸头」是 `send`，芯片上标「直发」。
+
+同理，背景音乐（`snap.bgm`）、角色包（`snap.characters`）、封面和背景图（`snap.card`）也一律从快照读，见 [bridge.md](bridge.md#卡上有的一律从快照读)。
+
 ## 存档结构
 
 仓库里的 `src/game/state.schema.json` 就是这张卡的存档结构（字段：`location` 地点、`unlockedCg` 已解锁的回忆、`day` 天数、`love` 好感、`mood` 心情、`claw` 抓娃娃）。把它整份粘进你的卡：编辑器「舞台 → ② 存档结构」保存。`logic.test.ts` 里有一条测试保证它和代码里的 `DEFAULT_SAVE` 对得上。

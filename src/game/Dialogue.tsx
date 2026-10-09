@@ -9,7 +9,8 @@ import Choices from './Choices'
 import { CHAR_NAME, LOGO_URL, type ExprId } from './content'
 import ErrorNotice, { type NoticeError } from './ErrorNotice'
 import ReviewBar from './ReviewBar'
-import { useBeats, useChoices } from './useGame'
+import ShortcutTray from './ShortcutTray'
+import { useBeats, useChoices, useShortcuts } from './useGame'
 import { usePref } from './usePref'
 import d from './Dialogue.module.css'
 
@@ -20,6 +21,7 @@ import d from './Dialogue.module.css'
  *  · 新一轮从第一句开始；生成中边写边读，读到最新那句它会继续长。
  *  · 手机：底下不常驻输入栏，标题栏右边一颗气泡点开全屏输入（InputSheet）；她在写时底下浮一条细进度。
  *    电脑：底下一行输入框。
+ *  · ⚡ 快捷指令：卡上配了才出（ShortcutTray）；填进输入框或直接发，看作者设的 mode。
  *  · 可以整个隐藏（只留左下角小胶囊，看立绘和场景），记在本机；新一轮开始时自动恢复。
  * ★性能：对话框自己按区订阅旁白 / 对话 / 选项（useBeats / useChoices），AI 写字时只有它重画，App 不动。
  */
@@ -42,6 +44,8 @@ export default function Dialogue({ me, call, busy, error, topupUrl, onSend, onDi
   const cursor = useTurnCursor()
   const [text, setText] = useState('')
   const [sheet, setSheet] = useState(false)
+  const shortcuts = useShortcuts()
+  const [tray, setTray] = useState(false)
   const [mode, setMode] = usePref('gal-dialog', 'shown', ['shown', 'hidden'] as const)
 
   // 新一轮开始那一下：隐藏着就恢复（别错过她说话）
@@ -120,6 +124,17 @@ export default function Dialogue({ me, call, busy, error, topupUrl, onSend, onDi
             <button onClick={() => setMode('hidden')} aria-label="隐藏对话框" title="隐藏对话框" className="grid size-8 place-items-center rounded-full text-white/55 transition-colors hover:text-white">
               <Icon name="hide" className="size-4" />
             </button>
+            {shortcuts.length > 0 && (
+              <button
+                onClick={() => setTray(true)}
+                disabled={busy || cursor.viewing}
+                aria-label="快捷指令"
+                title="快捷指令"
+                className={`${d.plate} ml-0.5 grid size-8 place-items-center rounded-full text-white transition-transform active:scale-90 disabled:opacity-40 lg:hidden`}
+              >
+                <Icon name="bolt" className="size-4" />
+              </button>
+            )}
             <button
               onClick={() => setSheet(true)}
               disabled={busy || cursor.viewing}
@@ -188,6 +203,17 @@ export default function Dialogue({ me, call, busy, error, topupUrl, onSend, onDi
               <WritingBar />
             ) : (
               <div className="flex items-center gap-2">
+                {shortcuts.length > 0 && (
+                  <button
+                    onClick={() => setTray(true)}
+                    disabled={cursor.viewing}
+                    aria-label="快捷指令"
+                    title="快捷指令"
+                    className="grid size-10 shrink-0 place-items-center rounded-full border border-white/15 bg-white/[0.07] text-white transition-colors hover:border-white/40 disabled:opacity-40"
+                  >
+                    <Icon name="bolt" className="size-4" />
+                  </button>
+                )}
                 <input
                   value={text}
                   onChange={(e) => setText(e.target.value)}
@@ -204,6 +230,18 @@ export default function Dialogue({ me, call, busy, error, topupUrl, onSend, onDi
         </div>
       </div>
 
+      {tray && (
+        <ShortcutTray
+          items={shortcuts}
+          onClose={() => setTray(false)}
+          onPick={(s) => {
+            setTray(false)
+            if (s.mode === 'send') return void say(s.command)
+            setText(s.command)
+            if (window.matchMedia('(max-width: 1023px)').matches) setSheet(true) // 手机没有常驻输入栏：填好直接打开全屏输入
+          }}
+        />
+      )}
       {sheet && <InputSheet value={text} onChange={setText} onSend={() => void say(text)} onClose={() => setSheet(false)} disabled={busy} />}
     </div>
   )

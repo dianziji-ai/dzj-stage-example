@@ -7,6 +7,7 @@
 | `@dianziji/stage` 舞台 SDK | 0.3.3（详见 [packages/stage/CHANGELOG.md](packages/stage/CHANGELOG.md)） |
 
 - ★**卡上有的一律从快照读**：快照新增 `shortcuts` 快捷指令、`bgm` 背景音乐、`characters` 角色包，`card` 多了封面 / 背景 / 菜单背景。作者在编辑器改一处，对话模式和舞台都跟着变。用法见 [docs/bridge.md](docs/bridge.md#卡上有的一律从快照读)；给 AI 的规则写进了 AGENTS.md 和 skills（stage-game-logic、stage-assets）。
+- 官方例子接上快捷指令：卡上配了 8 条，舞台 ⚡ 按钮从快照读（`useShortcuts` + `ShortcutTray`），手册见 [docs/example-card.md](docs/example-card.md) 第 6 节。
 - 0.3.2 修了 `<CrossfadeImage>` 立绘被原图尺寸撑大（只剩一个大头）。
 
 ## 内测版 v0.3.0-beta — 2026-10-09

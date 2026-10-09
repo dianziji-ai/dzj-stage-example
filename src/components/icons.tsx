@@ -11,6 +11,7 @@ const PATHS = {
   ),
   log: <path d="M5 6h14M5 12h14M5 18h9" />,
   info: <path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 11v5M12 8h.01" />,
+  bolt: <path d="M13 3 5 14h6l-1 7 8-11h-6l1-7z" />,
   menu: <path d="M4 7h16M4 12h16M4 17h16" />,
   up: <path d="m6 15 6-6 6 6" />,
   back: <path d="m15 5-7 7 7 7" />,

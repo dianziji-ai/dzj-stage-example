@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from 'react'
-import { imageUrl, stripImages, withState, type SessionState } from '@dianziji/stage'
+import { imageUrl, stripImages, withState, type SessionState, type StageShortcut } from '@dianziji/stage'
 import { shallowEqual, useStage, useStageActions, useZone, useZoneData, useZoneList, useZoneText } from '@dianziji/stage/react'
 import { parseBeats, thoughtsOf } from './beats'
 import { OPENING_FILM } from './content'
@@ -103,3 +103,9 @@ export function useThought(): string {
 
 const NONE: string[] = []
 const NO_CG: number[] = []
+
+const NO_SHORTCUTS: StageShortcut[] = []
+/** 卡上的快捷指令（编辑器「快捷指令」，快照 shortcuts）。★卡上有的从快照读，舞台里不写一份；没配＝[] */
+export function useShortcuts(): StageShortcut[] {
+  return useStage((st) => st.snap?.shortcuts ?? NO_SHORTCUTS)
+}
