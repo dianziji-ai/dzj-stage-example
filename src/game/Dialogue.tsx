@@ -18,7 +18,7 @@ import d from './Dialogue.module.css'
 /**
  * 底部对话区（galgame 式）：一轮拆成一句一句播——旁白 → 你说的 → 她说的（每句自带表情）。
  *  · 点正文 / 「▶」看下一句；「◀ ▶」翻句、「‹ ›」翻轮（回看上一轮，SDK 的 useTurnCursor）。
- *  · 每换一句，把她这句的样子交给 App（onFocus，只在变了的时候交）：立绘一句一换。
+ *  · 每换一句，把她这句的样子交给 App（onFocus，只在变了的时候交）：立绘一句一换。读到最后一句告诉 App（onEnd）：心声这时才冒。
  *  · 新一轮从第一句开始；生成中边写边读，读到最新那句它会继续长。
  *  · 手机：底下不常驻输入栏，标题栏右边一颗气泡点开全屏输入（InputSheet）；她在写时底下浮一条细进度。
  *    电脑：底下一行输入框。
@@ -26,7 +26,7 @@ import d from './Dialogue.module.css'
  *  · 可以整个隐藏（只留左下角小胶囊，看立绘和场景），记在本机；新一轮开始时自动恢复。
  * ★性能：对话框自己按区订阅旁白 / 对话 / 选项（useBeats / useChoices），AI 写字时只有它重画，App 不动。
  */
-export default function Dialogue({ me, call, busy, error, topupUrl, onSend, onDismissError, onFocus }: {
+export default function Dialogue({ me, call, busy, error, topupUrl, onSend, onDismissError, onFocus, onEnd }: {
   /** 玩家名字（名牌上写；没填写「你」） */
   me: string
   /** 她对你的称呼（换场选项里「主人的房间」用） */
@@ -39,6 +39,8 @@ export default function Dialogue({ me, call, busy, error, topupUrl, onSend, onDi
   onDismissError: () => void
   /** 这一句她是什么样子（App 拿去配图库挑立绘） */
   onFocus: (look: Look) => void
+  /** 读没读到最后一句（写完了、选项出来了）：心声这时才冒，当这一轮的收尾 */
+  onEnd: (end: boolean) => void
 }) {
   const beats = useBeats()
   const choices = useChoices()
@@ -74,6 +76,8 @@ export default function Dialogue({ me, call, busy, error, topupUrl, onSend, onDi
   const [look, setLook] = useState<Look>(found)
   if (!sameLook(found, look)) setLook(found)
   useEffect(() => onFocus(look), [look, onFocus])
+  const atEnd = !busy && beats.length > 0 && idx === last
+  useEffect(() => onEnd(atEnd), [atEnd, onEnd])
 
   // 名牌和颜色：她＝按这句的表情；你＝雾蓝；屏幕消息＝金；旁白没有名牌
   const tone = beat?.kind === 'her' ? toneOf(beat.look.expr) : beat?.kind === 'you' ? 'you' : beat?.kind === 'note' ? 'note' : undefined

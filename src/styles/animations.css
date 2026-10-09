@@ -56,10 +56,31 @@
       transform: translateY(100%);
     }
   }
-  /* 心声气泡浮出来：从下面一点、小一点冒上来 */
+  /*
+   * 一轮的收尾（读到最后一句）：心声先从她头边浮起（带一点回弹），浮好后轻轻漂；行动选项紧跟着从下往上滑进来、一条错开一点。
+   * 节奏：气泡 0.12s 起、选项 0.3s 起（+80ms × 第几条），两样是一起「到」的，不是先后蹦出来。
+   */
+  --animate-thought-in: thought-in 0.6s cubic-bezier(0.2, 1.15, 0.35, 1) 0.12s both;
+  --animate-drift: drift 5s ease-in-out 0.8s infinite;
+  --animate-rise-in: rise-in 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both;
   @keyframes thought-in {
     from {
-      transform: translateY(10px) scale(0.9);
+      transform: translateY(14px) scale(0.85);
+      opacity: 0;
+    }
+  }
+  @keyframes drift {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-4px);
+    }
+  }
+  @keyframes rise-in {
+    from {
+      transform: translateY(12px) scale(0.98);
       opacity: 0;
     }
   }

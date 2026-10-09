@@ -56,7 +56,7 @@ describe('正在写哪个区（SDK 的 writingZone + 这张卡的分区顺序）
   const ids = fx.slots.map((sl: { zone: string }) => sl.zone)
   it('旁白写完、下一个就是对话（输入栏里的「正在写 · 对话」靠它）', () => {
     expect(writingZone('<narrative>旁白</narrative>\n', ids)).toBe('talk')
-    expect(writingZone('<talk>\n- 谁: 电子姬\n</talk>', ids)).toBe('thought') // 对话后面是心声区
+    expect(writingZone('<talk>\n- 谁: 电子姬\n</talk>', ids)).toBe('status')
   })
 })
 

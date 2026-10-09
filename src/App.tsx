@@ -47,6 +47,7 @@ export default function App() {
   const g = useGame()
   const thought = useThought() // 状态说明里显示（一轮才变一次）
   const [look, setLook] = useState<Look>(NO_LOOK) // 对话框正在播的那一句她的样子
+  const [atEnd, setAtEnd] = useState(false) // 读到这一轮最后一句了（选项出来）：心声这时才冒
   const pack = usePack()
   // 立绘：样子 / 穿着变了才重挑；挑不出（谁都对不上）就留着上一张。上一张也交进去：没写穿着时留在同一套
   const want = `${look.expr}|${look.act}|${look.seed}|${g.wear}`
@@ -149,7 +150,7 @@ export default function App() {
       <div className={page === 'play' ? 'contents' : 'hidden'}>
         <Scene bg={bg} sprite={sprite} preload={sprites} talking={g.busy} />
         {/* 心声：她没说出口的那句，写完才浮出来 */}
-        <ThoughtBubble />
+        {atEnd && <ThoughtBubble />}
         <Hud user={hudUser} place={g.location} call={g.player.call} time={g.time} love={g.status.好感} loveTick={g.loveTick} mood={g.status.心情} day={g.status.天数} coins={g.save.claw.coins} onStatus={showStatus} actions={actions} onMore={openMenu} musicOn={music.on} onMusic={toggleMusic} />
         {/* 手机：右侧细竖栏（顶栏下面 10px）——抓娃娃小圆钮 + 存档时才冒的小图标；立绘在中间，右边本来就空 */}
         <div className="pointer-events-none absolute inset-x-0 top-[calc(var(--safe-top)+60px)] z-20 px-safe lg:hidden">
@@ -170,7 +171,7 @@ export default function App() {
             </span>
           </div>
         </div>
-        <Dialogue me={g.player.name} call={g.player.call} busy={g.busy} error={g.error} topupUrl={stage.siteUrl('/recharge')} onSend={g.send} onDismissError={g.dismissError} onFocus={setLook} />
+        <Dialogue me={g.player.name} call={g.player.call} busy={g.busy} error={g.error} topupUrl={stage.siteUrl('/recharge')} onSend={g.send} onDismissError={g.dismissError} onFocus={setLook} onEnd={setAtEnd} />
       </div>
 
       {page === 'claw' && <ClawGame claw={g.save.claw} busy={g.busy} call={g.player.call} onUpdate={g.updateClaw} onGift={giftPlush} onLeave={leaveClaw} />}

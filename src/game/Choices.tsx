@@ -27,15 +27,15 @@ export default function Choices({ choices, call, busy, onPick }: {
           key={i}
           onClick={() => onPick(c)}
           disabled={busy}
-          style={{ animationDelay: `${i * 70}ms` }}
-          className="group relative flex w-full animate-fade-in items-center gap-3 overflow-hidden rounded-2xl border border-white/15 bg-[linear-gradient(90deg,rgb(40_18_60/0.88),rgb(40_18_60/0.62))] py-2.5 pr-4 pl-4 text-left text-[14px] leading-snug text-white shadow-[0_8px_24px_rgb(0_0_0/0.35)] transition-[border-color,transform] active:scale-[0.99] enabled:hover:border-[#ffd23f]/70 disabled:opacity-45 lg:text-[15px]"
+          style={{ animationDelay: `${300 + i * 80}ms` }}
+          className="group relative flex w-full animate-rise-in items-center gap-3 overflow-hidden rounded-2xl border border-white/15 bg-[linear-gradient(90deg,rgb(40_18_60/0.88),rgb(40_18_60/0.62))] py-2.5 pr-4 pl-4 text-left text-[14px] leading-snug text-white shadow-[0_8px_24px_rgb(0_0_0/0.35)] transition-[border-color,transform] active:scale-[0.99] enabled:hover:border-[#ffd23f]/70 disabled:opacity-45 lg:text-[15px]"
         >
           <span className="pointer-events-none absolute inset-y-2 left-0 w-[3px] rounded-full bg-gradient-to-b from-[#ff5fa2] to-[#ffd23f]" />
           <span className="min-w-0 flex-1 [text-shadow:0_1px_2px_rgb(0_0_0/0.5)]">{c}</span>
           <span className="shrink-0 text-xs text-white/35 transition-transform group-enabled:group-hover:translate-x-0.5 group-enabled:group-hover:text-[#ffd23f]">›</span>
         </button>
       ))}
-      {travel && <TravelChoice travel={travel} call={call} disabled={busy} delay={normal.length * 70} onPick={() => onPick(travel.text)} />}
+      {travel && <TravelChoice travel={travel} call={call} disabled={busy} delay={300 + normal.length * 80} onPick={() => onPick(travel.text)} />}
     </div>
   )
 }
@@ -48,7 +48,7 @@ function TravelChoice({ travel, call, disabled, delay, onPick }: { travel: Trave
       onClick={onPick}
       disabled={disabled}
       style={{ animationDelay: `${delay}ms` }}
-      className="group relative flex w-full animate-fade-in items-stretch gap-3 overflow-hidden rounded-2xl border border-[#ffd23f]/45 bg-[linear-gradient(90deg,rgb(40_18_60/0.92),rgb(40_18_60/0.66))] p-1.5 pr-4 text-left shadow-[0_8px_24px_rgb(0_0_0/0.35)] transition-[border-color,transform] active:scale-[0.99] enabled:hover:border-[#ffd23f] disabled:opacity-45"
+      className="group relative flex w-full animate-rise-in items-stretch gap-3 overflow-hidden rounded-2xl border border-[#ffd23f]/45 bg-[linear-gradient(90deg,rgb(40_18_60/0.92),rgb(40_18_60/0.66))] p-1.5 pr-4 text-left shadow-[0_8px_24px_rgb(0_0_0/0.35)] transition-[border-color,transform] active:scale-[0.99] enabled:hover:border-[#ffd23f] disabled:opacity-45"
     >
       <span className="relative h-[52px] w-[80px] shrink-0 overflow-hidden rounded-xl bg-[#1b0f2a] shadow-[inset_0_0_0_1.5px_rgb(255_210_63/0.55)] lg:h-[58px] lg:w-[92px]">
         <img src={bgOf(pack, travel.place)} alt="" loading="lazy" decoding="async" className="absolute inset-0 size-full object-cover transition-transform duration-500 group-enabled:group-hover:scale-110" />
