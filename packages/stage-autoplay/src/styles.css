@@ -1,0 +1,198 @@
+/*
+ * @dianziji/stage-autoplay 默认样式。配色全是变量，舞台在自己的样式里覆盖：
+ *   .dzj-ap, .dzj-ap-settings { --dzj-ap-accent: #ff7eb6; --dzj-ap-track: rgb(255 255 255 / 0.25); --dzj-ap-fg: #fff; --dzj-ap-muted: rgb(255 255 255 / 0.6); }
+ * ★只动 transform / opacity；系统开了「减少动态效果」时倒计时不填（照样到点翻页）。不加光晕阴影。
+ */
+.dzj-ap,
+.dzj-ap-settings {
+  --dzj-ap-accent: #ff7eb6;
+  --dzj-ap-track: rgb(255 255 255 / 0.22);
+  --dzj-ap-fg: #fff;
+  --dzj-ap-muted: rgb(255 255 255 / 0.62);
+}
+
+/* ── 开关：低调，和标题栏的小按钮一个样子 ── */
+.dzj-ap {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+  align-items: stretch;
+  height: 2rem;
+  white-space: nowrap;
+  color: var(--dzj-ap-muted);
+  font-size: 12px;
+  transition: color 0.25s;
+}
+.dzj-ap[data-on] {
+  color: var(--dzj-ap-fg);
+}
+.dzj-ap-toggle,
+.dzj-ap-more {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35em;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+}
+.dzj-ap-toggle {
+  padding: 0 0.45em;
+}
+.dzj-ap-more {
+  padding: 0 0.4em;
+  opacity: 0.75;
+}
+.dzj-ap-toggle:hover,
+.dzj-ap-more:hover,
+.dzj-ap-more[aria-expanded='true'] {
+  color: var(--dzj-ap-fg);
+  opacity: 1;
+}
+/* 倒计时：图标和字下面一道发丝线从左往右长出来，长满就翻下一句 */
+.dzj-ap-fill {
+  position: absolute;
+  left: 0.45em;
+  right: 0.45em;
+  bottom: 0.3rem;
+  height: 1.5px;
+  border-radius: 999px;
+  background: var(--dzj-ap-accent);
+  transform: scaleX(0);
+  transform-origin: left;
+  animation: dzj-ap-fill linear forwards;
+  pointer-events: none;
+}
+@keyframes dzj-ap-fill {
+  to {
+    transform: scaleX(1);
+  }
+}
+.dzj-ap-icon {
+  width: 0.6rem;
+  height: 0.6rem;
+  fill: currentColor;
+}
+.dzj-ap[data-on] .dzj-ap-toggle .dzj-ap-icon {
+  color: var(--dzj-ap-accent);
+}
+/* 「调节」图标：两道横线 + 两颗旋钮 */
+.dzj-ap-more .dzj-ap-icon {
+  width: 0.75rem;
+  height: 0.75rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1;
+  stroke-linecap: round;
+}
+
+/* 窄屏想只留图标：舞台给胶囊加 dzj-ap-iconic（或自己写媒体查询把 .dzj-ap-label 藏掉） */
+.dzj-ap-iconic .dzj-ap-label {
+  display: none;
+}
+.dzj-ap-iconic .dzj-ap-fill {
+  left: 0.3em;
+  right: 0.3em;
+}
+
+/* ── 设置面板 ── */
+.dzj-ap-settings {
+  display: grid;
+  gap: 0.45rem;
+  color: var(--dzj-ap-fg);
+  font-size: 13px;
+}
+.dzj-ap-row {
+  display: flex;
+  margin-top: 0.15rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.dzj-ap-row output {
+  color: var(--dzj-ap-muted);
+  font-variant-numeric: tabular-nums;
+}
+/* 滑杆：细轨道，已选部分是主题色（--dzj-ap-pct 由组件按当前值写进来），圆点白底主题色边 */
+.dzj-ap-settings input[type='range'] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 1.25rem;
+  margin: 0;
+  background: transparent;
+  cursor: pointer;
+}
+.dzj-ap-settings input[type='range']::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--dzj-ap-accent) var(--dzj-ap-pct, 50%), var(--dzj-ap-track) var(--dzj-ap-pct, 50%));
+}
+.dzj-ap-settings input[type='range']::-moz-range-track {
+  height: 4px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--dzj-ap-accent) var(--dzj-ap-pct, 50%), var(--dzj-ap-track) var(--dzj-ap-pct, 50%));
+}
+.dzj-ap-settings input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  margin-top: -5px;
+  border: 2px solid var(--dzj-ap-accent);
+  border-radius: 50%;
+  background: #fff;
+}
+.dzj-ap-settings input[type='range']::-moz-range-thumb {
+  width: 10px;
+  height: 10px;
+  border: 2px solid var(--dzj-ap-accent);
+  border-radius: 50%;
+  background: #fff;
+}
+/* 开关：拨动式，开着是主题色、圆点滑到右边 */
+.dzj-ap-switch input {
+  -webkit-appearance: none;
+  appearance: none;
+  position: relative;
+  width: 2.25rem;
+  height: 1.3rem;
+  margin: 0;
+  border-radius: 999px;
+  background: var(--dzj-ap-track);
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+.dzj-ap-switch input::before {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: calc(1.3rem - 6px);
+  height: calc(1.3rem - 6px);
+  border-radius: 50%;
+  background: #fff;
+  transition: transform 0.2s;
+}
+.dzj-ap-switch input:checked {
+  background: var(--dzj-ap-accent);
+}
+.dzj-ap-switch input:checked::before {
+  transform: translateX(0.95rem);
+}
+.dzj-ap-hint {
+  margin: 0.2rem 0 0;
+  color: var(--dzj-ap-muted);
+  font-size: 11.5px;
+  line-height: 1.6;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dzj-ap-fill {
+    animation: none;
+    transform: none;
+    opacity: 0.5;
+  }
+}

@@ -43,3 +43,12 @@
     inset 0 1px 0 rgb(255 255 255 / 0.4),
     0 14px 36px -14px rgb(0 0 0 / 0.65);
 }
+
+/* 自动播放（@dianziji/stage-autoplay）换成电子姬的配色 */
+.dzj-ap.dzj-ap-gal,
+.dzj-ap-settings.dzj-ap-gal {
+  --dzj-ap-accent: #ff7eb6;
+  --dzj-ap-track: rgb(255 255 255 / 0.22);
+  --dzj-ap-fg: #fff;
+  --dzj-ap-muted: rgb(255 255 255 / 0.6);
+}

@@ -6,9 +6,10 @@
  * ★别往这里追加样式。
  */
 @import 'tailwindcss';
-/* SDK 两个包的样式入口（Tailwind 才会扫描到包里的类名） */
+/* SDK 三个包的样式入口（Tailwind 才会扫描到包里的类名） */
 @import '@dianziji/stage/styles.css';
 @import '@dianziji/stage-panel/styles.css';
+@import '@dianziji/stage-autoplay/styles.css';
 
 @import './styles/theme.css';
 @import './styles/animations.css';

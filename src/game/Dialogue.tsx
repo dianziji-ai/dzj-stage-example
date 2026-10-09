@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useTurnCursor, useTurnProgress } from '@dianziji/stage/react'
+import { useAutoPlay } from '@dianziji/stage-autoplay'
 import { Icon } from '../components/icons'
 import InputSheet from '../components/InputSheet'
 import SendButton from '../components/SendButton'
@@ -10,6 +11,7 @@ import Choices from './Choices'
 import { CHAR_NAME, LOGO_URL } from './content'
 import ErrorNotice, { type NoticeError } from './ErrorNotice'
 import ReviewBar from './ReviewBar'
+import AutoPlayControl from './AutoPlayControl'
 import ShortcutTray from './ShortcutTray'
 import { useBeats, useChoices, useShortcuts } from './useGame'
 import { usePref } from './usePref'
@@ -73,6 +75,9 @@ export default function Dialogue({ me, call, busy, error, topupUrl, onSend, onDi
   const beat: Beat | undefined = beats[idx]
   const go = (i: number) => setPos({ turn, idx: Math.max(0, Math.min(last, i)), text: beats[Math.max(0, Math.min(last, i))]?.text ?? '' })
 
+  // 自动播放（独立模块 @dianziji/stage-autoplay）：到点翻下一句；最后一句 / 还没写出下一句时原地等；开着输入框、快捷指令、回看、对话框藏起来时暂停
+  const auto = useAutoPlay({ text: beat?.text ?? '', canAdvance: idx < last, onNext: () => go(idx + 1), paused: sheet || tray || cursor.viewing || mode === 'hidden' || !!error })
+
   // 立绘：这一句她的样子；这一轮她还没开口（刚发出去 / 一轮开头全是旁白且她没说话）就停在上一轮最后的样子
   const [held, setHeld] = useState<Look>(NO_LOOK)
   const end = lastLook(beats)
@@ -135,6 +140,7 @@ export default function Dialogue({ me, call, busy, error, topupUrl, onSend, onDi
             <button onClick={cursor.next} disabled={!cursor.canNext} aria-label="下一轮" title="下一轮" className="grid h-8 min-w-8 place-items-center rounded-full text-white/55 transition-colors hover:text-white disabled:opacity-25">
               <Icon name="back" className="size-4 rotate-180" />
             </button>
+            <AutoPlayControl state={auto} />
             <button onClick={() => setMode('hidden')} aria-label="隐藏对话框" title="隐藏对话框" className="grid size-8 place-items-center rounded-full text-white/55 transition-colors hover:text-white">
               <Icon name="hide" className="size-4" />
             </button>
