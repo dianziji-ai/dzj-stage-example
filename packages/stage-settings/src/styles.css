@@ -1,5 +1,5 @@
 /*
- * @dianziji/stage-autoplay 默认样式。配色全是变量，舞台在自己的样式里覆盖：
+ * @dianziji/stage-settings 默认样式。配色全是变量，舞台在自己的样式里覆盖：
  *   .dzj-ap, .dzj-ap-settings { --dzj-ap-accent: #ff7eb6; --dzj-ap-track: rgb(255 255 255 / 0.25); --dzj-ap-fg: #fff; --dzj-ap-muted: rgb(255 255 255 / 0.6); }
  * ★只动 transform / opacity；系统开了「减少动态效果」时倒计时不填（照样到点翻页）。不加光晕阴影。
  */
@@ -99,6 +99,63 @@
 }
 
 /* ── 设置面板 ── */
+.dzj-st {
+  gap: 0.9rem;
+}
+.dzj-st-group {
+  display: grid;
+  gap: 0.55rem;
+}
+.dzj-st-group h3 {
+  margin: 0;
+  color: var(--dzj-ap-muted);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.25em;
+}
+.dzj-st-item {
+  display: grid;
+  gap: 0.35rem;
+}
+.dzj-st-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+.dzj-st-head small {
+  color: var(--dzj-ap-muted);
+  font-size: 11px;
+  text-align: right;
+}
+/* 分段选择：一条细轨道，选中那格是主题色 */
+.dzj-st-seg {
+  display: grid;
+  grid-auto-columns: minmax(0, 1fr);
+  grid-auto-flow: column;
+  padding: 2px;
+  border-radius: 999px;
+  background: var(--dzj-ap-track);
+}
+.dzj-st-seg button {
+  min-height: 1.9rem;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--dzj-ap-muted);
+  font: inherit;
+  font-size: 12.5px;
+  cursor: pointer;
+  transition: background-color 0.2s, color 0.2s;
+}
+.dzj-st-seg button:hover {
+  color: var(--dzj-ap-fg);
+}
+.dzj-st-seg button[aria-checked='true'] {
+  background: var(--dzj-ap-accent);
+  color: #fff;
+}
+
 .dzj-ap-settings {
   display: grid;
   gap: 0.45rem;
@@ -195,4 +252,13 @@
     transform: none;
     opacity: 0.5;
   }
+}
+
+/* 设置里选了「动效：减少」：和系统「减少动态效果」一样，把动画 / 过渡压到几乎为零（useSettingsRoot 写的 data-dzj-motion） */
+html[data-dzj-motion='reduced'] *,
+html[data-dzj-motion='reduced'] *::before,
+html[data-dzj-motion='reduced'] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
 }

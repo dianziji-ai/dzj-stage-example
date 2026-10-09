@@ -7,7 +7,7 @@
 | `@dianziji/stage` 舞台 SDK | 0.3.3（详见 [packages/stage/CHANGELOG.md](packages/stage/CHANGELOG.md)） |
 
 - ★**卡上有的一律从快照读**：快照新增 `shortcuts` 快捷指令、`bgm` 背景音乐、`characters` 角色包，`card` 多了封面 / 背景 / 菜单背景。作者在编辑器改一处，对话模式和舞台都跟着变。用法见 [docs/bridge.md](docs/bridge.md#卡上有的一律从快照读)；给 AI 的规则写进了 AGENTS.md 和 skills（stage-game-logic、stage-assets）。
-- ★新模块 **`@dianziji/stage-autoplay` 0.1.0**（自动播放，独立、只依赖 react）：等多久＝句末停顿 + 字数 × 每字停留，玩家在设置里调；最后一句 / 还没写出下一句时原地等。官方例子标题栏接上了（低调的「▶ 自动」+「调节」）。手册 [docs/autoplay.md](docs/autoplay.md)，skill `stage-autoplay`。
+- ★新模块 **`@dianziji/stage-settings` 0.1.0**（播放设置，独立、只依赖 react）：一个面板管文本速度（逐字打出）、字号、动效、选项行为（默认填入确认）、自动播放，默认值照柳月儿原卡；存玩家本机。官方例子标题栏「▶ 自动」+「调节」接上了。手册 [docs/settings.md](docs/settings.md)，skill `stage-settings`。
 - 官方例子行动选项改成一条一条的「光带」（中间深两头渐隐、上沿彩色发丝线，人物能透出来）；心声和选项读到最后一句才一起浮出；生成中点着读，写完不跳回第一句。
 - ★官方例子心声改成独立分区 `thought`（原来是旁白里的 `> 💭` 引用块，可选格式模型常不写）：每轮一句，舞台 `useZoneText('thought')` 读，手册第 1 节有说明。
 - ★SDK 0.3.4 `pickImage`：挑图规则写在卡的配图库分组名里；官方例子立绘 / 背景 / 地图全从配图库挑，加了睡衣、外出服、打游戏、睡着和房间白天。手册第 3 节重写。

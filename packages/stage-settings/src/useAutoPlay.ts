@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { delayFor } from './core'
-import { autoPlayStore, type AutoPlayStore } from './store'
-import { useAutoPlayPrefs } from './useAutoPlayPrefs'
+import { settingsStore, type SettingsStore } from './store'
+import { useSettings } from './useSettings'
 
 export type UseAutoPlayOptions = {
   /** 正在显示的这一句（算等多久用） */
@@ -10,21 +10,22 @@ export type UseAutoPlayOptions = {
   canAdvance: boolean
   /** 翻到下一句（舞台自己的翻页函数） */
   onNext: () => void
-  /** 舞台自己要暂停的时候（打开了输入框 / 弹窗、在回看旧的一轮、对话框藏起来了……）传 true */
+  /** 这句的字打完了吗（用了 useTypewriter 就传它的 done；没有打字效果不用传）：打完才开始计时 */
+  ready?: boolean
+  /** 舞台自己要暂停的时候（打开了输入框 / 弹窗、在回看旧的一轮、对话框藏起来、切到别的页面……）传 true */
   paused?: boolean
-  /** 不传用默认 store（autoPlayStore） */
-  store?: AutoPlayStore
+  store?: SettingsStore
 }
 
 export type AutoPlayState = {
   /** 自动播放开着吗（玩家的开关） */
   on: boolean
   toggle: () => void
-  /** 此刻正在倒计时（开着、没暂停、还有下一句、页面看得见） */
+  /** 此刻正在倒计时（开着、没暂停、字打完了、还有下一句、页面看得见） */
   running: boolean
-  /** 这一句要等多少毫秒（倒计时环的动画时长） */
+  /** 这一句要等多少毫秒（倒计时动画的时长） */
   duration: number
-  /** 给倒计时环当 key：换一句 / 换时长就从头播（暂停时环不渲染，恢复时重新挂上也是从头播） */
+  /** 给倒计时动画当 key：换一句 / 换时长就从头播（暂停时不渲染，恢复时重新挂上也是从头播） */
   cycle: string
 }
 
@@ -43,11 +44,11 @@ function usePageVisible(): boolean {
  * 自动播放的计时：到点调一次 onNext。
  * ★换了一句（text 变了）、玩家自己翻了页、从暂停里回来，都从头计时；onNext 用最新的那个（不因舞台每次渲染都新建函数而重新计时）。
  */
-export function useAutoPlay({ text, canAdvance, onNext, paused = false, store = autoPlayStore }: UseAutoPlayOptions): AutoPlayState {
-  const [prefs, set] = useAutoPlayPrefs(store)
+export function useAutoPlay({ text, canAdvance, onNext, ready = true, paused = false, store = settingsStore }: UseAutoPlayOptions): AutoPlayState {
+  const [{ autoPlay }, set] = useSettings(store)
   const visible = usePageVisible()
-  const running = prefs.on && !paused && canAdvance && visible
-  const duration = delayFor(text, prefs)
+  const running = autoPlay.on && !paused && ready && canAdvance && visible
+  const duration = delayFor(text, autoPlay)
   const next = useRef(onNext)
   useEffect(() => {
     next.current = onNext
@@ -59,5 +60,5 @@ export function useAutoPlay({ text, canAdvance, onNext, paused = false, store = 
     return () => clearTimeout(t)
   }, [running, duration, text])
 
-  return { on: prefs.on, toggle: () => set({ on: !prefs.on }), running, duration, cycle: `${duration}:${text}` }
+  return { on: autoPlay.on, toggle: () => set({ autoPlay: { on: !autoPlay.on } }), running, duration, cycle: `${duration}:${text}` }
 }

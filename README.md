@@ -33,7 +33,7 @@ React 19 + Vite + Tailwind CSS v4。电脑、手机都适配（只做竖屏）�
 **用 AI 开发**
 
 - [AGENTS.md](AGENTS.md)：给 AI 的总规则（开工流程、铁律、技能索引）。Claude Code 读 `CLAUDE.md`（就是引用它）。
-- [.claude/skills/](.claude/skills)：分主题的开发技能（流程、React、适配、素材、性能、游戏逻辑、自动播放、上线、踩过的坑）。
+- [.claude/skills/](.claude/skills)：分主题的开发技能（流程、React、适配、素材、性能、游戏逻辑、播放设置、上线、踩过的坑）。
 
 ## 项目结构
 
@@ -57,5 +57,5 @@ AGENTS.md        AI 总规则
 
 ## 版权
 
-本仓库（官方例子、`@dianziji/stage`、`@dianziji/stage-panel`、`@dianziji/stage-autoplay`、舞台协议与文档、美术与音频素材）是电子姬的**专有软件，不是开源软件**。
+本仓库（官方例子、`@dianziji/stage`、`@dianziji/stage-panel`、`@dianziji/stage-settings`、舞台协议与文档、美术与音频素材）是电子姬的**专有软件，不是开源软件**。
 只允许用来给电子姬平台上的卡开发舞台、并在电子姬平台发布；不得用于其他网站或产品，不得再分发、转售，不得照着舞台协议给别的平台做兼容实现。详见 [LICENSE](LICENSE)。

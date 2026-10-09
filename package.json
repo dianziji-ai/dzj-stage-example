@@ -19,13 +19,13 @@
     "preview": "vite preview",
     "pretest": "node scripts/sdk-lock.mjs",
     "test": "vitest run",
-    "test:sdk": "node scripts/sdk-lock.mjs && npm test -w @dianziji/stage -w @dianziji/stage-panel -w @dianziji/stage-autoplay",
+    "test:sdk": "node scripts/sdk-lock.mjs && npm test -w @dianziji/stage -w @dianziji/stage-panel -w @dianziji/stage-settings",
     "sdk:lock": "node scripts/sdk-lock.mjs --write"
   },
   "dependencies": {
     "@dianziji/stage": "0.3.4",
-    "@dianziji/stage-autoplay": "0.1.0",
     "@dianziji/stage-panel": "0.2.1",
+    "@dianziji/stage-settings": "0.1.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8"
   },

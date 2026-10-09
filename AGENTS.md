@@ -62,7 +62,7 @@
 | `stage-game-logic` | 分区、`onTurn` 结算、存档结构、附给 AI 的状态 |
 | `stage-release` | 打包、上传、交付前自检清单 |
 | `stage-pitfalls` | 出了怪问题先查这里：踩过的坑，现象 → 原因 → 做法 |
-| `stage-autoplay` | 自动播放（到点翻下一句）：接模块、换样子 |
+| `stage-settings` | 播放设置（打字速度 / 字号 / 动效 / 选项行为 / 自动播放）：接模块、换样子 |
 
 ## 五、项目地图
 
@@ -73,7 +73,7 @@ docs/                   开发手册（必读）
 packages/               舞台 SDK（只读）
   stage/                  @dianziji/stage：client / 会话引擎 / react
   stage-panel/            @dianziji/stage-panel：本局面板
-  stage-autoplay/         @dianziji/stage-autoplay：自动播放（独立模块，只依赖 react）
+  stage-settings/         @dianziji/stage-settings：播放设置（文本速度 / 字号 / 动效 / 选项行为 / 自动播放，独立模块，只依赖 react）
 src/                    游戏（作者的代码都在这里）
   main.tsx                启动：<StageBoot>（预加载、游戏规则；自动接上快照里的安全区）
   stage.ts                createStage()，别改

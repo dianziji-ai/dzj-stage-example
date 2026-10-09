@@ -1,13 +1,13 @@
 import { act, renderHook } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { createAutoPlayStore } from '../src/store'
+import { createSettingsStore } from '../src/store'
 import { useAutoPlay, type UseAutoPlayOptions } from '../src/useAutoPlay'
 
 // 「你好世界」4 个字 × 100 + 1000 ＝ 1400 毫秒
 const TEXT = '你好，世界！'
 const setup = (over: Partial<UseAutoPlayOptions> = {}, on = true) => {
-  const store = createAutoPlayStore(null)
-  store.set({ on, perChar: 100, pause: 1000 })
+  const store = createSettingsStore(null)
+  store.set({ autoPlay: { on, perChar: 100, pause: 1000 } })
   const onNext = vi.fn()
   const r = renderHook((p: Partial<UseAutoPlayOptions>) => useAutoPlay({ text: TEXT, canAdvance: true, onNext, store, ...over, ...p }), { initialProps: {} })
   return { ...r, onNext, store }
@@ -41,6 +41,14 @@ describe('useAutoPlay', () => {
     act(() => vi.advanceTimersByTime(10_000))
     expect(onNext).not.toHaveBeenCalled()
     rerender({ canAdvance: true })
+    act(() => vi.advanceTimersByTime(1400))
+    expect(onNext).toHaveBeenCalledTimes(1)
+  })
+  it('字还没打完（ready=false）不开始计时；打完才计时', () => {
+    const { rerender, onNext } = setup({ ready: false })
+    act(() => vi.advanceTimersByTime(5000))
+    expect(onNext).not.toHaveBeenCalled()
+    rerender({ ready: true })
     act(() => vi.advanceTimersByTime(1400))
     expect(onNext).toHaveBeenCalledTimes(1)
   })

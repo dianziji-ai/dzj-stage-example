@@ -1,7 +1,7 @@
 {
-  "name": "@dianziji/stage-autoplay",
+  "name": "@dianziji/stage-settings",
   "version": "0.1.0",
-  "description": "电子姬舞台自动播放：一句话的字数 × 每字时间 + 句末停顿，到点自动翻下一句；开关和时间玩家自己调（独立模块，只依赖 react）",
+  "description": "电子姬舞台的播放设置：文本速度（逐字打出）、字号、动效、选项行为、自动播放（字数 × 每字停留 + 句末停顿），一个面板全调，存玩家本机（独立模块，只依赖 react）",
   "private": true,
   "license": "UNLICENSED",
   "type": "module",

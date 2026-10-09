@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useTurnCursor, useTurnProgress } from '@dianziji/stage/react'
-import { useAutoPlay } from '@dianziji/stage-autoplay'
+import { fillChoice, useAutoPlay, useSettings, useTypewriter } from '@dianziji/stage-settings'
 import { Icon } from '../components/icons'
 import InputSheet from '../components/InputSheet'
 import SendButton from '../components/SendButton'
@@ -11,7 +11,7 @@ import Choices from './Choices'
 import { CHAR_NAME, LOGO_URL } from './content'
 import ErrorNotice, { type NoticeError } from './ErrorNotice'
 import ReviewBar from './ReviewBar'
-import AutoPlayControl from './AutoPlayControl'
+import PlayControl from './PlayControl'
 import ShortcutTray from './ShortcutTray'
 import { useBeats, useChoices, useShortcuts } from './useGame'
 import { usePref } from './usePref'
@@ -77,8 +77,14 @@ export default function Dialogue({ me, call, busy, error, topupUrl, onSend, onDi
   const beat: Beat | undefined = beats[idx]
   const go = (i: number) => setPos({ turn, idx: Math.max(0, Math.min(last, i)), text: beats[Math.max(0, Math.min(last, i))]?.text ?? '' })
 
-  // 自动播放（独立模块 @dianziji/stage-autoplay）：到点翻下一句；最后一句 / 还没写出下一句时原地等；开着输入框、快捷指令、回看、对话框藏起来时暂停
-  const auto = useAutoPlay({ text: beat?.text ?? '', canAdvance: idx < last, onNext: () => go(idx + 1), paused: !active || sheet || tray || cursor.viewing || mode === 'hidden' || !!error })
+  // 播放设置（独立模块 @dianziji/stage-settings）：
+  //   逐字打出（文本速度）；打字中点一下先补完这句，再点才翻页；
+  //   自动播放：字打完才开始计时，到点翻下一句；最后一句 / 还没写出下一句时原地等；开着输入框、快捷指令、回看、对话框藏起来、切到别的页面时暂停
+  const tw = useTypewriter(beat?.text ?? '')
+  const next = () => (tw.done ? go(idx + 1) : tw.finish())
+  const auto = useAutoPlay({ text: beat?.text ?? '', canAdvance: idx < last, onNext: () => go(idx + 1), ready: tw.done, paused: !active || sheet || tray || cursor.viewing || mode === 'hidden' || !!error })
+  const [settings] = useSettings()
+  const [stack, setStack] = useState<string[]>([])
 
   // 立绘：这一句她的样子；这一轮她还没开口（刚发出去 / 一轮开头全是旁白且她没说话）就停在上一轮最后的样子
   const [held, setHeld] = useState<Look>(NO_LOOK)
@@ -101,8 +107,18 @@ export default function Dialogue({ me, call, busy, error, topupUrl, onSend, onDi
     if (!line || busy) return
     const wasDraft = line === text.trim()
     if (wasDraft) setText('')
+    setStack([])
     setSheet(false)
     if (!(await onSend(line)) && wasDraft) setText(line)
+  }
+
+  /** 点选项：设置里「填入确认」＝填进输入框（连点几个按顺序叠，手机顺手打开全屏输入），「直接发送」＝直接发 */
+  const pick = (c: string) => {
+    if (settings.choiceMode === 'send') return void say(c)
+    const r = fillChoice(text, stack, c)
+    setText(r.text)
+    setStack(r.stack)
+    if (window.matchMedia('(max-width: 1023px)').matches) setSheet(true)
   }
 
   if (mode === 'hidden') {
@@ -128,7 +144,7 @@ export default function Dialogue({ me, call, busy, error, topupUrl, onSend, onDi
       <div className="mx-auto flex min-h-0 w-full max-w-2xl flex-col px-4 lg:max-w-3xl lg:px-6">
         {cursor.viewing && <ReviewBar back={cursor.back} said={cursor.said} me={me} onLatest={cursor.latest} />}
         {/* 选项只在读到最后一句时出：话还没听完，不急着做选择 */}
-        {idx === last && <Choices choices={choices} call={call} busy={busy || cursor.viewing} onPick={(c) => void say(c)} />}
+        {idx === last && <Choices choices={choices} call={call} busy={busy || cursor.viewing} onPick={pick} />}
         {error && <ErrorNotice error={error} topupUrl={topupUrl} onRetry={(t) => void say(t)} onClose={onDismissError} />}
 
         <div className={`flex min-h-0 flex-col pt-3 ${d.box}`} data-tone={tone}>
@@ -142,7 +158,7 @@ export default function Dialogue({ me, call, busy, error, topupUrl, onSend, onDi
             <button onClick={cursor.next} disabled={!cursor.canNext} aria-label="下一轮" title="下一轮" className="grid h-8 min-w-8 place-items-center rounded-full text-white/55 transition-colors hover:text-white disabled:opacity-25">
               <Icon name="back" className="size-4 rotate-180" />
             </button>
-            <AutoPlayControl state={auto} />
+            <PlayControl state={auto} />
             <button onClick={() => setMode('hidden')} aria-label="隐藏对话框" title="隐藏对话框" className="grid size-8 place-items-center rounded-full text-white/55 transition-colors hover:text-white">
               <Icon name="hide" className="size-4" />
             </button>
@@ -172,12 +188,12 @@ export default function Dialogue({ me, call, busy, error, topupUrl, onSend, onDi
           {/* 这一句：点一下看下一句 */}
           <div className="relative flex min-h-0 flex-col">
             <button
-              onClick={() => go(idx + 1)}
-              className="flex max-h-[26dvh] min-h-[76px] flex-col items-start justify-start overflow-y-auto pt-0.5 pr-6 pb-2 text-left text-[15px] leading-[1.85] break-words lg:max-h-[30dvh] lg:min-h-[92px] lg:text-[17px]"
+              onClick={next}
+              className="flex max-h-[26dvh] min-h-[76px] flex-col items-start justify-start overflow-y-auto pt-0.5 pr-6 pb-2 text-left text-[calc(15px*var(--dzj-font-scale,1))] leading-[1.85] break-words lg:max-h-[30dvh] lg:min-h-[92px] lg:text-[calc(17px*var(--dzj-font-scale,1))]"
             >
               {beat ? (
                 <span key={`${turn}-${idx}`} className={`animate-fade-in ${beat.kind === 'narr' ? 'text-white/80' : beat.kind === 'you' ? 'text-[#cfe6ff]' : beat.kind === 'note' ? 'text-[#fff1c2]' : 'text-white/90'}`}>
-                  <BeatText text={beat.text} sayClass={d.say} />
+                  <BeatText text={tw.shown} sayClass={d.say} />
                   {busy && idx === last && <span className="ml-0.5 inline-block w-2 animate-blink">▍</span>}
                 </span>
               ) : (

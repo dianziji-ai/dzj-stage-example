@@ -22,6 +22,7 @@ import { useOnline } from './game/useOnline'
 import { stage } from './stage'
 import type { StageImage } from '@dianziji/stage'
 import { SaveIndicator, StageToaster } from '@dianziji/stage/react'
+import { useSettingsRoot } from '@dianziji/stage-settings'
 import { openStagePanel, StagePanel } from '@dianziji/stage-panel'
 
 type PageId = 'play' | 'map' | 'gallery' | 'claw'
@@ -44,6 +45,7 @@ const TABS: Tab[] = [
  *  · 切到别的页面时游戏画面只是隐藏（display:none，动画随之暂停），不卸载——生成中的回复照常收。
  */
 export default function App() {
+  useSettingsRoot() // 播放设置里的字号 / 动效写到 <html> 上（对话字号乘 --dzj-font-scale）
   const g = useGame()
   const thought = useThought() // 状态说明里显示（一轮才变一次）
   const [look, setLook] = useState<Look>(NO_LOOK) // 对话框正在播的那一句她的样子
