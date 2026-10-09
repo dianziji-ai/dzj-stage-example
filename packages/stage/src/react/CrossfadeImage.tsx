@@ -80,7 +80,9 @@ export default function CrossfadeImage({ src, alt = '', className, style, imgCla
   }, [layers, mode, duration])
 
   return (
-    <div className={className} style={{ display: 'grid', ...style }}>
+    // ★网格的行 / 列要钉成外层的尺寸（minmax(0, 1fr)）：默认的 auto 轨道会被图的原始尺寸撑开，
+    //   图上写的 h-full / size-full 就变成「原图有多大显示多大」——1600 高的立绘在屏幕上只剩一个大头（0.3.1 的 bug，0.3.2 修）。
+    <div className={className} style={{ display: 'grid', gridTemplateRows: 'minmax(0, 1fr)', gridTemplateColumns: 'minmax(0, 1fr)', ...style }}>
       {layers.map((l, i) => {
         const top = i === layers.length - 1
         return (

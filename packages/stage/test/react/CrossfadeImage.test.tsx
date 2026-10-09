@@ -48,6 +48,14 @@ describe('CrossfadeImage：换图不闪、换得顺', () => {
     expect(anims.map((a) => a.frames)).toEqual([[{ opacity: 0 }, { opacity: 1 }]])
   })
 
+  it('外层网格的行列钉成容器尺寸：图上的 h-full 跟着容器走，不被原图尺寸撑开（0.3.1 立绘只剩大头的 bug）', () => {
+    const { container } = render(<CrossfadeImage src="a.webp" className="h-full" imgClassName="h-full w-auto" />)
+    const box = container.firstElementChild as HTMLElement
+    expect(box.style.display).toBe('grid')
+    expect(box.style.gridTemplateRows).toBe('minmax(0, 1fr)')
+    expect(box.style.gridTemplateColumns).toBe('minmax(0, 1fr)')
+  })
+
   it('换图：新图没好之前一直是旧图；好了交叉淡化（旧的同时淡出），淡完撤掉旧图', async () => {
     const { container, rerender } = render(<CrossfadeImage src="a.webp" />)
     await loaded('a.webp')
