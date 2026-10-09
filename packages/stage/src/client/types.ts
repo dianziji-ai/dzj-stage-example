@@ -58,7 +58,11 @@ export type StageShortcut = { label: string; command: string; mode: 'fill' | 'se
 /** 卡上背景音乐曲库里的一首（编辑器「背景音乐」）：第一首＝默认播的那首 */
 export type StageTrack = { name: string; url: string }
 /** 卡上角色包里的一位（编辑器「角色包」）：names＝名字和别名，image＝立绘，desc＝作者写的简介 */
-export type StageCharacter = { names: string[]; image: string; desc: string }
+/** 角色包的一行。voice（0.4.0）＝网站给这个角色配了声音（声音工坊），stage.speak 能念它的台词；老网站没这项＝false */
+export type StageCharacter = { names: string[]; image: string; desc: string; voice: boolean }
+
+/** stage.speak 念好的一句（0.4.0）：url＝音频地址（mp3/wav，舞台自己播）；cost＝这次扣了多少能量（同一句重听＝0，cached＝true） */
+export type StageSpeech = { url: string; cost: number; cached: boolean }
 
 /** 图册里的一张图：thumb＝缩略图（格子用，只取第一帧），src＝原图（点开看） */
 export type StageGalleryImage = { src: string; thumb: string }
@@ -147,3 +151,5 @@ export type StageErrorCode =
   | 'network'
   | 'stream'
   | 'version'
+  /** 0.4.0 stage.speak：这个角色没配声音（或声音已下架）。不算出错，跳过这句就行 */
+  | 'no_voice'

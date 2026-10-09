@@ -4,11 +4,11 @@
  * 只用这一层（Vue / 原生 JS / 自己管状态）就从 @dianziji/stage/client 引。消息格式见 protocol.ts、docs/bridge.md。
  */
 import { isBridgeMessage, PROTOCOL, STAGE_TOOLS, type StageMethod, type StageTool, type ToSite } from './protocol'
-import type { StageErrorCode, StageGallery, StageSave, StageSnapshot } from './types'
+import type { StageErrorCode, StageGallery, StageSave, StageSnapshot, StageSpeech } from './types'
 
 declare const __SDK_VERSION__: string | undefined
 /** 握手时报给网站的 SDK 版本（排查用） */
-const SDK_VERSION = typeof __SDK_VERSION__ === 'string' ? __SDK_VERSION__ : '0.3.4'
+const SDK_VERSION = typeof __SDK_VERSION__ === 'string' ? __SDK_VERSION__ : '0.4.0'
 
 /** 等网站的第一份快照最多等多久：超时＝不在网站里打开（比如直接打开了 localhost） */
 const READY_MS = 3000
@@ -81,6 +81,13 @@ export type StageClient = {
   save: (state: StageSave | null, opts?: { source?: SaveSource }) => Promise<{ size: number }>
   /** 图册（和网站画廊同一套解锁规则；打开图册时再调） */
   gallery: () => Promise<StageGallery>
+  /**
+   * 角色配音（0.4.0）：请网站用作者给这个角色配的声音念一句，返回音频地址（舞台自己播）。
+   * who＝角色名或别名（和角色包对得上就行）；按字数扣玩家能量，同一句同情绪重听不扣（cached）。
+   * 角色没配声音 → StageError('no_voice')；能量不够 → 'insufficient'（网站自己会弹充值）。
+   * 一般不直接调：用 @dianziji/stage-voice 的 useVoice，它管检查、排队、预取、出错就停。
+   */
+  speak: (line: { who: string; text: string; emotion?: string }) => Promise<StageSpeech>
   /** 打开网站自己的工具（换模型、挂 MOD、本局、记忆、切到对话）。舞台不用自己做这些面板。没连上网站＝false */
   open: (tool: StageTool) => boolean
   /** 网站上的页面地址（比如 siteUrl('/recharge') 去充值）；连上之前只给路径本身 */
@@ -103,7 +110,8 @@ export { STAGE_TOOLS } from './protocol'
 function withDefaults(s: StageSnapshot): StageSnapshot {
   const c = s.card as Partial<StageSnapshot['card']> & Pick<StageSnapshot['card'], 'id' | 'name'>
   const card = { ...c, avatar: c.avatar ?? '', background: c.background ?? '', menu_background: c.menu_background ?? '' }
-  return { ...s, card, shortcuts: s.shortcuts ?? [], bgm: s.bgm ?? [], characters: s.characters ?? [] }
+  const characters = (s.characters ?? []).map((c) => ({ ...c, voice: c.voice === true }))
+  return { ...s, card, shortcuts: s.shortcuts ?? [], bgm: s.bgm ?? [], characters }
 }
 
 /**
@@ -234,6 +242,8 @@ export function createStage(opts: { parent?: Window; self?: Window } = {}): Stag
     },
 
     gallery: () => request<StageGallery>('gallery'),
+
+    speak: (line) => request<StageSpeech>('speak', { who: line.who, text: line.text, emotion: line.emotion ?? '' }),
 
     open(tool) {
       if (!parent || !snap || !STAGE_TOOLS.includes(tool)) return false

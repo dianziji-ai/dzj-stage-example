@@ -49,7 +49,7 @@
 | `setup` | 初始设定 `{ text, fields: [{ key, label, value }] }`：玩家填了什么就是什么，只读；没填＝`null` | 玩家在网站上改了设定 |
 | `shortcuts` | 卡上的快捷指令 `[{ label, command, mode }]`：`mode`＝`fill` 填进输入框等玩家改（缺省）/ `send` 直接发；没配＝`[]` | 不变 |
 | `bgm` | 卡上的背景音乐曲库 `[{ name, url }]`，第一首＝默认播的那首；没配＝`[]` | 不变 |
-| `characters` | 卡上的角色包 `[{ names, image, desc }]`：名字和别名、立绘、作者写的简介；没配＝`[]` | 不变 |
+| `characters` | 卡上的角色包 `[{ names, image, desc, voice }]`：名字和别名、立绘、作者写的简介；`voice`（0.4.0）＝作者给这个角色配了声音（`stage.speak` 能念）；没配＝`[]` | 不变 |
 | `history` | 最近的历史（正序，库里原文，`{{asset}}` 已展开）。每条 `{ id, role, kind, content, created_at?, status?, spend? }` | 发出一句、这一轮写完、回溯、编辑、删除、重生、读更早的（`older`） |
 | `has_more` | 更早还有历史 | 同上 |
 | `save` | 舞台存档；没存过 / 不符合现在的存档结构＝开局存档；卡没定义存档结构＝`null` | **只在 `init` 里给**：之后只有舞台自己存（`save` 请求），网站不再推 |
@@ -86,6 +86,7 @@ const her = characters.find((c) => c.names.includes('柳月儿'))      // 角色
 | `save` | `{ state }`（对象，或 `null` 清空） | `{ size }`（存进去的字节数） | 整份覆盖这一局的舞台存档。按卡的存档结构校验（不符合 → `invalid`），最大 64KB（超了 → `too_large`）；卡没定义存档结构 → `invalid` | `stage.save(state)` |
 | `gallery` | — | 图册 `{ turns, previews, packs }` | 和网站画廊同一套解锁规则；锁着（`locked`）和没开放（`hidden`）的相册不给图片地址 | `stage.gallery()` |
 | `open` | `{ tool }` | — | 打开网站自己的工具：`model` 换模型 / 调参数 · `mod` 挂 MOD · `session` 本局（设定、存档、图册、消费记录）· `memory` 记忆 · `chat` 切到对话模式 | `stage.open(tool)` |
+| `speak`（0.4.0） | `{ who, text, emotion }` | `{ url, cost, cached }` | 角色配音：按 `who`（角色名或别名，宏先展开）找作者在角色包里配的声音，用它念 `text`，返回音频地址（舞台自己播）。按字数扣玩家能量，同一句同情绪重听不扣（`cached`）。没配声音 → `no_voice`（不算出错，跳过）；能量不够 → `insufficient`（网站自己弹充值） | `stage.speak(line)`，一般用 [voice.md](voice.md) 的 `useVoice` |
 
 回溯、编辑、删除不开放给舞台：`stage.open('chat')` 切到对话模式去做，做完网站推新的 `history`，舞台自动跟上。
 

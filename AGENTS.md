@@ -73,7 +73,9 @@ docs/                   开发手册（必读）
 packages/               舞台 SDK（只读）
   stage/                  @dianziji/stage：client / 会话引擎 / react
   stage-panel/            @dianziji/stage-panel：本局面板
-  stage-settings/         @dianziji/stage-settings：播放设置（文本速度 / 字号 / 动效 / 选项行为 / 自动播放，独立模块，只依赖 react）
+  stage-settings/         @dianziji/stage-settings：播放设置（文本速度 / 字号 / 动效 / 选项行为 / 自动播放 / 配音，独立模块，只依赖 react）
+  stage-voice/            @dianziji/stage-voice：角色配音（useVoice + VoiceButton，见 docs/voice.md）
+  stage-sfx/              @dianziji/stage-sfx：界面音效（useSfxRoot + data-sfx，见 docs/sfx.md）
 src/                    游戏（作者的代码都在这里）
   main.tsx                启动：<StageBoot>（预加载、游戏规则；自动接上快照里的安全区）
   stage.ts                createStage()，别改

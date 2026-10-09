@@ -3,12 +3,12 @@
  * 一个 store 被好几个地方读（设置面板、自动播放按钮、打字机、对话框），改一处其它都跟着变：subscribe / get 给 useSyncExternalStore 用。
  * ★读写都包 try：隐私模式 / 禁用站点数据时照常能用，只是记不住。
  */
-import { normalizeSettings, sameSettings, type AutoPlay, type Settings } from './core'
+import { normalizeSettings, sameSettings, type AutoPlay, type Settings, type Sfx, type Voice } from './core'
 
 export const STORAGE_KEY = 'dzj-stage-settings'
 
-/** 改设置：autoPlay 可以只给要改的那几项 */
-export type SettingsPatch = Partial<Omit<Settings, 'autoPlay'>> & { autoPlay?: Partial<AutoPlay> }
+/** 改设置：autoPlay / voice / sfx 可以只给要改的那几项 */
+export type SettingsPatch = Partial<Omit<Settings, 'autoPlay' | 'voice' | 'sfx'>> & { autoPlay?: Partial<AutoPlay>; voice?: Partial<Voice>; sfx?: Partial<Sfx> }
 
 export type SettingsStore = {
   get: () => Settings
@@ -34,7 +34,7 @@ export function createSettingsStore(storage: Storage | null = typeof localStorag
   return {
     get: () => settings,
     set(patch) {
-      const next = normalizeSettings({ ...settings, ...patch, autoPlay: { ...settings.autoPlay, ...patch.autoPlay } })
+      const next = normalizeSettings({ ...settings, ...patch, autoPlay: { ...settings.autoPlay, ...patch.autoPlay }, voice: { ...settings.voice, ...patch.voice }, sfx: { ...settings.sfx, ...patch.sfx } })
       if (sameSettings(next, settings)) return
       settings = next
       try {

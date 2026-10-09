@@ -93,6 +93,14 @@ describe('握手', () => {
     expect(s.card).toEqual({ id: 'c1', name: '卡', avatar: '', background: '', menu_background: '' })
   })
 
+  it('网站没发 0.4.0 的 characters[].voice：补成 false', async () => {
+    const site = fakeSite()
+    const stage = createStage({ parent: site.parent, self: site.self })
+    const p = stage.ready()
+    site.init({ ...snapOf(), characters: [{ names: ['妈妈'], image: '', desc: '' }] } as never)
+    expect((await p).characters).toEqual([{ names: ['妈妈'], image: '', desc: '', voice: false }])
+  })
+
   it('不在网站里（没有外层窗口）：ready 直接失败，说请在网站里打开', async () => {
     const site = fakeSite()
     const stage = createStage({ self: site.self })
@@ -181,6 +189,21 @@ describe('请求', () => {
     const g = stage.gallery()
     site.reply(site.lastRequest().id!, { turns: 3, previews: [], packs: [] })
     await expect(g).resolves.toEqual({ turns: 3, previews: [], packs: [] })
+  })
+
+  it('speak（0.4.0）：带 who / text / emotion，回音频地址；没配声音＝no_voice、不可重试', async () => {
+    const { site, stage } = await connected()
+    const p = stage.speak({ who: '妈妈', text: '跟你说了多少遍' })
+    const r = site.lastRequest()
+    expect(r).toMatchObject({ method: 'speak', args: { who: '妈妈', text: '跟你说了多少遍', emotion: '' } })
+    site.reply(r.id!, { url: 'https://r2.test/a.mp3', cost: 20, cached: false })
+    await expect(p).resolves.toEqual({ url: 'https://r2.test/a.mp3', cost: 20, cached: false })
+
+    const q = stage.speak({ who: '路人', text: '嗯', emotion: '冷淡' })
+    site.refuse(site.lastRequest().id!, 'no_voice', '这个角色没配声音')
+    const e = await q.catch((x: StageError) => x)
+    expect(e).toMatchObject({ code: 'no_voice' })
+    expect((e as StageError).retryable).toBe(false)
   })
 
   it('网站拒了：抛 StageError（code / 中文原因），同时广播一次 error', async () => {

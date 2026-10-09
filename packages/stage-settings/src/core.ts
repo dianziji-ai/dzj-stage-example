@@ -1,6 +1,6 @@
 /**
- * 播放设置的数据和纯函数（不碰 DOM / React）。一份设置管五样：
- *   文本速度（逐字打出）· 字号 · 动效 · 选项行为 · 自动播放（开关 + 每字停留 + 句末停顿）。
+ * 播放设置的数据和纯函数（不碰 DOM / React）。一份设置管六样：
+ *   文本速度（逐字打出）· 字号 · 动效 · 选项行为 · 自动播放（开关 + 每字停留 + 句末停顿）· 配音（0.2.0，给 @dianziji/stage-voice 用）。
  * 自动播放等多久 ＝ 句末停顿 + 字数 × 每字停留，最多 MAX_DELAY_MS；字数只数要读的字（空白和标点不算）。
  */
 
@@ -10,8 +10,16 @@ export type Motion = 'full' | 'reduced'
 /** 点选项：fill＝填进输入框等玩家确认（连点几个按顺序叠加）；send＝直接发 */
 export type ChoiceMode = 'fill' | 'send'
 export type AutoPlay = { on: boolean; perChar: number; pause: number }
+/**
+ * 配音（0.2.0）：on＝角色台词自动念出来（按字数扣玩家能量，所以默认关、玩家自己开；念出错一次 stage-voice 会把它关掉）；
+ * volume 0~100；maxLine＝一句超过这么多字就不念（模型写出一大段时不白扣）；maxTurn＝一轮累计超过就不再念，0＝不限。
+ */
+export type Voice = { on: boolean; volume: number; maxLine: number; maxTurn: number }
 
-export type Settings = { textSpeed: TextSpeed; fontSize: FontSize; motion: Motion; choiceMode: ChoiceMode; autoPlay: AutoPlay }
+/** 界面音效（0.2.0，给 @dianziji/stage-sfx 用）：悬停 / 点击 / 确认这些操作的声音反馈。默认开、音量 50 */
+export type Sfx = { on: boolean; volume: number }
+
+export type Settings = { textSpeed: TextSpeed; fontSize: FontSize; motion: Motion; choiceMode: ChoiceMode; autoPlay: AutoPlay; voice: Voice; sfx: Sfx }
 
 export const DEFAULT_SETTINGS: Settings = {
   textSpeed: 'normal',
@@ -19,7 +27,13 @@ export const DEFAULT_SETTINGS: Settings = {
   motion: 'full',
   choiceMode: 'fill',
   autoPlay: { on: false, perChar: 90, pause: 1500 },
+  voice: { on: false, volume: 80, maxLine: 80, maxTurn: 300 },
+  sfx: { on: true, volume: 50 },
 }
+
+/** 配音两个上限的可选值（设置面板的分段按钮用；读回来不在里面的夹回默认） */
+export const VOICE_MAX_LINE = [40, 80, 150] as const
+export const VOICE_MAX_TURN = [150, 300, 600, 0] as const
 
 /** 每种文本速度一秒打几个字（瞬间＝Infinity，一下全出） */
 export const CHARS_PER_SEC: Record<TextSpeed, number> = { slow: 14, normal: 30, fast: 70, instant: Infinity }
@@ -30,7 +44,24 @@ export const FONT_SCALE: Record<FontSize, number> = { small: 0.88, normal: 1, la
 export const LIMITS = {
   perChar: { min: 20, max: 250, step: 10 },
   pause: { min: 0, max: 5000, step: 250 },
+  volume: { min: 0, max: 100, step: 5 },
 } as const
+
+/**
+ * 设置面板上的「翻页节奏」三档（0.2.0 起面板不再给两条滑杆，选一档同时定每字停留和句末停顿）。
+ * 读回来的不是这三档（老版本滑杆调过的）：面板按最近的一档显示，玩家点了才改。
+ */
+export type Pace = 'slow' | 'normal' | 'fast'
+export const PACES: Record<Pace, Pick<AutoPlay, 'perChar' | 'pause'>> = {
+  slow: { perChar: 130, pause: 2500 },
+  normal: { perChar: 90, pause: 1500 },
+  fast: { perChar: 50, pause: 800 },
+}
+/** 现在的设置最接近哪一档 */
+export function paceOf(a: Pick<AutoPlay, 'perChar' | 'pause'>): Pace {
+  const d = (p: Pace) => Math.abs(PACES[p].perChar - a.perChar) * 10 + Math.abs(PACES[p].pause - a.pause)
+  return (['slow', 'normal', 'fast'] as Pace[]).reduce((best, p) => (d(p) < d(best) ? p : best), 'normal')
+}
 
 /** 一句最多等多久：再长的句子也不让人干等 */
 export const MAX_DELAY_MS = 12_000
@@ -58,7 +89,10 @@ const num = (v: unknown, d: number, lim: { min: number; max: number }) => (typeo
 export function normalizeSettings(raw: unknown): Settings {
   const r = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>
   const a = (r.autoPlay && typeof r.autoPlay === 'object' ? r.autoPlay : {}) as Record<string, unknown>
+  const v = (r.voice && typeof r.voice === 'object' ? r.voice : {}) as Record<string, unknown>
+  const x = (r.sfx && typeof r.sfx === 'object' ? r.sfx : {}) as Record<string, unknown>
   const d = DEFAULT_SETTINGS
+  const oneOf = (x: unknown, all: readonly number[], def: number) => (typeof x === 'number' && all.includes(x) ? x : def)
   return {
     textSpeed: pick(r.textSpeed, ['slow', 'normal', 'fast', 'instant'] as const, d.textSpeed),
     fontSize: pick(r.fontSize, ['small', 'normal', 'large'] as const, d.fontSize),
@@ -69,12 +103,27 @@ export function normalizeSettings(raw: unknown): Settings {
       perChar: num(a.perChar, d.autoPlay.perChar, LIMITS.perChar),
       pause: num(a.pause, d.autoPlay.pause, LIMITS.pause),
     },
+    voice: {
+      on: typeof v.on === 'boolean' ? v.on : d.voice.on,
+      volume: num(v.volume, d.voice.volume, LIMITS.volume),
+      maxLine: oneOf(v.maxLine, VOICE_MAX_LINE, d.voice.maxLine),
+      maxTurn: oneOf(v.maxTurn, VOICE_MAX_TURN, d.voice.maxTurn),
+    },
+    sfx: {
+      on: typeof x.on === 'boolean' ? x.on : d.sfx.on,
+      volume: num(x.volume, d.sfx.volume, LIMITS.volume),
+    },
   }
 }
 
 /** 两份设置一样吗（store 判断要不要写、要不要通知） */
 export function sameSettings(a: Settings, b: Settings): boolean {
-  return a.textSpeed === b.textSpeed && a.fontSize === b.fontSize && a.motion === b.motion && a.choiceMode === b.choiceMode && a.autoPlay.on === b.autoPlay.on && a.autoPlay.perChar === b.autoPlay.perChar && a.autoPlay.pause === b.autoPlay.pause
+  return (
+    a.textSpeed === b.textSpeed && a.fontSize === b.fontSize && a.motion === b.motion && a.choiceMode === b.choiceMode &&
+    a.autoPlay.on === b.autoPlay.on && a.autoPlay.perChar === b.autoPlay.perChar && a.autoPlay.pause === b.autoPlay.pause &&
+    a.voice.on === b.voice.on && a.voice.volume === b.voice.volume && a.voice.maxLine === b.voice.maxLine && a.voice.maxTurn === b.voice.maxTurn &&
+    a.sfx.on === b.sfx.on && a.sfx.volume === b.sfx.volume
+  )
 }
 
 /**

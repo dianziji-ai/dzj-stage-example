@@ -48,3 +48,37 @@ describe('fillChoice：填入确认模式点选项', () => {
     expect(fillChoice('写了一半', [], ' 抱住她 ')).toEqual({ text: '抱住她', stack: ['抱住她'] })
   })
 })
+
+describe('配音设置（0.2.0）', () => {
+  it('默认关、音量 80、单句 80、每轮 300', () => {
+    expect(DEFAULT_SETTINGS.voice).toEqual({ on: false, volume: 80, maxLine: 80, maxTurn: 300 })
+    expect(normalizeSettings(null).voice).toEqual(DEFAULT_SETTINGS.voice)
+  })
+  it('读回来不认识的值夹回默认：音量夹进 0~100，上限只认可选值，0＝不限', () => {
+    const v = normalizeSettings({ voice: { on: true, volume: 180, maxLine: 77, maxTurn: 0 } }).voice
+    expect(v).toEqual({ on: true, volume: 100, maxLine: 80, maxTurn: 0 })
+    expect(normalizeSettings({ voice: 'x' }).voice).toEqual(DEFAULT_SETTINGS.voice)
+  })
+  it('sameSettings 也比配音', () => {
+    const a = normalizeSettings(null)
+    expect(sameSettings(a, { ...a, voice: { ...a.voice, on: true } })).toBe(false)
+  })
+})
+
+describe('翻页节奏三档（0.2.0）', () => {
+  it('paceOf 取最近的一档；默认＝标准', async () => {
+    const { PACES, paceOf } = await import('../src/core')
+    expect(paceOf(DEFAULT_SETTINGS.autoPlay)).toBe('normal')
+    expect(paceOf(PACES.fast)).toBe('fast')
+    expect(paceOf({ perChar: 140, pause: 3000 })).toBe('slow')
+  })
+})
+
+describe('音效设置（0.2.0）', () => {
+  it('默认开、音量 50；读回来夹回范围', () => {
+    expect(DEFAULT_SETTINGS.sfx).toEqual({ on: true, volume: 50 })
+    expect(normalizeSettings({ sfx: { on: false, volume: -5 } }).sfx).toEqual({ on: false, volume: 0 })
+    const a = normalizeSettings(null)
+    expect(sameSettings(a, { ...a, sfx: { ...a.sfx, volume: 60 } })).toBe(false)
+  })
+})
