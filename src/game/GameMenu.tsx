@@ -1,22 +1,26 @@
 import { useEffect } from 'react'
 import { useSaveStatus, useStageActions } from '@dianziji/stage/react'
 import { Icon, type IconName } from '../components/icons'
+import { Dot } from './Hud'
 
-type Item = { icon?: IconName; emoji?: string; label: string; sub?: string; onClick: () => void; on?: boolean }
+type Item = { icon?: IconName; emoji?: string; label: string; sub?: string; onClick: () => void; on?: boolean; dot?: boolean }
 
 /**
  * 手机菜单（顶栏 ☰）：从底部弹起的奶油色面板，3 列大格子。
- *   地图 / 图册 / 本局 / 音乐开关 / 保存（下面一行小字写上次什么时候存的）
+ *   地图 / 图册 / 本局 / 音乐开关 / 保存（下面一行小字写上次什么时候存的）/ 更新日志
  * 点格子做事并收起（音乐、保存不收，原地变）；点遮罩 / Esc 收起。底边让 home 条。
  * ★性能：关着不渲染；进场只动 transform。
  */
-export default function GameMenu({ open, onClose, go, musicOn, onMusic }: {
+export default function GameMenu({ open, onClose, go, musicOn, onMusic, onLog, logNew }: {
   open: boolean
   onClose: () => void
   /** 去某一页 / 打开本局（'panel'） */
   go: (page: string) => void
   musicOn: boolean
   onMusic: () => void
+  /** 打开更新日志；logNew＝有没看过的新版本（亮红点） */
+  onLog: () => void
+  logNew: boolean
 }) {
   const { saveNow, saver } = useStageActions()
   const st = useSaveStatus(saver)
@@ -40,6 +44,7 @@ export default function GameMenu({ open, onClose, go, musicOn, onMusic }: {
     { icon: 'info', label: '本局', sub: '设定 / 存档 / 分区', onClick: nav('panel') },
     { emoji: musicOn ? '🎵' : '🔇', label: musicOn ? '音乐 开' : '音乐 关', sub: '点一下切换', onClick: onMusic, on: musicOn },
     { emoji: '💾', label: '保存', sub: saved, onClick: saveNow },
+    { icon: 'log', label: '更新', sub: '这一版改了什么', onClick: () => (onClose(), onLog()), dot: logNew },
   ]
 
   return (
@@ -52,12 +57,13 @@ export default function GameMenu({ open, onClose, go, musicOn, onMusic }: {
             <button
               key={it.label}
               onClick={it.onClick}
-              className={`flex flex-col items-center gap-1 rounded-2xl bg-white px-2 py-3.5 text-[#4a2f2a] shadow-[0_6px_16px_-10px_rgba(236,72,153,0.45)] active:scale-95 ${it.on === false ? 'opacity-70' : ''}`}
+              className={`relative flex flex-col items-center gap-1 rounded-2xl bg-white px-2 py-3.5 text-[#4a2f2a] shadow-[0_6px_16px_-10px_rgba(236,72,153,0.45)] active:scale-95 ${it.on === false ? 'opacity-70' : ''}`}
             >
               <span className="grid size-10 place-items-center rounded-full bg-gradient-to-br from-amber-100 to-pink-100 text-pink-500">
                 {it.icon ? <Icon name={it.icon} className="size-5" /> : <span className="text-lg">{it.emoji}</span>}
               </span>
               <span className="text-sm font-bold">{it.label}</span>
+              {it.dot && <Dot />}
               {it.sub && <span className={`w-full truncate text-center text-[10px] ${st.state === 'error' && it.label === '保存' ? 'text-rose-500' : 'text-[#9a7b72]'}`}>{it.sub}</span>}
             </button>
           ))}

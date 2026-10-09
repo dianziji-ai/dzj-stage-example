@@ -117,6 +117,13 @@ export default function Dialogue({ me, call, busy, error, topupUrl, onSend, onDi
     if (!(await onSend(line)) && wasDraft) setText(line)
   }
 
+  /** 去自己说（没有选项时点那条提示）：电脑落到下面常驻的输入框，手机打开全屏输入层 */
+  const inputRef = useRef<HTMLInputElement>(null)
+  const talk = () => {
+    if (window.matchMedia('(min-width: 1024px)').matches) inputRef.current?.focus()
+    else setSheet(true)
+  }
+
   /** 点选项：设置里「填入确认」＝填进输入框（连点几个按顺序叠，手机顺手打开全屏输入），「直接发送」＝直接发 */
   const pick = (c: string) => {
     if (settings.choiceMode === 'send') return void say(c)
@@ -149,7 +156,7 @@ export default function Dialogue({ me, call, busy, error, topupUrl, onSend, onDi
       <div className="mx-auto flex min-h-0 w-full max-w-2xl flex-col px-4 lg:max-w-3xl lg:px-6">
         {cursor.viewing && <ReviewBar back={cursor.back} said={cursor.said} me={me} onLatest={cursor.latest} />}
         {/* 选项只在读到最后一句时出：话还没听完，不急着做选择 */}
-        {idx === last && <Choices choices={choices} call={call} busy={busy || cursor.viewing} onPick={pick} />}
+        {idx === last && <Choices choices={choices} call={call} busy={busy || cursor.viewing} onPick={pick} onTalk={talk} />}
         {error && <ErrorNotice error={error} topupUrl={topupUrl} onRetry={(t) => void say(t)} onClose={onDismissError} />}
 
         <div className={`flex min-h-0 flex-col pt-3 ${d.box}`} data-tone={tone}>
@@ -258,6 +265,7 @@ export default function Dialogue({ me, call, busy, error, topupUrl, onSend, onDi
                   </button>
                 )}
                 <input
+                  ref={inputRef}
                   value={text}
                   onChange={(e) => setText(e.target.value)}
                   onKeyDown={(e) => {

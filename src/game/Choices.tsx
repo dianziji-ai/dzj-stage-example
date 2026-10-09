@@ -13,6 +13,7 @@ import { travelOf, type Travel } from './logic'
  *   也是一条光带：金色发丝线，左边一枚小窗露出目的地，「前往 · 地点」+ 那句话；点了发后面那句话（不带【前往：…】）。
  *   地点不在地图里的（travelOf 返回 null），整条丢掉——别把「【前往：火星】」露给玩家。
  * 生成中 / 回看旧的一轮时置灰（不能点）。
+ * ★这一轮写完却一条能点的都没有（模型漏写了行动区）：出一条淡一点的光带「暂时没有动作，点击气泡自由发言吧～」，点了就去自己说（onTalk）。
  */
 type Tint = { dot: string; line: string }
 const TINTS: Tint[] = [
@@ -21,17 +22,30 @@ const TINTS: Tint[] = [
   { dot: 'bg-[#b98cff] shadow-[0_0_8px_#b98cff]', line: 'via-[#b98cff]/75 group-enabled:group-hover:via-[#b98cff]' },
 ]
 const GOLD: Tint = { dot: '', line: 'via-[#ffd23f]/85 group-enabled:group-hover:via-[#ffd23f]' }
+const HINT: Tint = { dot: '', line: 'via-white/40 group-enabled:group-hover:via-white/70' }
 
-export default function Choices({ choices, call, busy, onPick }: {
+export default function Choices({ choices, call, busy, onPick, onTalk }: {
   choices: string[]
   /** 她对你的称呼（「主人的房间」里的主人换成它） */
   call: string
   busy: boolean
   onPick: (c: string) => void
+  /** 没有选项时点提示：去自己说（手机打开全屏输入，电脑落到下面的输入框） */
+  onTalk: () => void
 }) {
   const normal = choices.filter((c) => !c.trim().startsWith('【前往'))
   const travel = choices.map(travelOf).find((t): t is Travel => t !== null) ?? null
-  if (!normal.length && !travel) return null
+  if (!normal.length && !travel)
+    return busy ? null : (
+      <div className="mx-auto mb-2 grid w-full max-w-xl shrink-0 lg:mb-3">
+        <Ribbon tint={HINT} delay={300} disabled={false} onClick={onTalk} lead={<span className="shrink-0 text-[15px] leading-none opacity-80">💬</span>}>
+          <span className="text-white/75">
+            暂时没有动作，<span className="lg:hidden">点击气泡</span>
+            <span className="hidden lg:inline">在下面</span>自由发言吧～
+          </span>
+        </Ribbon>
+      </div>
+    )
   return (
     <div className="mx-auto mb-2 grid w-full max-w-xl shrink-0 gap-2.5 lg:mb-3 lg:gap-3">
       {normal.map((c, i) => {

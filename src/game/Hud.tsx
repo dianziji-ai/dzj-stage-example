@@ -1,8 +1,9 @@
-import { memo, useState } from 'react'
+import { memo, useEffect, useState } from 'react'
 import { Icon, type IconName } from '../components/icons'
-import { placeName, type PlaceId } from './content'
+import { LOGO_URL, placeName, type PlaceId } from './content'
 
-export type HudAction = { icon: IconName; label: string; onClick: () => void }
+/** dot＝右上角亮小红点（有没看过的新东西，比如更新日志） */
+export type HudAction = { icon: IconName; label: string; onClick: () => void; dot?: boolean }
 
 type Props = {
   /** 玩家站内资料（拆成原始值传，memo 才比得动）；没有＝不显示头像 */
@@ -34,15 +35,35 @@ type Props = {
  *   电脑（一行）：  [头像 昵称 @用户名·ID] [📍地点 · 第几天 时间] [♥ 好感条 🪙 心情]  ……  [🎵] [地图|图册]
  *
  * 头像点了打开「本局」面板；状态条点了弹状态说明。
+ * ★可以收起：︿ 收起后整条只剩左上角她的圆头像（带好感数 / 红点），点头像展开；收起与否记在本机。
+ *   收起与否也标在 <html data-hud-folded> 上：顶栏下面那一列（手机抓娃娃小圆钮）跟着挪到顶上。
  * ★改高度要同步 App.tsx 里「顶栏下面」那些东西的 top（手机 60px、电脑 80px）。
  * memo：只收数值，打字时数值没变就不重渲染。
  */
 export default memo(function Hud(p: Props) {
+  const [folded, setFolded] = useState(readFolded)
+  useEffect(() => {
+    document.documentElement.setAttribute('data-hud-folded', folded ? '1' : '0')
+    writeFolded(folded)
+  }, [folded])
+  const fold = () => setFolded(true)
+  if (folded)
+    return (
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-20 pt-safe px-safe">
+        <div className="mx-auto max-w-2xl px-3 pt-2.5 lg:max-w-6xl lg:px-5 lg:pt-4">
+          <button onClick={() => setFolded(false)} aria-label="展开顶栏" title="展开顶栏" className="pointer-events-auto relative block animate-fade-in rounded-full active:scale-95">
+            <img src={LOGO_URL} alt="" className="size-11 rounded-full bg-white/30 object-cover ring-2 ring-white/80 shadow-[0_6px_18px_rgb(0_0_0/0.35)] lg:size-14" />
+            <span className="absolute -right-1.5 -bottom-1 rounded-full bg-pink-500 px-1.5 text-[10px] leading-4 font-bold text-white shadow">♥{p.love}</span>
+            {p.actions.some((a) => a.dot) && <Dot />}
+          </button>
+        </div>
+      </div>
+    )
   return (
     <div className="pointer-events-none absolute inset-x-0 top-0 z-20 bg-gradient-to-b from-black/35 to-transparent pt-safe px-safe">
       <div className="pointer-events-auto mx-auto max-w-2xl px-3 pt-2.5 pb-6 lg:max-w-6xl lg:px-5 lg:pt-4">
-        <Mobile {...p} />
-        <Desktop {...p} />
+        <Mobile {...p} onFold={fold} />
+        <Desktop {...p} onFold={fold} />
       </div>
     </div>
   )
@@ -53,7 +74,7 @@ export default memo(function Hud(p: Props) {
  *   [头像  星空天台 · 00:15 ……  ♥ 20  ☰]
  * 头像→本局；♥→状态说明（好感条 / 硬币 / 心情 / 天数都在里面）；☰→菜单（地图 / 图册 / 本局 / 音乐 / 保存）。
  */
-function Mobile(p: Props) {
+function Mobile(p: Props & { onFold: () => void }) {
   return (
     <div className="glass flex h-10 items-center gap-2 rounded-full pr-1 pl-1 lg:hidden">
       {p.user ? <AvatarButton {...p.user} /> : <span className="w-2" />}
@@ -66,15 +87,19 @@ function Mobile(p: Props) {
       <button onClick={p.onStatus} aria-label={`状态：好感 ${p.love}，硬币 ${p.coins}，心情 ${p.mood}`} className="flex h-8 shrink-0 items-center rounded-full bg-white/12 px-2.5 text-[13px] active:bg-white/20">
         <Love love={p.love} tick={p.loveTick} />
       </button>
-      <button onClick={p.onMore} aria-label="菜单" className="grid size-8 shrink-0 place-items-center rounded-full active:bg-white/15">
+      <button onClick={p.onFold} aria-label="收起顶栏" className="grid size-8 shrink-0 place-items-center rounded-full text-white/70 active:bg-white/15">
+        <Icon name="up" className="size-4" />
+      </button>
+      <button onClick={p.onMore} aria-label="菜单" className="relative grid size-8 shrink-0 place-items-center rounded-full active:bg-white/15">
         <Icon name="menu" className="size-5" />
+        {p.actions.some((a) => a.dot) && <Dot />}
       </button>
     </div>
   )
 }
 
 /** 电脑：一行，左边三块（我 / 在哪 / 状态）同高，右边音乐 + 入口 */
-function Desktop(p: Props) {
+function Desktop(p: Props & { onFold: () => void }) {
   return (
     <div className="hidden h-14 items-stretch gap-3 lg:flex">
       {p.user && (
@@ -103,12 +128,16 @@ function Desktop(p: Props) {
       <MusicButton on={p.musicOn} onClick={p.onMusic} className="w-14" />
       <div className="glass flex shrink-0 items-center rounded-2xl p-1.5">
         {p.actions.map((a) => (
-          <button key={a.label} onClick={a.onClick} className="flex h-full items-center gap-1.5 rounded-xl px-3 text-sm hover:bg-white/15">
+          <button key={a.label} onClick={a.onClick} className="relative flex h-full items-center gap-1.5 rounded-xl px-3 text-sm hover:bg-white/15">
             <Icon name={a.icon} className="size-4" />
             {a.label}
+            {a.dot && <Dot />}
           </button>
         ))}
       </div>
+      <button onClick={p.onFold} aria-label="收起顶栏" title="收起顶栏" className="glass grid w-12 shrink-0 place-items-center rounded-2xl text-white/80 hover:text-white">
+        <Icon name="up" className="size-4" />
+      </button>
     </div>
   )
 }
@@ -175,4 +204,26 @@ function Avatar({ src, name, className }: { src: string; name: string; className
   ) : (
     <span className={`grid place-items-center rounded-full bg-gradient-to-br from-amber-200 to-pink-300 text-sm font-bold text-white ring-2 ring-white/70 ${className}`}>{[...(name || '?')][0]}</span>
   )
+}
+
+/** 小红点：有没看过的新东西 */
+export function Dot() {
+  return <span className="absolute top-0.5 right-0.5 size-2 rounded-full bg-pink-500 ring-2 ring-white/90" aria-hidden />
+}
+
+/** 顶栏收起了没有（本机偏好，读写包 try：隐私模式会抛） */
+const FOLD_KEY = 'gal-hud-folded'
+function readFolded(): boolean {
+  try {
+    return localStorage.getItem(FOLD_KEY) === '1'
+  } catch {
+    return false
+  }
+}
+function writeFolded(v: boolean) {
+  try {
+    localStorage.setItem(FOLD_KEY, v ? '1' : '0')
+  } catch {
+    /* 存不了就只管这一次 */
+  }
 }

@@ -16,6 +16,8 @@ import ThoughtBubble from './game/ThoughtBubble'
 import TabBar, { type Tab } from './game/TabBar'
 import TipHost from './game/Tip'
 import GameMenu from './game/GameMenu'
+import ChangelogSheet from './game/ChangelogSheet'
+import { CHANGELOG } from './game/changelog'
 import { showTip } from './game/tipStore'
 import { usePlayGestures } from './game/gestures'
 import { useGame, usePack, useThought } from './game/useGame'
@@ -85,8 +87,24 @@ export default function App() {
   useBgm(page === 'claw' ? 'lively' : PLACE_SONG[g.location] ?? 'day')
   const music = useBgmPrefs()
   const toggleMusic = useCallback(() => bgm.setOn(!bgm.prefs.on), [])
+  // 更新日志：最新一版的 id 跟本机记的不一样＝有新版本没看过，入口亮红点
+  const [logOpen, setLogOpen] = useState(false)
+  const [logSeen, setLogSeen] = useState(() => readLocal(LOG_KEY))
+  const logNew = logSeen !== CHANGELOG[0].id
+  const openLog = useCallback(() => {
+    setLogOpen(true)
+    setLogSeen(CHANGELOG[0].id)
+    writeLocal(LOG_KEY, CHANGELOG[0].id)
+  }, [])
+
   // 电脑顶栏的入口：「本局」不放这里（左上角玩家头像点了就是本局）
-  const actions = useMemo<HudAction[]>(() => TABS.filter((t) => t.id !== 'play' && t.id !== 'panel').map((t) => ({ icon: t.icon, label: t.label, onClick: () => go(t.id) })), [go])
+  const actions = useMemo<HudAction[]>(
+    () => [
+      ...TABS.filter((t) => t.id !== 'play' && t.id !== 'panel').map((t) => ({ icon: t.icon, label: t.label, onClick: () => go(t.id) })),
+      { icon: 'log', label: '更新', onClick: openLog, dot: logNew },
+    ],
+    [go, openLog, logNew],
+  )
 
   // 抓娃娃机：送娃娃＝扣一只收藏、回游玩页、发给她；离开时选了「告诉她」就把战绩发过去
   // ★先发、发出去了再从收藏里扣：能量不足 / 断网 / 她还在说时 send 返回 false，娃娃留在收藏柜里（错误由对话框讲）
@@ -150,7 +168,7 @@ export default function App() {
 
   // 鼠标手势：右键藏起全部界面（只看背景和立绘）/ 再右键回来；左键点空白处翻下一句（对话框把它的「下一句」交上来）
   const advance = useRef<() => void>(() => {})
-  const gestures = usePlayGestures({ enabled: page === 'play' && !menu && view === null && egg === null, advance: () => advance.current() })
+  const gestures = usePlayGestures({ enabled: page === 'play' && !menu && !logOpen && view === null && egg === null, advance: () => advance.current() })
 
   return (
     <div className="fixed inset-0 overflow-hidden bg-black text-white select-none" onClick={gestures.onClick} onContextMenu={gestures.onContextMenu}>
@@ -162,7 +180,7 @@ export default function App() {
         {atEnd && <ThoughtBubble />}
         <Hud user={hudUser} place={g.location} call={g.player.call} time={g.time} love={g.status.好感} loveTick={g.loveTick} mood={g.status.心情} day={g.status.天数} coins={g.save.claw.coins} onStatus={showStatus} actions={actions} onMore={openMenu} musicOn={music.on} onMusic={toggleMusic} />
         {/* 手机：右侧细竖栏（顶栏下面 10px）——抓娃娃小圆钮 + 存档时才冒的小图标；立绘在中间，右边本来就空 */}
-        <div className="pointer-events-none absolute inset-x-0 top-[calc(var(--safe-top)+60px)] z-20 px-safe lg:hidden">
+        <div className="pointer-events-none absolute inset-x-0 top-[calc(var(--safe-top)+60px)] z-20 px-safe transition-[top] duration-300 lg:hidden [html[data-hud-folded='1']_&]:top-[calc(var(--safe-top)+8px)]">
           {/* 和顶栏同一列（平板上不贴屏幕边、角标不被裁），右边缘对齐细胶囊 */}
           <div className="pointer-events-auto mx-auto flex max-w-2xl flex-col items-end gap-2.5 px-3 pt-1 pr-4">
             <EntryButton variant="rail" coins={g.save.claw.coins} hint={clawHint} onOpen={() => setPage('claw')} onLocked={clawLocked} />
@@ -194,7 +212,8 @@ export default function App() {
         </div>
       )}
 
-      <GameMenu open={menu} onClose={closeMenu} go={go} musicOn={music.on} onMusic={toggleMusic} />
+      <GameMenu open={menu} onClose={closeMenu} go={go} musicOn={music.on} onMusic={toggleMusic} onLog={openLog} logNew={logNew} />
+      {logOpen && <ChangelogSheet onClose={() => setLogOpen(false)} />}
       <TipHost />
 
       {/* 本局面板：入口是顶栏 / 底部菜单里的「本局」，不要悬浮按钮；本地开发也显示 token 细节 */}
@@ -216,4 +235,21 @@ export default function App() {
       {g.film && <VideoViewer clip={g.film} closeLabel="跳过" closeOnEnd onClose={g.closeFilm} />}
     </div>
   )
+}
+
+/** 本机偏好（「看过了」这类）：读写包 try，隐私模式会抛 */
+const LOG_KEY = 'gal-changelog-seen'
+function readLocal(k: string): string {
+  try {
+    return localStorage.getItem(k) ?? ''
+  } catch {
+    return ''
+  }
+}
+function writeLocal(k: string, v: string) {
+  try {
+    localStorage.setItem(k, v)
+  } catch {
+    /* 存不了就下次再亮一次红点 */
+  }
 }
