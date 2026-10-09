@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type RefObject } from 'react'
 import { useTurnCursor, useTurnProgress } from '@dianziji/stage/react'
-import { fillChoice, useAutoPlay, useSettings, useTypewriter } from '@dianziji/stage-settings'
+import { useAutoPlay, useTypewriter } from '@dianziji/stage-settings'
 import { Icon } from '../components/icons'
 import InputSheet from '../components/InputSheet'
 import SendButton from '../components/SendButton'
@@ -8,6 +8,8 @@ import BeatText from './BeatText'
 import { NO_LOOK, sameLook, toneOf, type Look } from './art'
 import { lastLook, lookAt, type Beat } from './beats'
 import Choices from './Choices'
+import ChoiceConfirm from './ChoiceConfirm'
+import { choiceConfirmed, rememberChoiceConfirmed } from './choicePref'
 import { CHAR_NAME, LOGO_URL } from './content'
 import ErrorNotice, { type NoticeError } from './ErrorNotice'
 import ReviewBar from './ReviewBar'
@@ -88,8 +90,7 @@ export default function Dialogue({ me, call, busy, error, topupUrl, onSend, onDi
     if (advanceRef) advanceRef.current = next
   })
   const auto = useAutoPlay({ text: beat?.text ?? '', canAdvance: idx < last, onNext: () => go(idx + 1), ready: tw.done, paused: !active || sheet || tray || cursor.viewing || mode === 'hidden' || !!error })
-  const [settings] = useSettings()
-  const [stack, setStack] = useState<string[]>([])
+  const [askChoice, setAskChoice] = useState<string | null>(null) // 点了选项、等确认的那一句
 
   // 立绘：这一句她的样子；这一轮她还没开口（刚发出去 / 一轮开头全是旁白且她没说话）就停在上一轮最后的样子
   const [held, setHeld] = useState<Look>(NO_LOOK)
@@ -112,7 +113,6 @@ export default function Dialogue({ me, call, busy, error, topupUrl, onSend, onDi
     if (!line || busy) return
     const wasDraft = line === text.trim()
     if (wasDraft) setText('')
-    setStack([])
     setSheet(false)
     if (!(await onSend(line)) && wasDraft) setText(line)
   }
@@ -124,13 +124,11 @@ export default function Dialogue({ me, call, busy, error, topupUrl, onSend, onDi
     else setSheet(true)
   }
 
-  /** 点选项：设置里「填入确认」＝填进输入框（连点几个按顺序叠，手机顺手打开全屏输入），「直接发送」＝直接发 */
+  /** 点选项：直接发出去，不填输入框。第一次点先确认一次（勾了「以后不再提示」就记在本机，之后直接发） */
   const pick = (c: string) => {
-    if (settings.choiceMode === 'send') return void say(c)
-    const r = fillChoice(text, stack, c)
-    setText(r.text)
-    setStack(r.stack)
-    if (window.matchMedia('(max-width: 1023px)').matches) setSheet(true)
+    if (busy) return
+    if (!choiceConfirmed()) return void setAskChoice(c)
+    void say(c)
   }
 
   if (mode === 'hidden') {
@@ -290,6 +288,18 @@ export default function Dialogue({ me, call, busy, error, topupUrl, onSend, onDi
             if (s.mode === 'send') return void say(s.command)
             setText(s.command)
             if (window.matchMedia('(max-width: 1023px)').matches) setSheet(true) // 手机没有常驻输入栏：填好直接打开全屏输入
+          }}
+        />
+      )}
+      {askChoice !== null && (
+        <ChoiceConfirm
+          text={askChoice}
+          onCancel={() => setAskChoice(null)}
+          onSend={(remember) => {
+            if (remember) rememberChoiceConfirmed()
+            const c = askChoice
+            setAskChoice(null)
+            void say(c)
           }}
         />
       )}

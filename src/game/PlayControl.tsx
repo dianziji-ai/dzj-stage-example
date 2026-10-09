@@ -38,7 +38,8 @@ export default function PlayControl({ state }: { state: AutoPlayState }) {
                 </button>
               </div>
               <div className="min-h-0 overflow-y-auto overscroll-contain px-5 pb-5">
-                <SettingsPanel className="dzj-ap-gal" />
+                {/* 不放「点选项」：本例点选项一律直接发（第一次确认一次，见 ChoiceConfirm） */}
+                <SettingsPanel className="dzj-ap-gal" sections={['text', 'font', 'motion', 'auto']} />
               </div>
             </div>
           </div>,
