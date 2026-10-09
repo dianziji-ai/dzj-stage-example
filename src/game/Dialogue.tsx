@@ -60,12 +60,18 @@ export default function Dialogue({ me, call, busy, error, topupUrl, onSend, onDi
 
   // 读到第几句：换了一轮（新生成 / 回看）就回到第一句（React「根据上一次渲染调整状态」写法，不用 effect）
   const turn = busy ? 'live' : `t${cursor.id ?? 'latest'}`
-  const [pos, setPos] = useState({ turn, idx: 0 })
-  if (pos.turn !== turn) setPos({ turn, idx: 0 })
+  const [pos, setPos] = useState({ turn, idx: 0, text: '' })
+  // 换了一轮才回到第一句；★生成中玩家已经点着往下读了，写完（live → 最新一轮）就从读到的那句接着播，不跳回开头
+  //   按句子内容找回来（写完后句子顺序可能变：生成中先把你说的那句补在最前，写完它挪到旁白后面）；找不到再按位置。生成中那句可能只写了半截，所以也认「开头一样」
+  if (pos.turn !== turn) {
+    const keep = pos.turn === 'live' && turn === 'tlatest'
+    const at = keep && pos.text ? beats.findIndex((b) => b.text === pos.text || b.text.startsWith(pos.text)) : -1
+    setPos({ turn, idx: keep ? (at >= 0 ? at : pos.idx) : 0, text: keep ? pos.text : '' })
+  }
   const last = Math.max(0, beats.length - 1)
   const idx = Math.min(pos.idx, last)
   const beat: Beat | undefined = beats[idx]
-  const go = (i: number) => setPos({ turn, idx: Math.max(0, Math.min(last, i)) })
+  const go = (i: number) => setPos({ turn, idx: Math.max(0, Math.min(last, i)), text: beats[Math.max(0, Math.min(last, i))]?.text ?? '' })
 
   // 立绘：这一句她的样子；这一轮她还没开口（刚发出去 / 一轮开头全是旁白且她没说话）就停在上一轮最后的样子
   const [held, setHeld] = useState<Look>(NO_LOOK)
