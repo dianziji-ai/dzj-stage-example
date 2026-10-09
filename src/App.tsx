@@ -193,7 +193,8 @@ export default function App() {
             <span className="pointer-events-auto">
               <SaveIndicator className="glass text-white" />
             </span>
-            <span className="pointer-events-auto">
+            {/* 顶栏收起时招牌挪到右上角（和左上角头像同一行）；保存按钮留在头像下面不动 */}
+            <span className="pointer-events-auto transition-transform duration-300 [html[data-hud-folded='1']_&]:-translate-y-16">
               <EntryButton variant="sign" coins={g.save.claw.coins} hint={clawHint} onOpen={() => setPage('claw')} onLocked={clawLocked} />
             </span>
           </div>
