@@ -28,7 +28,7 @@ import d from './Dialogue.module.css'
  *  · 可以整个隐藏（只留左下角小胶囊，看立绘和场景），记在本机；新一轮开始时自动恢复。
  * ★性能：对话框自己按区订阅旁白 / 对话 / 选项（useBeats / useChoices），AI 写字时只有它重画，App 不动。
  */
-export default function Dialogue({ me, call, busy, error, topupUrl, onSend, onDismissError, onFocus, onEnd }: {
+export default function Dialogue({ me, call, busy, error, topupUrl, onSend, onDismissError, onFocus, onEnd, active = true }: {
   /** 玩家名字（名牌上写；没填写「你」） */
   me: string
   /** 她对你的称呼（换场选项里「主人的房间」用） */
@@ -43,6 +43,8 @@ export default function Dialogue({ me, call, busy, error, topupUrl, onSend, onDi
   onFocus: (look: Look) => void
   /** 读没读到最后一句（写完了、选项出来了）：心声这时才冒，当这一轮的收尾 */
   onEnd: (end: boolean) => void
+  /** 在游玩页吗（切到地图 / 图鉴 / 抓娃娃时对话框只是藏起来、不卸载：自动播放要停） */
+  active?: boolean
 }) {
   const beats = useBeats()
   const choices = useChoices()
@@ -76,7 +78,7 @@ export default function Dialogue({ me, call, busy, error, topupUrl, onSend, onDi
   const go = (i: number) => setPos({ turn, idx: Math.max(0, Math.min(last, i)), text: beats[Math.max(0, Math.min(last, i))]?.text ?? '' })
 
   // 自动播放（独立模块 @dianziji/stage-autoplay）：到点翻下一句；最后一句 / 还没写出下一句时原地等；开着输入框、快捷指令、回看、对话框藏起来时暂停
-  const auto = useAutoPlay({ text: beat?.text ?? '', canAdvance: idx < last, onNext: () => go(idx + 1), paused: sheet || tray || cursor.viewing || mode === 'hidden' || !!error })
+  const auto = useAutoPlay({ text: beat?.text ?? '', canAdvance: idx < last, onNext: () => go(idx + 1), paused: !active || sheet || tray || cursor.viewing || mode === 'hidden' || !!error })
 
   // 立绘：这一句她的样子；这一轮她还没开口（刚发出去 / 一轮开头全是旁白且她没说话）就停在上一轮最后的样子
   const [held, setHeld] = useState<Look>(NO_LOOK)

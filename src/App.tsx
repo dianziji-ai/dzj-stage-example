@@ -171,7 +171,7 @@ export default function App() {
             </span>
           </div>
         </div>
-        <Dialogue me={g.player.name} call={g.player.call} busy={g.busy} error={g.error} topupUrl={stage.siteUrl('/recharge')} onSend={g.send} onDismissError={g.dismissError} onFocus={setLook} onEnd={setAtEnd} />
+        <Dialogue me={g.player.name} call={g.player.call} busy={g.busy} error={g.error} topupUrl={stage.siteUrl('/recharge')} onSend={g.send} onDismissError={g.dismissError} onFocus={setLook} onEnd={setAtEnd} active={page === 'play'} />
       </div>
 
       {page === 'claw' && <ClawGame claw={g.save.claw} busy={g.busy} call={g.player.call} onUpdate={g.updateClaw} onGift={giftPlush} onLeave={leaveClaw} />}

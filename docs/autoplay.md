@@ -15,7 +15,7 @@
    ```ts
    const auto = useAutoPlay({ text: beat?.text ?? '', canAdvance: idx < last, onNext: () => go(idx + 1), paused: sheet || tray || cursor.viewing || hidden || !!error })
    ```
-   `paused` 写你舞台里「玩家在干别的」的所有情况：开着输入框 / 快捷指令 / 弹窗、在回看旧的一轮（`useTurnCursor().viewing`）、对话框藏起来、出错提示开着。
+   `paused` 写你舞台里「玩家在干别的」的所有情况：开着输入框 / 快捷指令 / 弹窗、在回看旧的一轮（`useTurnCursor().viewing`）、对话框藏起来、出错提示开着、**切到别的页面（地图 / 图册……对话框只是藏起来没卸载时一定要算上）**。
 3. 放界面：照抄例子的 `src/game/AutoPlayControl.tsx`（低调的「▶ 自动」+「调节」小图标，点开浮出 `<AutoPlaySettings />`）。
 
 ## 换样子
