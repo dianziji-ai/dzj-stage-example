@@ -4,7 +4,7 @@ import { StageError, withState, type SaveSource, type SnapshotListener, type Sta
 
 const msg = (id: number, role: 'user' | 'assistant', content: string): StageMessage => ({ id, role, kind: null, content })
 const snapOf = (p: Partial<StageSnapshot> = {}): StageSnapshot => ({
-  card: { id: 'c', name: 'c' },
+  card: { id: 'c', name: 'c', avatar: '', background: '', menu_background: '' },
   site: 'https://site.test',
   user: null,
   asset_base: '',
@@ -12,6 +12,9 @@ const snapOf = (p: Partial<StageSnapshot> = {}): StageSnapshot => ({
   state_schema: { type: 'object' },
   image_pack: null,
   setup: { text: '', fields: [] },
+  shortcuts: [],
+  bgm: [],
+  characters: [],
   history: [msg(1, 'assistant', '开场')],
   has_more: false,
   save: { love: 20 },

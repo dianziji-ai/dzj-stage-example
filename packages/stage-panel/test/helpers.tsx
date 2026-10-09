@@ -17,7 +17,7 @@ export const spend = { cost: 1200, model: 'deepseek/deepseek-v3.2', channel: '�
 
 /** 一局像样的快照：有玩家、初始设定、两轮历史（AI 那轮扣了能量）、存档结构、分区 */
 export const snapOf = (p: Partial<StageSnapshot> = {}): StageSnapshot => ({
-  card: { id: 'card1', name: '电子姬的约会' },
+  card: { id: 'card1', name: '电子姬的约会', avatar: '', background: '', menu_background: '' },
   site: 'https://dianziji.ai',
   user: { id: 7, username: 'linchuan', name: '林川', avatar: 'https://cdn/a.webp' },
   asset_base: 'https://cdn',
@@ -30,6 +30,9 @@ export const snapOf = (p: Partial<StageSnapshot> = {}): StageSnapshot => ({
   state_schema: { type: 'object', properties: { love: { type: 'integer', default: 20 }, mood: { type: 'string' } } },
   image_pack: null,
   setup: { text: '名字：林川\n称呼：前辈', fields: [{ key: 'user', label: '名字', value: '林川' }, { key: 'call', label: '称呼', value: null }] },
+  shortcuts: [],
+  bgm: [],
+  characters: [],
   history: [
     msg(1, 'assistant', '<face>\n表情: happy\n</face>\n<narrative>\n她笑了。\n</narrative>', { kind: 'opening' }),
     msg(2, 'user', '你好', { created_at: '2026-10-06T10:00:00Z' }),

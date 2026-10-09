@@ -1,5 +1,14 @@
 # 更新记录
 
+## 内测版 v0.3.1-beta — 2026-10-09
+
+| 包 / 部分 | 版本 |
+|---|---|
+| `@dianziji/stage` 舞台 SDK | 0.3.3（详见 [packages/stage/CHANGELOG.md](packages/stage/CHANGELOG.md)） |
+
+- ★**卡上有的一律从快照读**：快照新增 `shortcuts` 快捷指令、`bgm` 背景音乐、`characters` 角色包，`card` 多了封面 / 背景 / 菜单背景。作者在编辑器改一处，对话模式和舞台都跟着变。用法见 [docs/bridge.md](docs/bridge.md#卡上有的一律从快照读)；给 AI 的规则写进了 AGENTS.md 和 skills（stage-game-logic、stage-assets）。
+- 0.3.2 修了 `<CrossfadeImage>` 立绘被原图尺寸撑大（只剩一个大头）。
+
 ## 内测版 v0.3.0-beta — 2026-10-09
 
 ★官方例子「电子姬的同居日常」重做：**旁白区 + 对话区**，一句一句播、立绘一句一换。手册 [docs/example-card.md](docs/example-card.md) 按「分区 → 拆句 → 选立绘 → 结算 → 选项」重写成教程。

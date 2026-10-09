@@ -39,14 +39,17 @@
 
 | 字段 | 说明 | 什么时候变 |
 |---|---|---|
-| `card` | `{ id, name }` | 不变 |
+| `card` | `{ id, name, avatar, background, menu_background }`：卡名、封面、对话背景、菜单背景（没配＝`''`） | 不变 |
 | `site` | 网站地址（如 `https://dianziji.ai`），`stage.siteUrl('/recharge')` 拼站内链接用 | 不变 |
 | `user` | 玩家的公开资料 `{ id, username, name, avatar }`；只有这几项 | 不变 |
 | `asset_base` | 卡素材的图床地址：卡里写的 `{{asset}}/卡id/assets/…` 把 `{{asset}}` 换成它 | 不变 |
 | `slots` | 卡的分区结构 `{ zone, kind?, label?, … }`，其余字段原样透传 | 不变 |
 | `state_schema` | 存档结构（JSON Schema，编辑器「舞台 → ② 存档结构」）；没定义＝`null`，此时不能存档 | 不变 |
 | `image_pack` | 配图库 `{ groups, images }`（AI 按编号引用的图）；没配＝`null` | 不变 |
-| `setup` | 初始设定 `{ text, fields: [{ key, label, value }] }`，只读 | 玩家在网站上改了设定 |
+| `setup` | 初始设定 `{ text, fields: [{ key, label, value }] }`：玩家填了什么就是什么，只读；没填＝`null` | 玩家在网站上改了设定 |
+| `shortcuts` | 卡上的快捷指令 `[{ label, command, mode }]`：`mode`＝`fill` 填进输入框等玩家改（缺省）/ `send` 直接发；没配＝`[]` | 不变 |
+| `bgm` | 卡上的背景音乐曲库 `[{ name, url }]`，第一首＝默认播的那首；没配＝`[]` | 不变 |
+| `characters` | 卡上的角色包 `[{ names, image, desc }]`：名字和别名、立绘、作者写的简介；没配＝`[]` | 不变 |
 | `history` | 最近的历史（正序，库里原文，`{{asset}}` 已展开）。每条 `{ id, role, kind, content, created_at?, status?, spend? }` | 发出一句、这一轮写完、回溯、编辑、删除、重生、读更早的（`older`） |
 | `has_more` | 更早还有历史 | 同上 |
 | `save` | 舞台存档；没存过 / 不符合现在的存档结构＝开局存档；卡没定义存档结构＝`null` | **只在 `init` 里给**：之后只有舞台自己存（`save` 请求），网站不再推 |
@@ -54,6 +57,21 @@
 | `error` | 上一轮失败 `{ code, message, retry?, retryAfter? }`：`retry`＝能「再说一次」的那句原话；没有＝`null` | 这一轮失败时给；玩家再发一句时网站清掉 |
 | `meta` | `{ model, channel, dev }`：这一局用的模型、线路（只用来显示，换模型由网站管）；`dev`＝作者本人在本地开发 | 换模型 |
 | `safe_area` | `{ top, right, bottom, left }`（px）：刘海、home 条要让开的距离。iframe 里 CSS 的 `env()` 恒为 0，由网站在外层量好推进来 | 转屏、窗口变化 |
+
+### 卡上有的一律从快照读
+
+快捷指令、背景音乐、角色包、封面 / 背景图，**卡上都有**：作者在网站编辑器里配好，网站推进快照。舞台**直接读快照**，别在代码里再写一份——写死的那份作者改了卡也不会变，对话模式和舞台就对不上了。
+
+```ts
+const { shortcuts, bgm, characters, card } = stage.snapshot()!
+shortcuts.map((s) => <button onClick={() => (s.mode === 'send' ? stage.send(s.command) : fillInput(s.command))}>{s.label}</button>)
+const song = bgm.find((t) => t.name.includes('深夜')) ?? bgm[0]   // 按曲名挑，挑不到用第一首
+const her = characters.find((c) => c.names.includes('柳月儿'))      // 角色包：立绘、简介
+```
+
+卡上**没有**的才写在舞台里：立绘清单、地图热区、玩法规则这些游戏自己的东西。
+
+快照里只会有网站本来就公开给玩家的东西（游玩页能看到的卡数据）；提示词、世界书永远不会进快照。
 
 ## 7 个请求
 

@@ -53,6 +53,13 @@ export type StageSchema = {
 /** 初始设定（进场前玩家在平台填的）：text＝原文（和 AI 看到的一字不差）；fields＝按卡的设定字段拆好，没填的 value＝null */
 export type StageSetup = { text: string; fields: { key: string; label: string; value: string | null }[] }
 
+/** 卡上的一条快捷指令（编辑器「快捷指令」）：mode＝fill 填进输入框等玩家改（缺省）/ send 直接发 */
+export type StageShortcut = { label: string; command: string; mode: 'fill' | 'send' }
+/** 卡上背景音乐曲库里的一首（编辑器「背景音乐」）：第一首＝默认播的那首 */
+export type StageTrack = { name: string; url: string }
+/** 卡上角色包里的一位（编辑器「角色包」）：names＝名字和别名，image＝立绘，desc＝作者写的简介 */
+export type StageCharacter = { names: string[]; image: string; desc: string }
+
 /** 图册里的一张图：thumb＝缩略图（格子用，只取第一帧），src＝原图（点开看） */
 export type StageGalleryImage = { src: string; thumb: string }
 
@@ -93,7 +100,8 @@ export type SafeArea = { top: number; right: number; bottom: number; left: numbe
 
 /** 这一局的快照：网站 init 时整份给，之后 update 只给变了的那几项 */
 export type StageSnapshot = {
-  card: { id: string; name: string }
+  /** 卡的门面：名字、封面（avatar）、对话背景（background）、菜单背景（menu_background，没配＝''）。后三项 0.3.3 起 */
+  card: { id: string; name: string; avatar: string; background: string; menu_background: string }
   /** 网站地址（如 https://dianziji.ai）：拼站内链接用（stage.siteUrl） */
   site: string
   /** 玩家：只有展示用的几项 */
@@ -107,6 +115,13 @@ export type StageSnapshot = {
   image_pack: StageImagePack | null
   /** 初始设定（只读；要改回网站的设定）。按 key 取值：setup.fields.find((f) => f.key === 'name')?.value */
   setup: StageSetup
+  /**
+   * ★卡上有的一律从这里读，别在舞台代码里再写一份（作者在编辑器改一处，对话模式和舞台都跟着变）。0.3.3 起：
+   *   shortcuts 快捷指令 · bgm 背景音乐曲库 · characters 角色包。卡上没配＝[]。
+   */
+  shortcuts: StageShortcut[]
+  bgm: StageTrack[]
+  characters: StageCharacter[]
   /** 最近的历史（正序，库里原文，{{asset}} 已展开）。读更早的：stage.older() */
   history: StageMessage[]
   has_more: boolean

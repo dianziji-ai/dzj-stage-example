@@ -8,7 +8,7 @@ import type { StageErrorCode, StageGallery, StageSave, StageSnapshot } from './t
 
 declare const __SDK_VERSION__: string | undefined
 /** 握手时报给网站的 SDK 版本（排查用） */
-const SDK_VERSION = typeof __SDK_VERSION__ === 'string' ? __SDK_VERSION__ : '0.3.2'
+const SDK_VERSION = typeof __SDK_VERSION__ === 'string' ? __SDK_VERSION__ : '0.3.3'
 
 /** 等网站的第一份快照最多等多久：超时＝不在网站里打开（比如直接打开了 localhost） */
 const READY_MS = 3000
@@ -97,6 +97,16 @@ export type { StageTool } from './protocol'
 export { STAGE_TOOLS } from './protocol'
 
 /**
+ * 网站老一点（还没发 0.3.3 加的字段）也不让舞台拿到 undefined：缺的补成空的。
+ * ★快照字段只加不改：以后再加字段，在这里补一个缺省值。
+ */
+function withDefaults(s: StageSnapshot): StageSnapshot {
+  const c = s.card as Partial<StageSnapshot['card']> & Pick<StageSnapshot['card'], 'id' | 'name'>
+  const card = { ...c, avatar: c.avatar ?? '', background: c.background ?? '', menu_background: c.menu_background ?? '' }
+  return { ...s, card, shortcuts: s.shortcuts ?? [], bgm: s.bgm ?? [], characters: s.characters ?? [] }
+}
+
+/**
  * 建桥。一个舞台只建一个（官方例子放在 src/stage.ts）。
  * 参数只给测试用（换掉外层窗口 / 本窗口）；正常不用传。
  */
@@ -145,7 +155,7 @@ export function createStage(opts: { parent?: Window; self?: Window } = {}): Stag
     }
     if (d.type === 'init') {
       origin = e.origin
-      snap = d.snapshot as StageSnapshot
+      snap = withDefaults(d.snapshot as StageSnapshot)
       readyWait.forEach((w) => w.ok(snap!))
       readyWait = []
       notify(Object.keys(snap) as (keyof StageSnapshot)[])

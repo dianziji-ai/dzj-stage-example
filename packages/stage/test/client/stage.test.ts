@@ -30,7 +30,7 @@ function fakeSite() {
 }
 
 export const snapOf = (p: Partial<StageSnapshot> = {}): StageSnapshot => ({
-  card: { id: 'c1', name: '卡' },
+  card: { id: 'c1', name: '卡', avatar: '', background: '', menu_background: '' },
   site: SITE,
   user: null,
   asset_base: 'https://img.test',
@@ -38,6 +38,9 @@ export const snapOf = (p: Partial<StageSnapshot> = {}): StageSnapshot => ({
   state_schema: null,
   image_pack: null,
   setup: { text: '', fields: [] },
+  shortcuts: [],
+  bgm: [],
+  characters: [],
   history: [{ id: 1, role: 'assistant', kind: 'opening', content: '开场' }],
   has_more: false,
   save: null,
@@ -71,6 +74,23 @@ describe('握手', () => {
     expect(stage.snapshot()?.card.id).toBe('c1')
     void stage.send('你好').catch(() => {})
     expect(site.sent.at(-1)).toMatchObject({ m: { type: 'request', method: 'send' }, o: SITE })
+  })
+
+  it('网站老一点、没发 0.3.3 加的字段：补成空的，舞台拿不到 undefined', async () => {
+    const site = fakeSite()
+    const stage = createStage({ parent: site.parent, self: site.self })
+    const p = stage.ready()
+    const old = snapOf() as Record<string, unknown>
+    delete old.shortcuts
+    delete old.bgm
+    delete old.characters
+    old.card = { id: 'c1', name: '卡' }
+    site.init(old as never)
+    const s = await p
+    expect(s.shortcuts).toEqual([])
+    expect(s.bgm).toEqual([])
+    expect(s.characters).toEqual([])
+    expect(s.card).toEqual({ id: 'c1', name: '卡', avatar: '', background: '', menu_background: '' })
   })
 
   it('不在网站里（没有外层窗口）：ready 直接失败，说请在网站里打开', async () => {
@@ -111,7 +131,7 @@ describe('快照', () => {
     const fn = vi.fn()
     const off = stage.subscribe(fn)
     site.update({ live: { said: '你好', text: '<正文>她', reasoning: '' } })
-    expect(fn).toHaveBeenLastCalledWith(expect.objectContaining({ live: { said: '你好', text: '<正文>她', reasoning: '' }, card: { id: 'c1', name: '卡' } }), ['live'])
+    expect(fn).toHaveBeenLastCalledWith(expect.objectContaining({ live: { said: '你好', text: '<正文>她', reasoning: '' }, card: expect.objectContaining({ id: 'c1', name: '卡' }) }), ['live'])
     site.update({})
     expect(fn).toHaveBeenCalledTimes(1)
     off()
@@ -123,7 +143,7 @@ describe('快照', () => {
     const { site, stage } = await connected()
     const fn = vi.fn()
     stage.subscribe(fn)
-    site.init(snapOf({ card: { id: 'c2', name: '别的局' } }))
+    site.init(snapOf({ card: { id: 'c2', name: '别的局', avatar: '', background: '', menu_background: '' } }))
     expect(stage.snapshot()?.card.id).toBe('c2')
     expect(fn.mock.calls[0][1]).toContain('history')
   })

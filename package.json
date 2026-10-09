@@ -23,7 +23,7 @@
     "sdk:lock": "node scripts/sdk-lock.mjs --write"
   },
   "dependencies": {
-    "@dianziji/stage": "0.3.2",
+    "@dianziji/stage": "0.3.3",
     "@dianziji/stage-panel": "0.2.1",
     "react": "^19.2.8",
     "react-dom": "^19.2.8"

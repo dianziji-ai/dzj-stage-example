@@ -20,7 +20,7 @@ describe('面板本体', () => {
 
   it('网站推了新的：面板跟着变', () => {
     const { stage } = open()
-    act(() => stage.push({ card: { id: 'card1', name: '新名字' } }))
+    act(() => stage.push({ card: { id: 'card1', name: '新名字', avatar: '', background: '', menu_background: '' } }))
     expect(screen.getByText('新名字 · 林川')).toBeTruthy()
   })
 
