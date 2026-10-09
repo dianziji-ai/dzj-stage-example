@@ -1,6 +1,6 @@
 {
   "name": "@dianziji/stage",
-  "version": "0.3.3",
+  "version": "0.3.4",
   "description": "电子姬舞台 SDK：客户端（读这一局 / 发一句话收流 / 存档）+ 会话引擎 + React 外壳",
   "private": true,
   "license": "UNLICENSED",

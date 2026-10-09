@@ -1,5 +1,7 @@
 import { showTip } from '../tipStore'
-import { MAP_URL, PLACES, withCall, type PlaceId } from '../content'
+import { mapOf } from '../art'
+import { PLACES, withCall, type PlaceId } from '../content'
+import { usePack } from '../useGame'
 import Page from './Page'
 
 /** 地图：白相框里的小镇地图 + 地点胶囊（地点全部开放）；当前位置粉色；生成中不能点。 */
@@ -9,12 +11,13 @@ export default function MapPage({ focus, here, busy, call, line, onGo, onBack }:
   /** 出发时替玩家说的那句（确认框里原样引用，说的就是发的） */
   line: (id: PlaceId) => string
   here: PlaceId; busy: boolean; call: string; onGo: (id: PlaceId) => void; onBack: () => void }) {
+  const pack = usePack()
   return (
     <Page title="地图" onBack={onBack} sub={busy ? '她正在说话，等一下再走吧～' : '今天想和电子姬去哪儿约会呢？'}>
       <div className="mx-auto w-full max-w-[min(100%,70dvh)] px-4 pt-2 pb-4">
         <div className="rounded-[28px] bg-white p-2 shadow-[0_14px_40px_-12px_rgba(236,72,153,0.35)]">
           <div className="relative aspect-square overflow-hidden rounded-[22px] bg-[#e9f5df]">
-            <img src={MAP_URL} alt="" decoding="async" className="size-full object-cover" />
+            <img src={mapOf(pack)} alt="" decoding="async" className="size-full object-cover" />
             {PLACES.map((p) => {
               const cur = p.id === here
               const hot = p.id === focus && !cur

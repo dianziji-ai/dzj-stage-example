@@ -5,7 +5,8 @@ import { useBgm, useBgmPrefs } from './audio/useBgm'
 import ClawGame from './claw/ClawGame'
 import EntryButton from './claw/EntryButton'
 import { plushName, type PlushId } from './claw/data'
-import { EGGS, placeName, PLACES, spriteUrl, type ExprId, type PlaceId } from './game/content'
+import { allSprites, bgOf, NO_LOOK, spriteOf, type Look } from './game/art'
+import { EGGS, placeName, PLACES, type PlaceId } from './game/content'
 import Dialogue from './game/Dialogue'
 import Hud, { type HudAction } from './game/Hud'
 import { CgViewer, GalleryPage, MapPage } from './game/pages'
@@ -16,9 +17,10 @@ import TabBar, { type Tab } from './game/TabBar'
 import TipHost from './game/Tip'
 import GameMenu from './game/GameMenu'
 import { showTip } from './game/tipStore'
-import { useGame, useThought } from './game/useGame'
+import { useGame, usePack, useThought } from './game/useGame'
 import { useOnline } from './game/useOnline'
 import { stage } from './stage'
+import type { StageImage } from '@dianziji/stage'
 import { SaveIndicator, StageToaster } from '@dianziji/stage/react'
 import { openStagePanel, StagePanel } from '@dianziji/stage-panel'
 
@@ -37,13 +39,22 @@ const TABS: Tab[] = [
  *  · 游玩页全屏：背景 + 立绘 + 对话框 + 状态栏，右上角一个菜单钮（电脑上直接平铺几个入口）。
  *  · 地图 / 图册是单独的页面；「本局」打开舞台面板（概览 / 初始设定 / 图册 / 存档 / 分区 / 指南），底部有菜单，点「游玩」回去。
  *    对话记录不在舞台里做：网站工具栏的「记录」 / 对话模式就是（舞台只管玩）。
- *  · 立绘跟着对话框正在播的那一句走：Dialogue 每换一句交来这句的表情（onFocus），这里交给 Scene。
+ *  · 立绘跟着对话框正在播的那一句走：Dialogue 每换一句交来她这句的样子（onFocus），这里拿去配图库挑一张（art.ts）交给 Scene。
+ *    背景也从配图库挑：地点 + 时段。舞台代码里没有一张图的地址，作者改配图库就生效。
  *  · 切到别的页面时游戏画面只是隐藏（display:none，动画随之暂停），不卸载——生成中的回复照常收。
  */
 export default function App() {
   const g = useGame()
   const thought = useThought() // 状态说明里显示（一轮才变一次）
-  const [expr, setExpr] = useState<ExprId>('normal') // 立绘：对话框正在播的那一句的表情
+  const [look, setLook] = useState<Look>(NO_LOOK) // 对话框正在播的那一句她的样子
+  const pack = usePack()
+  // 立绘：样子 / 穿着变了才重挑；挑不出（谁都对不上）就留着上一张。上一张也交进去：没写穿着时留在同一套
+  const want = `${look.expr}|${look.act}|${look.seed}|${g.wear}`
+  const [art, setArt] = useState<{ want: string; img: StageImage | null }>({ want: '', img: null })
+  if (art.want !== want) setArt({ want, img: spriteOf(pack, look, g.wear, art.img) ?? art.img })
+  const sprite = art.img?.src ?? ''
+  const bg = bgOf(pack, g.location, g.time)
+  const sprites = useMemo(() => allSprites(pack), [pack])
   const [page, setPage] = useState<PageId>('play')
   const [menu, setMenu] = useState(false) // 手机菜单（顶栏 ☰）
   const [view, setView] = useState<number | null>(null) // 图册里点开看的 CG
@@ -94,7 +105,7 @@ export default function App() {
   const showStatus = useCallback(
     () =>
       showTip({
-        image: spriteUrl(expr),
+        image: sprite,
         title: '和电子姬的状态',
         text: thought ? `💭 ${thought}` : undefined,
         rows: [
@@ -106,7 +117,7 @@ export default function App() {
         ],
         dismiss: '好的',
       }),
-    [g.status, g.save, expr, thought],
+    [g.status, g.save, sprite, thought],
   )
 
   const showMap = (id: PlaceId) => {
@@ -136,7 +147,7 @@ export default function App() {
   return (
     <div className="fixed inset-0 overflow-hidden bg-black text-white select-none">
       <div className={page === 'play' ? 'contents' : 'hidden'}>
-        <Scene place={g.location} expr={expr} talking={g.busy} />
+        <Scene bg={bg} sprite={sprite} preload={sprites} talking={g.busy} />
         {/* 心声：她没说出口的那句，写完才浮出来 */}
         <ThoughtBubble />
         <Hud user={hudUser} place={g.location} call={g.player.call} time={g.time} love={g.status.好感} loveTick={g.loveTick} mood={g.status.心情} day={g.status.天数} coins={g.save.claw.coins} onStatus={showStatus} actions={actions} onMore={openMenu} musicOn={music.on} onMusic={toggleMusic} />
@@ -159,7 +170,7 @@ export default function App() {
             </span>
           </div>
         </div>
-        <Dialogue me={g.player.name} call={g.player.call} busy={g.busy} error={g.error} topupUrl={stage.siteUrl('/recharge')} onSend={g.send} onDismissError={g.dismissError} onFocus={setExpr} />
+        <Dialogue me={g.player.name} call={g.player.call} busy={g.busy} error={g.error} topupUrl={stage.siteUrl('/recharge')} onSend={g.send} onDismissError={g.dismissError} onFocus={setLook} />
       </div>
 
       {page === 'claw' && <ClawGame claw={g.save.claw} busy={g.busy} call={g.player.call} onUpdate={g.updateClaw} onGift={giftPlush} onLeave={leaveClaw} />}

@@ -1,17 +1,19 @@
 /**
  * 这张卡的固定内容：地点、表情、素材地址、解锁规则。
- * 和卡里的提示词 / 分区约定一一对应（场景.地点 ∈ PLACES 的 id；对话区「表情」的中文词表在 expression.ts）。
+ * 和卡里的提示词 / 分区约定一一对应（场景.地点 ∈ PLACES 的 id）。立绘、背景、地图不在这里：在卡的配图库，怎么挑见 art.ts。
  */
 
 import manifest from './manifest.json'
 
 /**
- * 素材地址：全部在卡的素材库里（网站编辑器「素材库」上传），manifest.json 记每张图的地址（按用途分组）。
+ * 素材地址：全部在卡的素材库里（网站编辑器「素材库」上传）。
+ *   立绘 / 背景 / 地图 → 进卡的配图库按组挑（art.ts），这里没有；
+ *   manifest.json 只记配图库管不到的：开场视频、彩蛋视频、抓娃娃机的娃娃。
  * ★大图不打进舞台包：换成自己的卡，就把自己素材库里的地址填进 manifest.json。
  */
 /** 一段视频：src＝视频，poster＝封面图（第一帧截图）。★封面用图片，别用 <video> 显示第一帧——带 src 的 video 会被安卓浏览器嗅探、拉进关不掉的原生全屏 */
 export type Clip = { name?: string; src: string; poster: string }
-const M = manifest as unknown as { bg: Record<string, string>; sprites: Record<string, string>; film?: Clip; eggs?: Clip[] }
+const M = manifest as unknown as { film?: Clip; eggs?: Clip[] }
 
 /** 舞台开场视频（新开一局进游戏前，点了才播）；没配＝null */
 export const OPENING_FILM: Clip | null = M.film ?? null
@@ -35,13 +37,6 @@ export const placeName = (id: string, who = '主人') => withCall(PLACES.find((p
 
 /** 本地写死的「主人」换成玩家在初始设定里选的称呼（台词、地点名都用它） */
 export const withCall = (text: string, call: string) => (call && call !== '主人' ? text.replaceAll('主人', call) : text)
-
-export type ExprId = 'normal' | 'happy' | 'shy' | 'pout' | 'surprised' | 'sad' | 'wink' | 'love'
-export const EXPRESSIONS: ExprId[] = ['normal', 'happy', 'shy', 'pout', 'surprised', 'sad', 'wink', 'love']
-
-export const bgUrl = (id: PlaceId) => M.bg[id] ?? ''
-export const spriteUrl = (id: ExprId) => M.sprites[id] ?? ''
-export const MAP_URL = M.bg.map ?? ''
 
 export const CHAR_NAME = '电子姬'
 /** 电子姬 logo（名牌头像；站内 logo.jpeg 缩成 96px webp，3.6KB） */

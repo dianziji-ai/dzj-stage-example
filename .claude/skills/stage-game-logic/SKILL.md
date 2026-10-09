@@ -13,7 +13,8 @@ description: 舞台的游戏逻辑：卡的分区怎么读、onTurn 每轮结算
 - 三种类型：文字区（正文，markdown）→ `useZoneText(id)`；数据区（`kind: yaml` 或 `data`）→ `useZoneData(id)` / `useZoneText(id, '键')`；选项区 → `useZoneList('action')`。
 - ★**选项区的 id 必须叫 `action`**：SDK 只认这个 id 是选项。作者的卡里选项区叫别的名字，`useZoneList` 永远是空数组、也不报错：让作者在网站编辑器「分区」页把它改成 `action`。
 - 文字区要显示 markdown 用 SDK 的 `renderMarkdown()` 转成安全 HTML；纯文本按行拆开显示更省事（例子：`beats.ts` + `BeatText.tsx`，不当 HTML 解析，不会被注入）。
-- ★让 AI 写「事实」不写「画面」：台词放进 YAML 列表区（谁 / 表情 / 动作 / 说），舞台按表情挑立绘、认不出就近或沿用上一张（例子：`expression.ts`、`beats.ts` 的 `spriteAt`）。别让 AI 写图片编号。
+- ★让 AI 写「事实」不写「画面」：台词放进 YAML 列表区（谁 / 表情 / 动作 / 说），舞台拿这些事实去配图库挑图（SDK 的 `pickImage`，例子：`art.ts`、`beats.ts` 的 `lookAt`）。别让 AI 写图片编号。
+- ★★「事实 → 哪张图」写在**卡的配图库分组名**里，不写在舞台代码里：`立绘/穿着=睡衣|睡裙`、`立绘/表情=害羞|脸红`、`背景/地点=cafe|咖啡馆`、`立绘/默认`。代码里只排维度的先后（谁 must → 动作 → 穿着 → 表情）。作者加图、加衣服、调近义词只改配图库。不许在 `src/` 里写图片地址表、近义词表、替补表。规则见 `docs/example-card.md` 第 3 节。
 
 ## 每轮结算：onTurn
 写在 `src/game/rules.ts`，交给 `<StageBoot onTurn={…}>`。AI 这一轮写完那一刻调一次，返回新存档：

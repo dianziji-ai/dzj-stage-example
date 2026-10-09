@@ -11,10 +11,10 @@
  *       - 谁: '我'      ……（只照抄玩家原话）
  *
  * 播放顺序＝先旁白（把场景铺开），再对话（你和她一来一回）。
- * 她的每一句自带表情 → 立绘一句一换；表情认不出（exprOf 返回 null）就沿用前一句（spriteAt）。
+ * 她的每一句自带「样子」（表情 + 小动作的原文）→ 立绘一句一换。这里不认词：拿原文去配图库挑图（art.ts 的 spriteOf）。
  */
-import { exprOf } from './expression'
-import { CHAR_NAME, type ExprId } from './content'
+import type { Look } from './art'
+import { CHAR_NAME } from './content'
 
 export type Beat =
   /** 你说的（对话区「我」的条目；没有就用你发出去的那句） */
@@ -23,8 +23,8 @@ export type Beat =
   | { kind: 'narr'; text: string }
   /** 屏幕消息 / 纸条：source＝首行粗体写的来源 */
   | { kind: 'note'; source: string; text: string }
-  /** 电子姬的一句：say＝有没有说出口（只有动作也成一句）；expr＝这句的立绘，认不出＝null */
-  | { kind: 'her'; text: string; say: boolean; expr: ExprId | null }
+  /** 电子姬的一句：say＝有没有说出口（只有动作也成一句）；look＝这句的样子（挑立绘用） */
+  | { kind: 'her'; text: string; say: boolean; look: Look }
 
 const HR = /^(?:-{3,}|\*{3,}|_{3,})$/
 const SOURCE = /^\*\*([^*]+)\*\*\s*(.*)$/
@@ -78,7 +78,7 @@ export function parseBeats(narrative: string, talk: unknown = null, said = ''): 
       out.push({ kind: 'you', text: line(act, say) })
       mine++
     } else {
-      out.push({ kind: 'her', text: line(act, say), say: !!say, expr: exprOf(r['表情']) })
+      out.push({ kind: 'her', text: line(act, say), say: !!say, look: { expr: str(r['表情']), act, seed: line(act, say) } })
     }
   }
 
@@ -89,26 +89,27 @@ export function parseBeats(narrative: string, talk: unknown = null, said = ''): 
 }
 
 /**
- * 第 idx 句该显示哪张立绘：
- *   往前找她最近一句认得出表情的 → 旁白、你说话的时候她还在画面里，立绘不消失、不乱跳；
+ * 第 idx 句她是什么样子：
+ *   这句是她说的 → 就是这句；
+ *   往前找她最近一句 → 旁白、你说话的时候她还在画面里，立绘不消失、不乱跳；
  *   往前没有（一轮开头先是几句旁白）→ 往后找她第一句，提前换好；
  *   这一轮她一句都没说 → fallback（上一轮最后的样子）。
  */
-export function spriteAt(beats: Beat[], idx: number, fallback: ExprId): ExprId {
+export function lookAt(beats: Beat[], idx: number, fallback: Look): Look {
   const at = (j: number) => {
     const b = beats[j]
-    return b?.kind === 'her' ? b.expr : null
+    return b?.kind === 'her' ? b.look : null
   }
   for (let j = Math.min(idx, beats.length - 1); j >= 0; j--) if (at(j)) return at(j)!
   for (let j = idx + 1; j < beats.length; j++) if (at(j)) return at(j)!
   return fallback
 }
 
-/** 这一轮最后一句她的表情（下一轮开头、她还没开口时立绘就停在这张）；没有＝null */
-export function lastExpr(beats: Beat[]): ExprId | null {
+/** 这一轮她最后一句的样子（下一轮开头、她还没开口时立绘就停在这张）；她没说话＝null */
+export function lastLook(beats: Beat[]): Look | null {
   for (let j = beats.length - 1; j >= 0; j--) {
     const b = beats[j]
-    if (b.kind === 'her' && b.expr) return b.expr
+    if (b.kind === 'her') return b.look
   }
   return null
 }

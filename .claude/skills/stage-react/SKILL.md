@@ -35,7 +35,7 @@ const { send, setSave } = useStageActions()
 ```
 
 - ✗ 不要在 `App` 里 `useStage()` 拿全部再一层层往下传：AI 每写一个字整棵树都重画。
-- 例子的做法：`game/useGame.ts` 只订阅「一轮才变一次」的；`useBeats()` / `useChoices()` / `useThought()` 各自按区订阅，解析规则是纯函数（`beats.ts`、`expression.ts`）。
+- 例子的做法：`game/useGame.ts` 只订阅「一轮才变一次」的；`useBeats()` / `useChoices()` / `useThought()` 各自按区订阅，解析规则是纯函数（`beats.ts`、`art.ts`）。
 - 结算结果（好感 +3、解锁 CG）看 `lastTurn` 的 `prev` / `next`。
 
 ## 状态放哪

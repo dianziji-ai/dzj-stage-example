@@ -4,9 +4,10 @@ import { Icon } from '../components/icons'
 import InputSheet from '../components/InputSheet'
 import SendButton from '../components/SendButton'
 import BeatText from './BeatText'
-import { lastExpr, spriteAt, type Beat } from './beats'
+import { NO_LOOK, sameLook, toneOf, type Look } from './art'
+import { lastLook, lookAt, type Beat } from './beats'
 import Choices from './Choices'
-import { CHAR_NAME, LOGO_URL, type ExprId } from './content'
+import { CHAR_NAME, LOGO_URL } from './content'
 import ErrorNotice, { type NoticeError } from './ErrorNotice'
 import ReviewBar from './ReviewBar'
 import ShortcutTray from './ShortcutTray'
@@ -17,7 +18,7 @@ import d from './Dialogue.module.css'
 /**
  * 底部对话区（galgame 式）：一轮拆成一句一句播——旁白 → 你说的 → 她说的（每句自带表情）。
  *  · 点正文 / 「▶」看下一句；「◀ ▶」翻句、「‹ ›」翻轮（回看上一轮，SDK 的 useTurnCursor）。
- *  · 每换一句，把这句的立绘交给 App（onFocus，只在变了的时候交）：立绘一句一换。
+ *  · 每换一句，把她这句的样子交给 App（onFocus，只在变了的时候交）：立绘一句一换。
  *  · 新一轮从第一句开始；生成中边写边读，读到最新那句它会继续长。
  *  · 手机：底下不常驻输入栏，标题栏右边一颗气泡点开全屏输入（InputSheet）；她在写时底下浮一条细进度。
  *    电脑：底下一行输入框。
@@ -36,8 +37,8 @@ export default function Dialogue({ me, call, busy, error, topupUrl, onSend, onDi
   topupUrl: string
   onSend: (text: string) => Promise<boolean>
   onDismissError: () => void
-  /** 这一句该显示哪张立绘 */
-  onFocus: (expr: ExprId) => void
+  /** 这一句她是什么样子（App 拿去配图库挑立绘） */
+  onFocus: (look: Look) => void
 }) {
   const beats = useBeats()
   const choices = useChoices()
@@ -64,15 +65,18 @@ export default function Dialogue({ me, call, busy, error, topupUrl, onSend, onDi
   const beat: Beat | undefined = beats[idx]
   const go = (i: number) => setPos({ turn, idx: Math.max(0, Math.min(last, i)) })
 
-  // 立绘：这一句的表情；这一轮她还没开口（刚发出去 / 一轮开头全是旁白且她没说话）就停在上一轮最后的样子
-  const [held, setHeld] = useState<ExprId>('normal')
-  const end = lastExpr(beats)
-  if (!busy && end && end !== held) setHeld(end)
-  const expr = spriteAt(beats, idx, held)
-  useEffect(() => onFocus(expr), [expr, onFocus])
+  // 立绘：这一句她的样子；这一轮她还没开口（刚发出去 / 一轮开头全是旁白且她没说话）就停在上一轮最后的样子
+  const [held, setHeld] = useState<Look>(NO_LOOK)
+  const end = lastLook(beats)
+  if (!busy && end && !sameLook(end, held)) setHeld(end)
+  const found = lookAt(beats, idx, held)
+  // 每次解析出来的对象都是新的：内容没变就还用上一次那个，免得 App 每次都重挑
+  const [look, setLook] = useState<Look>(found)
+  if (!sameLook(found, look)) setLook(found)
+  useEffect(() => onFocus(look), [look, onFocus])
 
-  // 名牌和颜色：她＝按表情；你＝雾蓝；屏幕消息＝金；旁白没有名牌
-  const tone = beat?.kind === 'her' ? (beat.expr ?? expr) : beat?.kind === 'you' ? 'you' : beat?.kind === 'note' ? 'note' : undefined
+  // 名牌和颜色：她＝按这句的表情；你＝雾蓝；屏幕消息＝金；旁白没有名牌
+  const tone = beat?.kind === 'her' ? toneOf(beat.look.expr) : beat?.kind === 'you' ? 'you' : beat?.kind === 'note' ? 'note' : undefined
 
   /** 发一句：自己打的、选项、「再说一次」都走这里。发出去的正好是草稿才清草稿（点选项不吃掉打了一半的话），发失败再还回来 */
   const say = async (t: string) => {
@@ -89,7 +93,7 @@ export default function Dialogue({ me, call, busy, error, topupUrl, onSend, onDi
       <div className="absolute bottom-0 left-0 z-20 px-safe pb-composer">
         <div className="px-3">
           {error && <ErrorNotice error={error} topupUrl={topupUrl} onRetry={(t) => void say(t)} onClose={onDismissError} />}
-          <button onClick={() => setMode('shown')} className={`${d.box} flex animate-fade-in items-center gap-1.5 rounded-full py-1 pr-3.5 pl-1 text-sm font-bold`} data-tone={expr}>
+          <button onClick={() => setMode('shown')} className={`${d.box} flex animate-fade-in items-center gap-1.5 rounded-full py-1 pr-3.5 pl-1 text-sm font-bold`} data-tone={toneOf(look.expr)}>
             <span className={`${d.plate} flex items-center gap-1.5 rounded-full py-[3px] pr-3 pl-[3px]`}>
               <img src={LOGO_URL} alt="" className="size-[22px] rounded-full ring-1 ring-white/80" />
               {CHAR_NAME}

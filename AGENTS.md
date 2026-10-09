@@ -26,7 +26,8 @@
 | **React** | 函数组件 + hooks；**一个组件一个文件**，按功能分目录（`src/game/`、`src/xxx/`）；纯逻辑（存档怎么变、画面怎么解读）放 `logic.ts` 写成纯函数并配单测；数据**按分区订阅**（`useZoneText` / `useZoneData` …），不要在一个大组件里 `useStage()` 拿全部再往下传 |
 | **样式** | **Tailwind 类名优先**，直接写在组件上；全局复用的（变量、工具类、动画、质感）按主题放 `src/styles/`；只属于某个组件、Tailwind 写不动的用 `组件名.module.css` 放在组件旁边；**不许往 `src/index.css` 里加样式**（它只做引入） |
 | **适配** | 默认电脑和手机都适配；Tailwind 移动优先（先写手机，再 `lg:` 覆盖成电脑）；只做竖屏；**iOS 顶部刘海 / 底部 home 条必须让位**（`pt-safe` / `pb-safe` / `pb-composer`）；手机上的输入走全屏输入层 |
-| **卡上有的从快照读** | 快捷指令、背景音乐、角色包、封面 / 背景图，卡上都有：一律读快照（`snap.shortcuts` / `snap.bgm` / `snap.characters` / `snap.card`），**别在舞台代码里写一份**——写死的作者改了卡也不变。卡上没有的（立绘清单、地图热区、玩法规则）才写在 `src/`。见 `docs/bridge.md`「卡上有的一律从快照读」 |
+| **卡上有的从快照读** | 快捷指令、背景音乐、角色包、封面 / 背景图，卡上都有：一律读快照（`snap.shortcuts` / `snap.bgm` / `snap.characters` / `snap.card`），**别在舞台代码里写一份**——写死的作者改了卡也不变。见 `docs/bridge.md`「卡上有的一律从快照读」 |
+| **图从配图库挑** | 立绘、背景、地图放卡的配图库，挑图规则写在分组名里（`立绘/穿着=睡衣\|睡裙`、`立绘/表情=害羞\|脸红`），舞台用 SDK 的 `pickImage` 挑（例子 `src/game/art.ts`）。**不许在 `src/` 里写图片地址表、近义词表、替补表**。见 `docs/example-card.md` 第 3 节 |
 | **素材** | **所有图片、视频都放卡的素材库**（网站编辑器「素材库」上传），用素材库给的地址；**不许外链任何别的网站**；大图用 webp；首屏要用的图交给 `StageBoot` 的 `preload` 预加载；`public/` 里的文件用 `import.meta.env.BASE_URL` 拼路径，不写 `/xxx` 绝对路径 |
 | **性能** | 动画只动 `transform` / `opacity`；不做大面积 `backdrop-filter: blur`（手机掉帧）；不让 React 每帧重渲染（动画用 CSS 或 Web Animations）；看不见就暂停；尊重「减少动态效果」；视频点了才播 |
 | **本机存储** | 偏好、「看过了」这类小东西照常用 `localStorage`（读写包 `try`），平台上线时自动按卡分开，不用自己加前缀；**游戏进度一律进存档**（线上，换设备也在）；隐私不许写进本机存储 |

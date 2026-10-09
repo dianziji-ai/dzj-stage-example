@@ -1,35 +1,6 @@
 {
     "cardId": "ca44070d",
     "base": "https://r2.picimgdzj.me/card_assets",
-    "bg": {
-        "home": "https://r2.picimgdzj.me/card_assets/ca44070d/assets/image/M7X6bpFrHLPw7h0RBLBM.webp",
-        "street": "https://r2.picimgdzj.me/card_assets/ca44070d/assets/image/hMc4ZAGmoE7JNEKCTpY8.webp",
-        "cafe": "https://r2.picimgdzj.me/card_assets/ca44070d/assets/image/UJ1zHRIKOdal2RgGamJZ.webp",
-        "arcade": "https://r2.picimgdzj.me/card_assets/ca44070d/assets/image/o8vNWE9DSZtlHtEhow0o.webp",
-        "park": "https://r2.picimgdzj.me/card_assets/ca44070d/assets/image/AItnRIQ8hrBWowgUGtmJ.webp",
-        "rooftop": "https://r2.picimgdzj.me/card_assets/ca44070d/assets/image/EMqC8QKBsLxl6gxVDjNj.webp",
-        "map": "https://r2.picimgdzj.me/card_assets/ca44070d/assets/image/3CKpyt7gE2DxTVTzXlOx.webp"
-    },
-    "sprites": {
-        "normal": "https://r2.picimgdzj.me/card_assets/ca44070d/assets/image/w3qDM2a9bdRWDtL1T10b.webp",
-        "happy": "https://r2.picimgdzj.me/card_assets/ca44070d/assets/image/FHIqpJ3ERza5vLmzGIJg.webp",
-        "shy": "https://r2.picimgdzj.me/card_assets/ca44070d/assets/image/odLtZ6uyizYM1EqbuW7j.webp",
-        "pout": "https://r2.picimgdzj.me/card_assets/ca44070d/assets/image/p2KrbfCeW5Bs01hLULat.webp",
-        "surprised": "https://r2.picimgdzj.me/card_assets/ca44070d/assets/image/vMPi1KZv188njL6LQV48.webp",
-        "sad": "https://r2.picimgdzj.me/card_assets/ca44070d/assets/image/kzEauPlNungjkVs7Owny.webp",
-        "wink": "https://r2.picimgdzj.me/card_assets/ca44070d/assets/image/nBKJ36Rh471P0e5JSuKS.webp",
-        "love": "https://r2.picimgdzj.me/card_assets/ca44070d/assets/image/eHKLIOasHLHiSCk5jaMK.webp"
-    },
-    "cg": {
-        "1": "https://r2.picimgdzj.me/card_assets/ca44070d/assets/image/rrYNAhbOJaurRdBHtn7u.webp",
-        "2": "https://r2.picimgdzj.me/card_assets/ca44070d/assets/image/zlShPyn2zc4pLxlcIvRZ.webp",
-        "3": "https://r2.picimgdzj.me/card_assets/ca44070d/assets/image/It4HX6gckxwf2tPcSMd6.webp",
-        "4": "https://r2.picimgdzj.me/card_assets/ca44070d/assets/image/ssLRW3SHzY5jnyvHKbiH.webp",
-        "5": "https://r2.picimgdzj.me/card_assets/ca44070d/assets/image/uMsGBwzBGgmElzgwTssM.webp",
-        "6": "https://r2.picimgdzj.me/card_assets/ca44070d/assets/image/lF7w4ExAhyqKVaRTBtsO.webp",
-        "7": "https://r2.picimgdzj.me/card_assets/ca44070d/assets/image/gf6Y2BxmtbJoasb5J9Un.webp",
-        "8": "https://r2.picimgdzj.me/card_assets/ca44070d/assets/image/yLzHdWROi6gJiise1Ukl.webp"
-    },
     "plush": {
         "chick": "https://r2.picimgdzj.me/card_assets/ca44070d/assets/image/3UqkW7J3UHtAdHVZEWTh.webp",
         "eggchick": "https://r2.picimgdzj.me/card_assets/ca44070d/assets/image/B2vLy547Tl3vX8yZG98B.webp",

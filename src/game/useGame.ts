@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from 'react'
-import { imageUrl, stripImages, withState, type SessionState, type StageShortcut } from '@dianziji/stage'
+import { imageUrl, stripImages, withState, type SessionState, type StageShortcut, type StageSnapshot } from '@dianziji/stage'
 import { shallowEqual, useStage, useStageActions, useZone, useZoneData, useZoneList, useZoneText } from '@dianziji/stage/react'
 import { parseBeats, thoughtsOf } from './beats'
 import { OPENING_FILM } from './content'
@@ -30,6 +30,7 @@ export function useGame() {
   const scene = useZoneData('scene', HOLD)
   const location = placeOf(scene, save.location)
   const time = timeOf(scene)
+  const wear = typeof scene['穿着'] === 'string' ? scene['穿着'].trim() : '' // 挑立绘用（认不认得交给配图库）
   const status = useMemo(() => ({ 好感: save.love, 心情: save.mood, 天数: save.day }), [save.love, save.mood, save.day])
 
   // 好感飘字：每次结算好感变了多少；n 当 key 让飘字重播
@@ -73,7 +74,7 @@ export function useGame() {
   /** 发一句话：末尾附上此刻状态（<dj_state>，AI 看不到存档，靠它知道当前好感、地点……；附什么是这张卡自己定的） */
   const send = useCallback((text: string) => rawSend(withState(text, stateForAi(save, player.name || '主人'))), [rawSend, save, player.name])
 
-  return { ...s, player, location, time, status, loveTick, cg, closeCg, film: film ? OPENING_FILM : null, closeFilm, updateClaw, send, retry, dismissError, loadOlder, cgUrl }
+  return { ...s, player, location, time, wear, status, loveTick, cg, closeCg, film: film ? OPENING_FILM : null, closeFilm, updateClaw, send, retry, dismissError, loadOlder, cgUrl }
 }
 
 /**
@@ -108,4 +109,10 @@ const NO_SHORTCUTS: StageShortcut[] = []
 /** 卡上的快捷指令（编辑器「快捷指令」，快照 shortcuts）。★卡上有的从快照读，舞台里不写一份；没配＝[] */
 export function useShortcuts(): StageShortcut[] {
   return useStage((st) => st.snap?.shortcuts ?? NO_SHORTCUTS)
+}
+
+/** 配图库（挑立绘 / 背景用，见 art.ts）。只在配图库变了时才变，订阅它的组件不跟着打字重画 */
+export function usePack(): Pick<StageSnapshot, 'image_pack'> {
+  const image_pack = useStage((st) => st.snap?.image_pack ?? null)
+  return useMemo(() => ({ image_pack }), [image_pack])
 }

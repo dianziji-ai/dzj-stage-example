@@ -1,4 +1,6 @@
-import { bgUrl, placeName } from './content'
+import { bgOf } from './art'
+import { placeName } from './content'
+import { usePack } from './useGame'
 import { travelOf, type Travel } from './logic'
 
 /**
@@ -40,6 +42,7 @@ export default function Choices({ choices, call, busy, onPick }: {
 
 /** 换场：一扇小门，门里是目的地；右边写「换场 · 去哪」和那句话，箭头往里走 */
 function TravelChoice({ travel, call, disabled, delay, onPick }: { travel: Travel; call: string; disabled: boolean; delay: number; onPick: () => void }) {
+  const pack = usePack()
   return (
     <button
       onClick={onPick}
@@ -48,7 +51,7 @@ function TravelChoice({ travel, call, disabled, delay, onPick }: { travel: Trave
       className="group relative flex w-full animate-fade-in items-stretch gap-3 overflow-hidden rounded-2xl border border-[#ffd23f]/45 bg-[linear-gradient(90deg,rgb(40_18_60/0.92),rgb(40_18_60/0.66))] p-1.5 pr-4 text-left shadow-[0_8px_24px_rgb(0_0_0/0.35)] transition-[border-color,transform] active:scale-[0.99] enabled:hover:border-[#ffd23f] disabled:opacity-45"
     >
       <span className="relative h-[52px] w-[80px] shrink-0 overflow-hidden rounded-xl bg-[#1b0f2a] shadow-[inset_0_0_0_1.5px_rgb(255_210_63/0.55)] lg:h-[58px] lg:w-[92px]">
-        <img src={bgUrl(travel.place)} alt="" loading="lazy" decoding="async" className="absolute inset-0 size-full object-cover transition-transform duration-500 group-enabled:group-hover:scale-110" />
+        <img src={bgOf(pack, travel.place)} alt="" loading="lazy" decoding="async" className="absolute inset-0 size-full object-cover transition-transform duration-500 group-enabled:group-hover:scale-110" />
         <span className="absolute inset-0 bg-[radial-gradient(70%_80%_at_50%_60%,transparent,rgb(20_8_30/0.5))]" />
       </span>
       <span className="flex min-w-0 flex-1 flex-col justify-center">

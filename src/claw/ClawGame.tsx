@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { bgm } from '../audio/bgm'
-import { bgUrl, spriteUrl, withCall } from '../game/content'
+import { bgOf, spriteOf } from '../game/art'
+import { withCall } from '../game/content'
+import { usePack } from '../game/useGame'
 import type { ClawSave } from '../game/logic'
 import { plushName, plushUrl, RARITY_LABEL, type PlushId } from './data'
 import { showTip } from '../game/tipStore'
@@ -34,6 +36,7 @@ export default function ClawGame({ claw, busy, call, onUpdate, onGift, onLeave }
   /** 离开：report＝要不要把这次的战绩告诉她（null＝不说） */
   onLeave: (report: string | null) => void
 }) {
+  const pack = usePack() // 背景、她的头像都从配图库挑（art.ts）
   const rng = useRef(seeded(Date.now()))
   const [pile, setPile] = useState<Plush[]>(() => makePile(rng.current))
   const nextKey = useRef(100)
@@ -270,7 +273,7 @@ export default function ClawGame({ claw, busy, call, onUpdate, onGift, onLeave }
   return (
     <div className="fixed inset-0 z-40 flex flex-col overflow-hidden bg-[#140c22] text-white select-none">
       {/* 背景：电玩城底图 + 压暗（静态，不模糊） */}
-      <img src={bgUrl('arcade')} alt="" className="absolute inset-0 size-full object-cover opacity-45" />
+      <img src={bgOf(pack, 'arcade')} alt="" className="absolute inset-0 size-full object-cover opacity-45" />
       <div className="absolute inset-0 bg-gradient-to-b from-[#140c22]/40 via-transparent to-[#140c22]/90" />
 
       {/* 顶栏 */}
@@ -336,7 +339,7 @@ export default function ClawGame({ claw, busy, call, onUpdate, onGift, onLeave }
       <div className="relative px-safe pb-[max(var(--safe-bottom),16px)]">
         <div className="mx-auto flex max-w-md items-center gap-3 px-4">
           <div className="size-14 shrink-0 overflow-hidden rounded-full border-2 border-pink-300 bg-pink-100">
-            <img src={spriteUrl(talk.face)} alt="" className="h-[300%] w-full max-w-none object-cover object-[50%_6%]" />
+            <img src={spriteOf(pack, { expr: talk.face, act: '', seed: talk.text }, '')?.src ?? ''} alt="" className="h-[300%] w-full max-w-none object-cover object-[50%_6%]" />
           </div>
           <div className="glass min-w-0 flex-1 rounded-2xl rounded-bl-md px-3.5 py-2.5 text-sm leading-snug">{withCall(talk.text, call)}</div>
         </div>

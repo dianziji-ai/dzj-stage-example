@@ -39,8 +39,9 @@ npm run lint
 
 | 想改什么 | 改哪里 |
 |---|---|
-| 地点、表情、素材地址 | `src/game/content.ts`、`src/game/expression.ts`、`src/game/manifest.json` |
-| 一轮怎么拆成一句一句、立绘怎么选 | `src/game/beats.ts`、`src/game/expression.ts` |
+| 地点、视频 / 娃娃素材地址 | `src/game/content.ts`、`src/game/manifest.json` |
+| 一轮怎么拆成一句一句 | `src/game/beats.ts` |
+| 立绘、背景怎么挑（配图库当对照表） | `src/game/art.ts` + 卡的配图库 |
 | 存档里有什么、每轮怎么变 | `src/game/logic.ts`（`GameSave` / `nextSave`）+ `src/game/rules.ts`；网站编辑器的存档结构要对上 |
 | 每句话附给 AI 的状态 | `src/game/logic.ts` 的 `stateForAi` |
 | 画面 | `src/game/` 下的组件；分区 id（`scene` / `narrative` / `talk` …）要和你卡里定义的对上 |

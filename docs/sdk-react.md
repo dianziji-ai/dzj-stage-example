@@ -84,9 +84,9 @@ const p     = useTurnProgress()                                     // { zone, l
 
 ```tsx
 // 背景：新图盖在旧图上淡入（不透明的图用 over，过程中画面不变暗）
-<CrossfadeImage src={bgUrl} mode="over" duration={450} className="absolute inset-0" imgClassName="size-full object-cover" />
+<CrossfadeImage src={bg} mode="over" duration={450} className="absolute inset-0" imgClassName="size-full object-cover" />
 // 立绘：交叉淡化（新图淡入、旧图同时淡出，透明底不重影）
-<CrossfadeImage src={spriteUrl} className="h-full" imgClassName="h-full w-auto max-w-none object-contain object-bottom" />
+<CrossfadeImage src={sprite} className="h-full" imgClassName="h-full w-auto max-w-none object-contain object-bottom" />
 ```
 
 - 新图**下载 + 解码完**才上屏，没好之前一直显示原来那张；第一张也是解码完才淡入。
