@@ -53,9 +53,9 @@ AI 一个字一个字写的时候，**只有用到「正在变的那个区」的
 ```ts
 const body  = useZoneText('narrative')                              // 文字区原文；新一轮开始是 ''
 const mood  = useZoneText('status', '心情')                          // 数据区的一行
-const face  = useZoneData('face', { hold: true, complete: true })   // 数据区整块（{ 表情: 'happy' }）
+const scene = useZoneData('scene', { hold: true, complete: true })  // 数据区整块（{ 地点: 'home', 时间: '周五 23:47' }）
 const items = useZoneList('action')                                 // 选项区每一条
-const z     = useZone('face', opts)                                 // 原始的区（{ type, value }）
+const talk  = useZone('talk')?.value                               // 原始的区（{ type, value }）：YAML 列表区的 value 是数组
 const id    = useWritingZone()                                      // AI 正在写哪个区；没在生成＝null
 const p     = useTurnProgress()                                     // { zone, label, ratio }；没在生成＝null
 ```
@@ -75,7 +75,7 @@ const p     = useTurnProgress()                                     // { zone, l
 |---|---|
 | `<StageToaster />` | SDK 的结果自动弹成顶部提示：默认读更早的 / 存档 / 图册 / 结算（`older` / `save` / `gallery` / `turn`）出错，玩家在面板改了存档。`ops={[...]}` 改要提示哪些操作；自己也能 `toast('抓到啦！', 'ok')` |
 | `<SaveIndicator />` | 「正在保存… / ✓ 已保存 / ⚠ 没存上 · 重试」，平时是手动保存按钮。`quiet`：平时不显示，只在存档时冒小图标 |
-| `<TurnProgress />` | 「● 正在写 · 表情」+ 进度条；`labels={{ thought: '偷偷想心事中' }}` 换说法 |
+| `<TurnProgress />` | 「● 正在写 · 对话」+ 进度条；`labels={{ talk: '她在组织语言' }}` 换说法 |
 | `<Splash />` | 启动加载页（StageBoot 自己用；想单独用也行） |
 
 ## 换图不闪：`<CrossfadeImage>`
@@ -104,7 +104,7 @@ const c = useTurnCursor()
 <button disabled={!c.canPrev} onClick={() => void c.prev()}>‹</button>
 <button disabled={!c.canNext} onClick={c.next}>›</button>
 {c.viewing && <span>往前 {c.back} 轮 · 你说：{c.said} <button onClick={c.latest}>回到最新</button></span>}
-<Typewriter key={c.id ?? 'latest'} … />   // 换一轮就重新挂载：直接显示全文，不重新打一遍字
+const [pos, setPos] = useState({ turn: c.id, idx: 0 }); if (pos.turn !== c.id) setPos({ turn: c.id, idx: 0 })   // 换一轮就从第一句读起（例子：Dialogue.tsx）
 ```
 
 | 字段 | 意思 |

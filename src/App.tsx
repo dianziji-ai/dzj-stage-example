@@ -5,10 +5,10 @@ import { useBgm, useBgmPrefs } from './audio/useBgm'
 import ClawGame from './claw/ClawGame'
 import EntryButton from './claw/EntryButton'
 import { plushName, type PlushId } from './claw/data'
-import { EGGS, placeName, PLACES, spriteUrl, type PlaceId } from './game/content'
+import { EGGS, placeName, PLACES, spriteUrl, type ExprId, type PlaceId } from './game/content'
 import Dialogue from './game/Dialogue'
 import Hud, { type HudAction } from './game/Hud'
-import { CgViewer, GalleryPage, LogPage, MapPage } from './game/pages'
+import { CgViewer, GalleryPage, MapPage } from './game/pages'
 import VideoViewer from './game/VideoViewer'
 import Scene from './game/Scene'
 import ThoughtBubble from './game/ThoughtBubble'
@@ -18,18 +18,16 @@ import GameMenu from './game/GameMenu'
 import { showTip } from './game/tipStore'
 import { useGame, useThought } from './game/useGame'
 import { useOnline } from './game/useOnline'
-import { splitState } from '@dianziji/stage'
 import { stage } from './stage'
 import { SaveIndicator, StageToaster } from '@dianziji/stage/react'
 import { openStagePanel, StagePanel } from '@dianziji/stage-panel'
 
-type PageId = 'play' | 'map' | 'gallery' | 'log' | 'claw'
+type PageId = 'play' | 'map' | 'gallery' | 'claw'
 
 const TABS: Tab[] = [
   { id: 'play', icon: 'play', label: '游玩' },
   { id: 'map', icon: 'map', label: '地图' },
   { id: 'gallery', icon: 'gallery', label: '图册' },
-  { id: 'log', icon: 'log', label: '记录' },
   // 「本局」不是一页：点了打开舞台面板（@dianziji/stage-panel），当前页不变
   { id: 'panel', icon: 'info', label: '本局' },
 ]
@@ -37,12 +35,15 @@ const TABS: Tab[] = [
 /**
  * 电子姬的同居日常。
  *  · 游玩页全屏：背景 + 立绘 + 对话框 + 状态栏，右上角一个菜单钮（电脑上直接平铺几个入口）。
- *  · 地图 / 图册 / 记录是单独的页面；「本局」打开舞台面板（概览 / 初始设定 / 历史消耗 / 图册 / 存档 / 分区），底部有菜单，点「游玩」回去。
+ *  · 地图 / 图册是单独的页面；「本局」打开舞台面板（概览 / 初始设定 / 图册 / 存档 / 分区 / 指南），底部有菜单，点「游玩」回去。
+ *    对话记录不在舞台里做：网站工具栏的「记录」 / 对话模式就是（舞台只管玩）。
+ *  · 立绘跟着对话框正在播的那一句走：Dialogue 每换一句交来这句的表情（onFocus），这里交给 Scene。
  *  · 切到别的页面时游戏画面只是隐藏（display:none，动画随之暂停），不卸载——生成中的回复照常收。
  */
 export default function App() {
   const g = useGame()
   const thought = useThought() // 状态说明里显示（一轮才变一次）
+  const [expr, setExpr] = useState<ExprId>('normal') // 立绘：对话框正在播的那一句的表情
   const [page, setPage] = useState<PageId>('play')
   const [menu, setMenu] = useState(false) // 手机菜单（顶栏 ☰）
   const [view, setView] = useState<number | null>(null) // 图册里点开看的 CG
@@ -58,7 +59,7 @@ export default function App() {
 
   const openMenu = useCallback(() => setMenu(true), [])
   const closeMenu = useCallback(() => setMenu(false), [])
-  /** 地图 / 图册 / 记录左上角的返回：回游玩页 */
+  /** 地图 / 图册左上角的返回：回游玩页 */
   const back = useCallback(() => go('play'), [go])
   const online = useOnline()
   // 左上角的玩家块：站内资料（memo 的 Hud 只在这几个值变了才重渲染）
@@ -71,10 +72,6 @@ export default function App() {
   const toggleMusic = useCallback(() => bgm.setOn(!bgm.prefs.on), [])
   // 电脑顶栏的入口：「本局」不放这里（左上角玩家头像点了就是本局）
   const actions = useMemo<HudAction[]>(() => TABS.filter((t) => t.id !== 'play' && t.id !== 'panel').map((t) => ({ icon: t.icon, label: t.label, onClick: () => go(t.id) })), [go])
-
-  // 记录：每一轮的原文（AI 的完整输出，含分区标签），不做解析
-  // 玩家的话去掉附带的 <dj_state> 状态再显示（库里存的是原文）；AI 的原文原样显示
-  const log = useMemo(() => g.history.map((m) => ({ id: m.id, role: m.role, text: m.role === 'user' ? splitState(m.content).text : m.content })), [g.history])
 
   // 抓娃娃机：送娃娃＝扣一只收藏、回游玩页、发给她；离开时选了「告诉她」就把战绩发过去
   // ★先发、发出去了再从收藏里扣：能量不足 / 断网 / 她还在说时 send 返回 false，娃娃留在收藏柜里（错误由对话框讲）
@@ -97,7 +94,7 @@ export default function App() {
   const showStatus = useCallback(
     () =>
       showTip({
-        image: spriteUrl(g.expr),
+        image: spriteUrl(expr),
         title: '和电子姬的状态',
         text: thought ? `💭 ${thought}` : undefined,
         rows: [
@@ -109,7 +106,7 @@ export default function App() {
         ],
         dismiss: '好的',
       }),
-    [g.status, g.save, g.expr, thought],
+    [g.status, g.save, expr, thought],
   )
 
   const showMap = (id: PlaceId) => {
@@ -139,7 +136,7 @@ export default function App() {
   return (
     <div className="fixed inset-0 overflow-hidden bg-black text-white select-none">
       <div className={page === 'play' ? 'contents' : 'hidden'}>
-        <Scene place={g.location} expr={g.expr} talking={g.busy} />
+        <Scene place={g.location} expr={expr} talking={g.busy} />
         {/* 心声：她没说出口的那句，写完才浮出来 */}
         <ThoughtBubble />
         <Hud user={hudUser} place={g.location} call={g.player.call} time={g.time} love={g.status.好感} loveTick={g.loveTick} mood={g.status.心情} day={g.status.天数} coins={g.save.claw.coins} onStatus={showStatus} actions={actions} onMore={openMenu} musicOn={music.on} onMusic={toggleMusic} />
@@ -162,7 +159,7 @@ export default function App() {
             </span>
           </div>
         </div>
-        <Dialogue said={g.said} me={g.player.name} busy={g.busy} error={g.error} topupUrl={stage.siteUrl('/recharge')} onSend={g.send} onDismissError={g.dismissError} />
+        <Dialogue me={g.player.name} call={g.player.call} busy={g.busy} error={g.error} topupUrl={stage.siteUrl('/recharge')} onSend={g.send} onDismissError={g.dismissError} onFocus={setExpr} />
       </div>
 
       {page === 'claw' && <ClawGame claw={g.save.claw} busy={g.busy} call={g.player.call} onUpdate={g.updateClaw} onGift={giftPlush} onLeave={leaveClaw} />}
@@ -171,7 +168,6 @@ export default function App() {
         <div className="gal-paper absolute inset-0 flex animate-fade-in flex-col">
           {page === 'map' && <MapPage focus={mapFocus} here={g.location} busy={g.busy} call={g.player.call} line={travelLine} onGo={travel} onBack={back} />}
           {page === 'gallery' && <GalleryPage unlocked={g.save.unlockedCg} url={g.cgUrl} onOpen={setView} onEgg={setEgg} collection={g.save.claw.collection} claw={clawCta} onBack={back} />}
-          {page === 'log' && <LogPage items={log} me={g.player.name} avatar={g.player.avatar} hasMore={g.hasOlder} onMore={g.loadOlder} onBack={back} />}
           <TabBar tabs={TABS} active={page} onPick={go} />
         </div>
       )}

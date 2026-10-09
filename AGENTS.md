@@ -30,7 +30,7 @@
 | **性能** | 动画只动 `transform` / `opacity`；不做大面积 `backdrop-filter: blur`（手机掉帧）；不让 React 每帧重渲染（动画用 CSS 或 Web Animations）；看不见就暂停；尊重「减少动态效果」；视频点了才播 |
 | **本机存储** | 偏好、「看过了」这类小东西照常用 `localStorage`（读写包 `try`），平台上线时自动按卡分开，不用自己加前缀；**游戏进度一律进存档**（线上，换设备也在）；隐私不许写进本机存储 |
 | **和网站通信** | 舞台没有凭证、不连后端：发话、存档、图册、打开网站工具一律走 `stage`（`createStage()`，SDK 已经包好），不要自己 `fetch` 平台接口、不要自己 `postMessage`；`src/stage.ts` 就一行 `createStage()`，别改 |
-| **游戏逻辑** | `onTurn` 里一律用 `zoneNum` / `zoneText` / `zoneList` / `zoneData` 安全取值（AI 不一定每轮都写每一行）；表情、场景这类「一直该有个值」的区订阅时加 `{ hold: true, complete: true }`（★只写变化量的状态区别加 hold，不然会一直显示上一轮的变化量）；存档 ≤ 64KB |
+| **游戏逻辑** | `onTurn` 里一律用 `zoneNum` / `zoneText` / `zoneList` / `zoneData` 安全取值（AI 不一定每轮都写每一行）；场景这类「一直该有个值」的区订阅时加 `{ hold: true, complete: true }`（★只写变化量的状态区别加 hold，不然会一直显示上一轮的变化量）；存档 ≤ 64KB |
 | **交付** | `npm test`、`npx tsc -b`、`npm run lint`、`npm run pack` 全过；能开浏览器就电脑和手机各截图自检（尺寸见 `docs/mobile.md`）；把改了哪些文件、还有什么没做完 / 没验证如实告诉作者 |
 | **真实发言** | 本地连的是网站上真实的那一局：**每发一句都扣作者的能量、永久写进这一局的历史**。要发测试消息先问作者、说清楚会扣能量；能用单测（`logic.test.ts` + 真实回复做 fixture）验的就别发 |
 

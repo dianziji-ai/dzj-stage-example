@@ -6,7 +6,7 @@
 
 舞台不是独立的游戏，而是**一张卡的画面**：AI 照常按卡的提示词和分区写剧情，舞台把分区渲染成画面。所以先在网站上有一张卡：
 
-- 卡的**分区**定好（正文、表情、场景、选项…），舞台按区渲染。
+- 卡的**分区**定好（旁白、对话、场景、选项…），舞台按区渲染。例子是怎么设计分区、怎么一步步变成画面的，见 [example-card.md](example-card.md)。
 - **定义游戏状态**：要存游戏数据的（好感、金币、背包、进度…），先在编辑器「舞台 → ② 存档结构」写好存档结构并保存，再写存档代码（见 [state.md](state.md#存档结构)）。不定义就不能存档。
 - 立绘、背景、CG 都传到**卡的素材库**（编辑器里上传），舞台引用素材库的地址。
 
@@ -39,10 +39,11 @@ npm run lint
 
 | 想改什么 | 改哪里 |
 |---|---|
-| 地点、表情、素材地址 | `src/game/content.ts`、`src/game/manifest.json` |
+| 地点、表情、素材地址 | `src/game/content.ts`、`src/game/expression.ts`、`src/game/manifest.json` |
+| 一轮怎么拆成一句一句、立绘怎么选 | `src/game/beats.ts`、`src/game/expression.ts` |
 | 存档里有什么、每轮怎么变 | `src/game/logic.ts`（`GameSave` / `nextSave`）+ `src/game/rules.ts`；网站编辑器的存档结构要对上 |
 | 每句话附给 AI 的状态 | `src/game/logic.ts` 的 `stateForAi` |
-| 画面 | `src/game/` 下的组件；分区 id（`scene` / `face` / `narrative` …）要和你卡里定义的对上 |
+| 画面 | `src/game/` 下的组件；分区 id（`scene` / `narrative` / `talk` …）要和你卡里定义的对上 |
 | 样式 | Tailwind 类名写在组件上；全局的放 `src/styles/`；组件专属的复杂样式用 `组件名.module.css` |
 | 不要的玩法 | 抓娃娃：删 `src/claw/` 之后还要改这几处（它们引用了抓娃娃的数据）：`game/logic.ts`（`GameSave.claw`、`stateForAi` 的抓娃娃一行、`START_COINS` 等）、`game/pages/GalleryPage.tsx`（娃娃收藏柜）、`game/Hud.tsx`（硬币）、`App.tsx`（入口、送娃娃、`clawCta`）、`game/logic.test.ts`，存档结构里的 `claw` 字段也删掉，再粘进编辑器「舞台 → ② 存档结构」。音乐：删 `src/audio/` 和 `App.tsx` 里的 `useBgm` / 音乐按钮。删完跑 `npx tsc -b`，报错的地方就是还要改的 |
 
@@ -75,7 +76,7 @@ docs/                         开发手册（就是这里）
 
 // ② 组件里按分区订阅：只有用到「正在变的那个区」的组件更新
 const body = useZoneText('narrative')
-const face = useZoneData('face', { hold: true, complete: true })
+const scene = useZoneData('scene', { hold: true, complete: true })
 const { send } = useStageActions()
 
 // ③ 现成组件

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { readZones, writingZone, zoneData, zoneText, type StageSnapshot } from '@dianziji/stage'
 import fx from './__fixtures__/card.json'
 import schema from './state.schema.json'
-import { cgOf, freshCgs, DEFAULT_SAVE, exprOf, nextSave, normalizeSave, placeOf, playerOf, stateForAi, thoughtOf, timeOf } from './logic'
+import { cgOf, freshCgs, DEFAULT_SAVE, nextSave, normalizeSave, placeOf, playerOf, stateForAi, timeOf, travelOf } from './logic'
 import { placeName, withCall } from './content'
 
 // 这张卡真实的分区定义 + 开场原文（从卡数据抄出来的）
@@ -12,9 +12,10 @@ const opening = readZones(fx.opening, snap)
 describe('开场能正确拆区', () => {
   it('每个区都在、形状对', () => {
     expect(opening.scene).toMatchObject({ type: 'data', value: { 地点: 'home' } })
-    expect(opening.face).toMatchObject({ type: 'data', value: { 表情: 'surprised' } })
     expect(opening.narrative?.type).toBe('narrative')
-    expect(String(opening.narrative?.value ?? '').length).toBeGreaterThan(200)
+    expect(zoneText(opening, 'narrative').length).toBeGreaterThan(200)
+    expect(Array.isArray(opening.talk?.value)).toBe(true) // 对话区：SDK 已把 YAML 列表解析成数组
+    expect(opening.talk?.value).toHaveLength(4)
     expect(opening.status).toBeUndefined() // 开场状态区留空：初值由存档默认值给（好感 20 / 好奇 / 第 1 天）
     expect(opening.action?.type).toBe('action')
     expect(opening.action?.value).toHaveLength(4)
@@ -24,31 +25,38 @@ describe('开场能正确拆区', () => {
   })
 })
 
-describe('画面解读：地点 / 表情 / 时间 / 心声', () => {
+describe('画面解读：地点 / 时间', () => {
   const scene = zoneData(opening, 'scene')
-  const face = zoneData(opening, 'face')
-  it('开场写的：地点 home、惊讶、周五 23:47、心声有一句', () => {
+  it('开场写的：地点 home、周五 23:47', () => {
     expect(placeOf(scene, 'cafe')).toBe('home')
-    expect(exprOf(face)).toBe('surprised')
     expect(timeOf(scene)).toBe('周五 23:47')
-    expect(thoughtOf(zoneText(opening, 'thought', '心声'))).toContain('真、真的出来了')
   })
-  it('没写 / 写了不认识的地点、表情：地点用存档里的，表情回 normal，时间空', () => {
+  it('没写 / 写了不认识的地点：用存档里的；时间空', () => {
     expect(placeOf({}, 'cafe')).toBe('cafe')
     expect(placeOf({ 地点: '火星' }, 'cafe')).toBe('cafe')
-    expect(exprOf({ 表情: '大哭' })).toBe('normal')
     expect(timeOf({})).toBe('')
   })
-  it('心声太长截到 40 字', () => {
-    expect(thoughtOf('啊'.repeat(60))).toHaveLength(40)
+})
+
+describe('换场选项（travelOf）', () => {
+  it('「【前往：id】一句话」认出来；开场第 4 条就是', () => {
+    expect(travelOf('【前往：cafe】拉着她去楼下的小鸡咖啡馆吃蛋糕')).toEqual({ place: 'cafe', text: '拉着她去楼下的小鸡咖啡馆吃蛋糕' })
+    expect(opening.action?.value).toContain('【前往：street】带她去楼下的霓虹商店街逛逛')
+  })
+  it('写中文名也认；没写那句话就补一句「和电子姬一起去」', () => {
+    expect(travelOf('【前往：电玩城】')).toEqual({ place: 'arcade', text: '（和电子姬一起去电玩城）' })
+  })
+  it('普通选项、地图外的地方：null（地图外的整条不出）', () => {
+    expect(travelOf('捏捏她的小鸡帽子')).toBeNull()
+    expect(travelOf('【前往：火星】飞过去')).toBeNull()
   })
 })
 
 describe('正在写哪个区（SDK 的 writingZone + 这张卡的分区顺序）', () => {
   const ids = fx.slots.map((sl: { zone: string }) => sl.zone)
-  it('正文写完、下一个就是心声（输入栏里的「正在写 · 心声」靠它）', () => {
-    expect(writingZone('<narrative>正文</narrative>\n', ids)).toBe('thought')
-    expect(writingZone('<thought>\n心声: 嘿\n</thought>', ids)).toBe('cg')
+  it('旁白写完、下一个就是对话（输入栏里的「正在写 · 对话」靠它）', () => {
+    expect(writingZone('<narrative>旁白</narrative>\n', ids)).toBe('talk')
+    expect(writingZone('<talk>\n- 谁: 电子姬\n</talk>', ids)).toBe('status')
   })
 })
 

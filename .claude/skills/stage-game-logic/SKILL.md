@@ -9,10 +9,11 @@ description: 舞台的游戏逻辑：卡的分区怎么读、onTurn 每轮结算
 
 ## 分区
 - AI 的回复按卡的分区写成 `<区id>…</区id>`。`snap.slots` 是卡注册过的分区，**只有注册过的才算**。
-- 分区 id 以作者的卡为准（例子用 `scene` / `face` / `narrative` / `thought` / `action`），写代码前先看 `snap.slots`，别照抄例子的 id。
+- 分区 id 以作者的卡为准（例子用 `scene` / `narrative` 旁白 / `talk` 对话 / `status` / `cg` / `game` / `action`，见 docs/example-card.md），写代码前先看 `snap.slots`，别照抄例子的 id。
 - 三种类型：文字区（正文，markdown）→ `useZoneText(id)`；数据区（`kind: yaml` 或 `data`）→ `useZoneData(id)` / `useZoneText(id, '键')`；选项区 → `useZoneList('action')`。
 - ★**选项区的 id 必须叫 `action`**：SDK 只认这个 id 是选项。作者的卡里选项区叫别的名字，`useZoneList` 永远是空数组、也不报错：让作者在网站编辑器「分区」页把它改成 `action`。
-- 正文用 SDK 的 `renderMarkdown()` 转成安全 HTML（例子：`Typewriter.tsx`）。
+- 文字区要显示 markdown 用 SDK 的 `renderMarkdown()` 转成安全 HTML；纯文本按行拆开显示更省事（例子：`beats.ts` + `BeatText.tsx`，不当 HTML 解析，不会被注入）。
+- ★让 AI 写「事实」不写「画面」：台词放进 YAML 列表区（谁 / 表情 / 动作 / 说），舞台按表情挑立绘、认不出就近或沿用上一张（例子：`expression.ts`、`beats.ts` 的 `spriteAt`）。别让 AI 写图片编号。
 
 ## 每轮结算：onTurn
 写在 `src/game/rules.ts`，交给 `<StageBoot onTurn={…}>`。AI 这一轮写完那一刻调一次，返回新存档：
@@ -51,7 +52,7 @@ send(withState(玩家的话, stateForAi(save)))   // 例子：useGame.ts 的 sen
 - **用**：存档里的当前数值、玩家在界面里做了 AI 没看见的事、已经发生过别重复的（已解锁的回忆）、想触发的世界书关键词。
 - **别用**：写作规则 / 文风 / 格式（写在卡的提示词里）、长期记忆（平台有记忆摘要）、大段数据（每轮都按 token 扣费，控制在几百字以内）。写成事实（「好感: 85」），别写成命令。
 - `stateForAi` 返回一个对象，键用中文，**每次带完整的一份**（没带的字段 AI 就当不存在）。
-- 显示玩家说过的话时用 `splitState(原文).text` 把状态块藏掉（例子：`App.tsx` 的记录页）。
+- 显示玩家说过的话时用 `splitState(原文).text` 把状态块藏掉（例子：`beats.ts` 的 `cleanSaid`；对话记录本身不用舞台做，网站的「记录」就是）。
 - 替玩家发的话（地图出发、送礼物）也走同一个 `send`，状态一起带上。
 - **一次性结果**（掷骰检定、抽卡、小游戏判定）：只附在这一句、发成功就清；输入框上挂一枚小牌让玩家看见附了什么、能撤；卡的分区说明认这段的标题（「玩家这句话末尾附了【行动检定】时…」）。别写进玩家的话里。详见 `docs/state.md`「一次性结果」。
 

@@ -1,66 +1,76 @@
-import { useEffect, useRef, useState, type PointerEvent } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { useTurnCursor, useTurnProgress } from '@dianziji/stage/react'
 import { Icon } from '../components/icons'
 import InputSheet from '../components/InputSheet'
 import SendButton from '../components/SendButton'
+import BeatText from './BeatText'
+import { lastExpr, spriteAt, type Beat } from './beats'
 import Choices from './Choices'
-import { CHAR_NAME, LOGO_URL } from './content'
+import { CHAR_NAME, LOGO_URL, type ExprId } from './content'
 import ErrorNotice, { type NoticeError } from './ErrorNotice'
-import { useTurnCursor, useTurnProgress } from '@dianziji/stage/react'
-import { useDialogue } from './useGame'
-import { usePref } from './usePref'
 import ReviewBar from './ReviewBar'
-import Thinking from './Thinking'
-import Typewriter from './Typewriter'
-
-type Mode = 'normal' | 'expanded' | 'hidden'
-const MODES = ['normal', 'expanded', 'hidden'] as const
-
-/** 正文区最高多高：标准 / 展开（矮屏——手机横屏——上限再压低） */
-const BODY_H: Record<Exclude<Mode, 'hidden'>, string> = {
-  normal: 'max-h-[32dvh] lg:max-h-[26dvh] [@media(max-height:520px)]:max-h-[24dvh]',
-  expanded: 'max-h-[62dvh] lg:max-h-[56dvh] [@media(max-height:520px)]:max-h-[52dvh]',
-}
+import { useBeats, useChoices } from './useGame'
+import { usePref } from './usePref'
+import d from './Dialogue.module.css'
 
 /**
- * 底部对话框：名牌 + 正文（生成中跟着流一个字一个字长出来）+ 选项 + 「自己说」。
- *  三种状态（记在本机）：标准 / 展开（读长正文）/ 隐藏（只留左下角小胶囊，看立绘场景）。
- *  操作：顶部把手往上拖＝展开、往下拖＝收起 / 隐藏、轻点＝标准⇄展开；右上角两颗按钮（电脑用）。
- *  新一轮开始时若是隐藏的，自动恢复成标准（别错过回复）。
- * ★性能：高度直接换档，不做高度动画（那个每帧都要排版）；拖动只在松手时判断方向。
- *  电脑：「自己说」是对话框里的一行输入框；手机：点了打开全屏输入（InputSheet）。
+ * 底部对话区（galgame 式）：一轮拆成一句一句播——旁白 → 你说的 → 她说的（每句自带表情）。
+ *  · 点正文 / 「▶」看下一句；「◀ ▶」翻句、「‹ ›」翻轮（回看上一轮，SDK 的 useTurnCursor）。
+ *  · 每换一句，把这句的立绘交给 App（onFocus，只在变了的时候交）：立绘一句一换。
+ *  · 新一轮从第一句开始；生成中边写边读，读到最新那句它会继续长。
+ *  · 手机：底下不常驻输入栏，标题栏右边一颗气泡点开全屏输入（InputSheet）；她在写时底下浮一条细进度。
+ *    电脑：底下一行输入框。
+ *  · 可以整个隐藏（只留左下角小胶囊，看立绘和场景），记在本机；新一轮开始时自动恢复。
+ * ★性能：对话框自己按区订阅旁白 / 对话 / 选项（useBeats / useChoices），AI 写字时只有它重画，App 不动。
  */
-export default function Dialogue({ said, me, busy, error, topupUrl, onSend, onDismissError }: {
-  said: string
-  /** 玩家名字（等回复时那句话的署名） */
+export default function Dialogue({ me, call, busy, error, topupUrl, onSend, onDismissError, onFocus }: {
+  /** 玩家名字（名牌上写；没填写「你」） */
   me: string
+  /** 她对你的称呼（换场选项里「主人的房间」用） */
+  call: string
   busy: boolean
   error: NoticeError | null
   /** 能量不足时「去充值」打开的地址 */
   topupUrl: string
   onSend: (text: string) => Promise<boolean>
   onDismissError: () => void
+  /** 这一句该显示哪张立绘 */
+  onFocus: (expr: ExprId) => void
 }) {
-  // ★正文 / 选项 / 正在写哪个区由对话框自己按区订阅：AI 写字时只有对话框更新，App 不重画
-  const { body, choices } = useDialogue()
-  // 上一轮 / 下一轮：回看时正文、立绘、场景、心声都是那一轮的（SDK 换了分区），这里只管翻页按钮 + 选项置灰
+  const beats = useBeats()
+  const choices = useChoices()
   const cursor = useTurnCursor()
   const [text, setText] = useState('')
   const [sheet, setSheet] = useState(false)
-  const [mode, setMode] = usePref<Mode>('gal-dialog', 'normal', MODES)
-  const scroller = useRef<HTMLDivElement>(null)
-  const dragY = useRef<number | null>(null)
+  const [mode, setMode] = usePref('gal-dialog', 'shown', ['shown', 'hidden'] as const)
 
-  // 新一轮开始那一下：隐藏着就恢复（别错过她说话）。只看「开始」这一下——生成中玩家自己再隐藏，不再弹回来
-  const modeRef = useRef(mode)
+  // 新一轮开始那一下：隐藏着就恢复（别错过她说话）
+  const wasBusy = useRef(busy)
   useEffect(() => {
-    modeRef.current = mode
-  })
-  useEffect(() => {
-    if (busy && modeRef.current === 'hidden') setMode('normal')
-  }, [busy, setMode])
+    if (busy && !wasBusy.current && mode === 'hidden') setMode('shown')
+    wasBusy.current = busy
+  }, [busy, mode, setMode])
 
-  /** 发一句：自己打的、选项、「再说一次」都走这里。发出去的正好是草稿才清草稿（点选项不吃掉打了一半的话） */
-  // ★send 要等 AI 整条回复写完才兑现：一点发送就先关输入层、清草稿（会话那边已经进入「生成中」），发失败再把话还回来
+  // 读到第几句：换了一轮（新生成 / 回看）就回到第一句（React「根据上一次渲染调整状态」写法，不用 effect）
+  const turn = busy ? 'live' : `t${cursor.id ?? 'latest'}`
+  const [pos, setPos] = useState({ turn, idx: 0 })
+  if (pos.turn !== turn) setPos({ turn, idx: 0 })
+  const last = Math.max(0, beats.length - 1)
+  const idx = Math.min(pos.idx, last)
+  const beat: Beat | undefined = beats[idx]
+  const go = (i: number) => setPos({ turn, idx: Math.max(0, Math.min(last, i)) })
+
+  // 立绘：这一句的表情；这一轮她还没开口（刚发出去 / 一轮开头全是旁白且她没说话）就停在上一轮最后的样子
+  const [held, setHeld] = useState<ExprId>('normal')
+  const end = lastExpr(beats)
+  if (!busy && end && end !== held) setHeld(end)
+  const expr = spriteAt(beats, idx, held)
+  useEffect(() => onFocus(expr), [expr, onFocus])
+
+  // 名牌和颜色：她＝按表情；你＝雾蓝；屏幕消息＝金；旁白没有名牌
+  const tone = beat?.kind === 'her' ? (beat.expr ?? expr) : beat?.kind === 'you' ? 'you' : beat?.kind === 'note' ? 'note' : undefined
+
+  /** 发一句：自己打的、选项、「再说一次」都走这里。发出去的正好是草稿才清草稿（点选项不吃掉打了一半的话），发失败再还回来 */
   const say = async (t: string) => {
     const line = t.trim()
     if (!line || busy) return
@@ -70,28 +80,16 @@ export default function Dialogue({ said, me, busy, error, topupUrl, onSend, onDi
     if (!(await onSend(line)) && wasDraft) setText(line)
   }
 
-  // 把手：松手时看拖了多少（往上展开、往下收起；已经最小再往下＝隐藏；几乎没动＝轻点切换）
-  const onHandleDown = (e: PointerEvent<HTMLButtonElement>) => {
-    dragY.current = e.clientY
-    e.currentTarget.setPointerCapture(e.pointerId)
-  }
-  const onHandleUp = (e: PointerEvent<HTMLButtonElement>) => {
-    if (dragY.current === null) return
-    const dy = e.clientY - dragY.current
-    dragY.current = null
-    if (Math.abs(dy) < 8) setMode(mode === 'expanded' ? 'normal' : 'expanded')
-    else if (dy < 0) setMode('expanded')
-    else setMode(mode === 'expanded' ? 'normal' : 'hidden')
-  }
-
   if (mode === 'hidden') {
     return (
       <div className="absolute bottom-0 left-0 z-20 px-safe pb-composer">
         <div className="px-3">
           {error && <ErrorNotice error={error} topupUrl={topupUrl} onRetry={(t) => void say(t)} onClose={onDismissError} />}
-          <button onClick={() => setMode('normal')} className="glass-strong flex animate-fade-in items-center gap-2 rounded-full py-1.5 pr-4 pl-1.5 text-sm font-semibold">
-            <NamePlate />
-            点我继续
+          <button onClick={() => setMode('shown')} className={`${d.box} flex animate-fade-in items-center gap-1.5 rounded-full py-1 pr-3.5 pl-1 text-sm font-bold`} data-tone={expr}>
+            <span className={`${d.plate} flex items-center gap-1.5 rounded-full py-[3px] pr-3 pl-[3px]`}>
+              <img src={LOGO_URL} alt="" className="size-[22px] rounded-full ring-1 ring-white/80" />
+              {CHAR_NAME}
+            </span>
             <Icon name="up" className="size-4" />
           </button>
         </div>
@@ -100,83 +98,107 @@ export default function Dialogue({ said, me, busy, error, topupUrl, onSend, onDi
   }
 
   return (
-    // ★整列有高度上限：永远停在顶栏 + 抓娃娃入口下面（空间不够时是正文自己滚，不是整列往上顶、压住顶栏）
-    <div className="absolute inset-x-0 bottom-0 z-20 flex max-h-[calc(100dvh-var(--safe-top)-148px)] flex-col justify-end px-safe pb-composer [@media(max-height:520px)]:max-h-[calc(100dvh-var(--safe-top)-64px)]">
-      <div className="mx-auto flex min-h-0 w-full max-w-2xl flex-col px-3 lg:max-w-4xl">
-        {/* 选项（可收起；对话框展开＝阅读模式，选项自动收成胶囊） */}
+    <div className="absolute inset-x-0 bottom-0 z-20 flex max-h-[calc(100dvh-var(--safe-top)-148px)] flex-col justify-end px-safe pb-composer">
+      <div className={d.veil} aria-hidden />
+      <div className="mx-auto flex min-h-0 w-full max-w-2xl flex-col px-4 lg:max-w-3xl lg:px-6">
         {cursor.viewing && <ReviewBar back={cursor.back} said={cursor.said} me={me} onLatest={cursor.latest} />}
-        <Choices choices={choices} busy={busy || cursor.viewing} forceClosed={mode === 'expanded'} onExpand={() => setMode('normal')} onPick={(c) => void say(c)} />
-
+        {/* 选项只在读到最后一句时出：话还没听完，不急着做选择 */}
+        {idx === last && <Choices choices={choices} call={call} busy={busy || cursor.viewing} onPick={(c) => void say(c)} />}
         {error && <ErrorNotice error={error} topupUrl={topupUrl} onRetry={(t) => void say(t)} onClose={onDismissError} />}
 
-        <div className="glass-strong relative flex min-h-0 flex-col rounded-3xl">
-          <NamePlate className="absolute -top-3.5 left-4 z-10" />
-          {/* 标题栏（在框内）：左边给名牌让位、中间把手（上下拖 / 轻点）、右边分段小胶囊（展开收起 | 隐藏） */}
-          <div className="relative flex h-10 shrink-0 items-center justify-end pr-3">
-            {/* 把手：相对整个对话框绝对居中（不受左边名牌、右边按钮宽度影响） */}
-            <button
-              onPointerDown={onHandleDown}
-              onPointerUp={onHandleUp}
-              onPointerCancel={() => (dragY.current = null)}
-              aria-label={mode === 'expanded' ? '收起对话框' : '展开对话框'}
-              className="absolute inset-y-0 left-1/2 flex w-24 -translate-x-1/2 touch-none items-center justify-center"
-            >
-              <span className="h-1 w-10 rounded-full bg-white/35" />
+        <div className={`flex min-h-0 flex-col pt-3 ${d.box}`} data-tone={tone}>
+          {/* 标题栏：名牌 · 上一轮 / 下一轮 · 隐藏 ·（手机）说话气泡 */}
+          <div className="mb-2 flex h-8 shrink-0 items-center gap-1">
+            <Plate beat={beat} me={me} busy={busy} />
+            <span className="flex-1" />
+            <button onClick={() => void cursor.prev()} disabled={!cursor.canPrev} aria-label="上一轮" title="上一轮" className="grid h-8 min-w-8 place-items-center rounded-full text-white/55 transition-colors hover:text-white disabled:opacity-25">
+              <Icon name="back" className="size-4" />
             </button>
-            {/* 上一轮 / 下一轮（生成中不能翻；到最新那一轮 › 置灰） */}
-            <div className="mr-1.5 flex items-center rounded-full bg-white/10 text-white/70">
-              <button onClick={() => void cursor.prev()} disabled={!cursor.canPrev} aria-label="上一轮" title="上一轮" className="grid h-7 w-8 place-items-center rounded-l-full hover:text-white disabled:opacity-30">
-                <Icon name="back" className="size-4" />
-              </button>
-              <span className="h-3.5 w-px bg-white/20" />
-              <button onClick={cursor.next} disabled={!cursor.canNext} aria-label="下一轮" title="下一轮" className="grid h-7 w-8 place-items-center rounded-r-full hover:text-white disabled:opacity-30">
-                <Icon name="back" className="size-4 rotate-180" />
-              </button>
-            </div>
-            <div className="flex items-center rounded-full bg-white/10 text-white/70">
-              <button
-                onClick={() => setMode(mode === 'expanded' ? 'normal' : 'expanded')}
-                aria-label={mode === 'expanded' ? '收起对话框' : '展开对话框'}
-                className="grid h-7 w-8 place-items-center rounded-l-full hover:text-white"
-              >
-                <Icon name={mode === 'expanded' ? 'down' : 'up'} className="size-4" />
-              </button>
-              <span className="h-3.5 w-px bg-white/20" />
-              <button onClick={() => setMode('hidden')} aria-label="隐藏对话框" className="grid h-7 w-8 place-items-center rounded-r-full hover:text-white">
-                <Icon name="hide" className="size-4" />
-              </button>
-            </div>
-          </div>
-          <div
-            ref={scroller}
-            className={`${BODY_H[mode]} min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pt-1 pb-3 text-[15px] leading-7 break-words whitespace-pre-wrap [@media(max-height:520px)]:leading-6`}
-          >
-            {/* key：换到另一轮就重新挂载＝直接显示全文（回看不重新打一遍字） */}
-            {body ? <Typewriter key={cursor.id ?? 'latest'} text={body} streaming={busy} markdown scrollEl={scroller} /> : busy ? <Thinking said={said} name={CHAR_NAME} me={me} /> : ''}
+            <button onClick={cursor.next} disabled={!cursor.canNext} aria-label="下一轮" title="下一轮" className="grid h-8 min-w-8 place-items-center rounded-full text-white/55 transition-colors hover:text-white disabled:opacity-25">
+              <Icon name="back" className="size-4 rotate-180" />
+            </button>
+            <button onClick={() => setMode('hidden')} aria-label="隐藏对话框" title="隐藏对话框" className="grid size-8 place-items-center rounded-full text-white/55 transition-colors hover:text-white">
+              <Icon name="hide" className="size-4" />
+            </button>
+            <button
+              onClick={() => setSheet(true)}
+              disabled={busy || cursor.viewing}
+              aria-label="自己说点什么"
+              title="自己说点什么"
+              className={`${d.plate} relative ml-0.5 grid size-8 place-items-center rounded-full text-white transition-transform active:scale-90 disabled:opacity-40 lg:hidden`}
+            >
+              {busy ? <span className="size-1.5 animate-pulse rounded-full bg-white" /> : <Icon name="chat" className="size-[18px]" />}
+              {text && !busy && <span className="absolute -top-0.5 -right-0.5 size-2.5 rounded-full border-2 border-[#2a1238] bg-[#ffd23f]" />}
+            </button>
           </div>
 
-          {/* 自己说（生成中这一栏变成「正在写 · 哪个区」+ 进度：反正这时也不能输入） */}
-          <div className="border-t border-white/15 p-2">
+          {/* 这一句：点一下看下一句 */}
+          <div className="relative flex min-h-0 flex-col">
+            <button
+              onClick={() => go(idx + 1)}
+              className="flex max-h-[26dvh] min-h-[76px] flex-col items-start justify-start overflow-y-auto pt-0.5 pr-6 pb-2 text-left text-[15px] leading-[1.85] break-words lg:max-h-[30dvh] lg:min-h-[92px] lg:text-[17px]"
+            >
+              {beat ? (
+                <span key={`${turn}-${idx}`} className={`animate-fade-in ${beat.kind === 'narr' ? 'text-white/80' : beat.kind === 'you' ? 'text-[#cfe6ff]' : beat.kind === 'note' ? 'text-[#fff1c2]' : 'text-white/90'}`}>
+                  <BeatText text={beat.text} sayClass={d.say} />
+                  {busy && idx === last && <span className="ml-0.5 inline-block w-2 animate-blink">▍</span>}
+                </span>
+              ) : (
+                busy && <Thinking />
+              )}
+            </button>
+            {!busy && idx < last && (
+              <span className={`pointer-events-none absolute right-1 bottom-2.5 text-[11px] ${d.next}`} aria-hidden>
+                ▼
+              </span>
+            )}
+          </div>
+
+          {/* 一句一句翻：◀ 一排细段（读过的亮）▶ · 3/12 */}
+          {beats.length > 1 && (
+            <div className="flex items-center gap-1.5 pb-2 text-[11px] text-white/55">
+              <button onClick={() => go(idx - 1)} disabled={idx === 0} aria-label="上一句" className="min-w-9 rounded-md px-1.5 py-1 hover:text-white disabled:opacity-25">
+                ◀
+              </button>
+              <span className="flex min-w-0 flex-1 items-center justify-center gap-[3px]" aria-hidden>
+                {beats.map((_, i) => (
+                  <span key={i} className={d.seg} data-on={i <= idx ? '' : undefined} />
+                ))}
+              </span>
+              <button onClick={() => go(idx + 1)} disabled={idx >= last} aria-label="下一句" className="min-w-9 rounded-md px-1.5 py-1 hover:text-white disabled:opacity-25">
+                ▶
+              </button>
+              <span className="min-w-10 text-right tabular-nums">
+                {idx + 1}
+                <span className="text-white/35"> / {beats.length}</span>
+              </span>
+            </div>
+          )}
+
+          {/* 手机：她在写的时候底下浮一条细进度（平时没有输入栏） */}
+          {busy && (
+            <div className="pb-2 lg:hidden">
+              <WritingBar compact />
+            </div>
+          )}
+
+          {/* 电脑：一行输入框（生成中换成进度） */}
+          <div className="hidden border-t border-white/12 py-2.5 lg:block">
             {busy ? (
               <WritingBar />
             ) : (
-              <>
-                <button onClick={() => setSheet(true)} className="w-full truncate rounded-full bg-white/10 px-4 py-2.5 text-left text-sm text-white/70 lg:hidden">
-                  {text || '自己说点什么…'}
-                </button>
-                <div className="hidden items-center gap-2 lg:flex">
-                  <input
-                    value={text}
-                    onChange={(e) => setText(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && !e.nativeEvent.isComposing) void say(text)
-                    }}
-                    placeholder="自己说点什么…（Enter 发送）"
-                    className="flex-1 rounded-full bg-white/10 px-4 py-2 text-sm text-white outline-none placeholder:text-white/50"
-                  />
-                  <SendButton onClick={() => void say(text)} disabled={!text.trim()} />
-                </div>
-              </>
+              <div className="flex items-center gap-2">
+                <input
+                  value={text}
+                  onChange={(e) => setText(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.nativeEvent.isComposing) void say(text)
+                  }}
+                  placeholder="自己说点什么…（Enter 发送）"
+                  className="min-w-0 flex-1 rounded-full border border-white/15 bg-white/[0.07] px-4 py-2.5 text-sm text-white outline-none placeholder:text-white/45 focus:border-white/40"
+                />
+                <SendButton onClick={() => void say(text)} disabled={!text.trim()} />
+              </div>
             )}
           </div>
         </div>
@@ -187,34 +209,64 @@ export default function Dialogue({ said, me, busy, error, topupUrl, onSend, onDi
   )
 }
 
-/** 名牌：小巧的标牌——头像收在里面 + 名字 + 金色小星芒（细白边、顶部一道高光、淡投影） */
-function NamePlate({ className = '' }: { className?: string }) {
+/** 名牌：她＝logo + 电子姬；你＝你的名字；屏幕消息＝来源；旁白没有名牌 */
+function Plate({ beat, me, busy }: { beat: Beat | undefined; me: string; busy: boolean }) {
+  const pill = `${d.plate} flex max-w-[60%] items-center gap-1.5 truncate rounded-full py-[3px] pr-3 text-[13px] leading-none font-bold tracking-wider text-white`
+  if (beat?.kind === 'her' || (!beat && busy)) {
+    return (
+      <span className={`${pill} pl-[3px]`}>
+        <img src={LOGO_URL} alt="" width={22} height={22} className="size-[22px] rounded-full ring-1 ring-white/80" />
+        {CHAR_NAME}
+      </span>
+    )
+  }
+  if (beat?.kind === 'you') return <span className={`${pill} py-[7px] pl-3`}>{me || '你'}</span>
+  if (beat?.kind === 'note') return <span className={`${pill} py-[7px] pl-3`}>{beat.source || '📄'}</span>
+  return <span className="text-[11px] tracking-[0.4em] text-white/40">{beat ? '— 旁白 —' : ''}</span>
+}
+
+/** 刚发出去、第一个字还没到：「电子姬正在想」+ 三个跳动的点 */
+function Thinking() {
   return (
-    <div
-      className={`flex items-center gap-1.5 rounded-full border border-white/55 bg-gradient-to-r from-pink-500 to-rose-500 py-[3px] pr-3 pl-[3px] shadow-[inset_0_1px_0_rgb(255_255_255/0.4),0_2px_8px_-2px_rgb(0_0_0/0.45)] ${className}`}
-    >
-      <img src={LOGO_URL} alt="" width={22} height={22} className="size-[22px] rounded-full ring-1 ring-white/80" />
-      <span className="text-[13px] leading-none font-semibold tracking-wider text-white">{CHAR_NAME}</span>
-      <span className="text-[9px] leading-none text-amber-200">✦</span>
-    </div>
+    <span className="flex items-center gap-2 text-white/70">
+      {CHAR_NAME}正在想
+      <span className="inline-flex gap-1">
+        {[0, 1, 2].map((i) => (
+          <span key={i} className="size-1.5 animate-blink rounded-full bg-white" style={{ animationDelay: `${i * 0.18}s` }} />
+        ))}
+      </span>
+    </span>
   )
 }
 
 /**
- * 生成中的输入栏：「● 正在写 · 心声」（区名用卡里分区的名字）+ 底边一条细进度条。
- * 进度只看 AI 写到哪个区了（SDK useTurnProgress）；AI 写完就变回输入框。和输入框同高，切换时不跳。
+ * 生成中：「● 正在写 · 对话」（区名用卡里分区的名字，SDK 的 useTurnProgress）+ 一条细进度。
+ * compact（手机）：不要胶囊，一行小字压在一道发光细线上，写完自己收起。
  */
-function WritingBar() {
+function WritingBar({ compact = false }: { compact?: boolean }) {
   const p = useTurnProgress()
   const text = p?.zone ? `正在写 · ${p.label}` : `${CHAR_NAME}在想…`
+  const ratio = Math.max(0.04, p?.ratio ?? 0)
+  const bar = (
+    <span className="block h-full origin-left rounded-full bg-gradient-to-r from-[#ff5fa2] to-[#ffd23f] transition-transform duration-500" style={{ transform: `scaleX(${ratio})` }} />
+  )
+  if (compact) {
+    return (
+      <div role="status" aria-live="polite" className="animate-fade-in">
+        <div className="flex items-center gap-2 pb-1.5 text-[11.5px] text-white/65">
+          <span className="size-1.5 shrink-0 animate-pulse rounded-full bg-[#ffd23f]" />
+          <span className="min-w-0 flex-1 truncate">{text}</span>
+          {p?.ratio != null && <span className="shrink-0 text-[#ffd23f]/80 tabular-nums">{Math.round(ratio * 100)}%</span>}
+        </div>
+        <span className="block h-[2px] overflow-hidden rounded-full bg-white/10">{bar}</span>
+      </div>
+    )
+  }
   return (
-    <div role="status" aria-live="polite" className="relative flex h-10 items-center gap-2 overflow-hidden rounded-full bg-white/10 px-4 text-sm text-white/80">
-      <span className="size-1.5 shrink-0 animate-pulse rounded-full bg-pink-300" />
+    <div role="status" aria-live="polite" className="relative flex h-10 items-center gap-2 overflow-hidden rounded-full border border-white/12 bg-white/[0.06] px-4 text-sm text-white/75">
+      <span className="size-1.5 shrink-0 animate-pulse rounded-full bg-[#ffd23f]" />
       <span className="truncate">{text}</span>
-      <span className="absolute inset-x-4 bottom-1 h-0.5 overflow-hidden rounded-full bg-white/15">
-        <span className="block h-full origin-left rounded-full bg-gradient-to-r from-pink-300 to-rose-400 transition-transform duration-500" style={{ transform: `scaleX(${Math.max(0.04, p?.ratio ?? 0)})` }} />
-      </span>
+      <span className="absolute inset-x-4 bottom-1 h-0.5 overflow-hidden rounded-full bg-white/12">{bar}</span>
     </div>
   )
 }
-

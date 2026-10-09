@@ -6,7 +6,7 @@ type Item = { icon?: IconName; emoji?: string; label: string; sub?: string; onCl
 
 /**
  * 手机菜单（顶栏 ☰）：从底部弹起的奶油色面板，3 列大格子。
- *   地图 / 图册 / 记录 / 本局 / 音乐开关 / 保存（下面一行小字写上次什么时候存的）
+ *   地图 / 图册 / 本局 / 音乐开关 / 保存（下面一行小字写上次什么时候存的）
  * 点格子做事并收起（音乐、保存不收，原地变）；点遮罩 / Esc 收起。底边让 home 条。
  * ★性能：关着不渲染；进场只动 transform。
  */
@@ -37,8 +37,7 @@ export default function GameMenu({ open, onClose, go, musicOn, onMusic }: {
   const items: Item[] = [
     { icon: 'map', label: '地图', sub: '和她去别处', onClick: nav('map') },
     { icon: 'gallery', label: '图册', sub: '回忆和娃娃', onClick: nav('gallery') },
-    { icon: 'log', label: '记录', sub: '聊过的每一轮', onClick: nav('log') },
-    { icon: 'info', label: '本局', sub: '设定 / 存档 / 消耗', onClick: nav('panel') },
+    { icon: 'info', label: '本局', sub: '设定 / 存档 / 分区', onClick: nav('panel') },
     { emoji: musicOn ? '🎵' : '🔇', label: musicOn ? '音乐 开' : '音乐 关', sub: '点一下切换', onClick: onMusic, on: musicOn },
     { emoji: '💾', label: '保存', sub: saved, onClick: saveNow },
   ]

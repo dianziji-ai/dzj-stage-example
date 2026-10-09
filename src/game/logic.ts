@@ -7,13 +7,14 @@
  *   AI 要知道当前值：每句话末尾用 withState(话, stateForAi(save)) 附上 <dj_state> 状态块（useGame 的 send；平台只给模型看最新一份）。
  *   ⚠ 别用「好感: +3」：YAML 会把 +3 解析成 3，正号丢了，分不清是加 3 还是等于 3。
  *
- * 分区 id（卡里定义，英文）：scene{地点,时间,天气} · face{表情} · narrative · cg · status{好感变化,心情,天数变化} · game{硬币} · action
+ * 分区 id（卡里定义，英文）：scene{地点,时间,天气} · narrative 旁白 · talk 对话 · status{好感变化,心情,天数变化} · cg · game{硬币} · action
+ *   旁白 / 对话怎么拆成一句一句、立绘怎么选：beats.ts、expression.ts（这里只管存档和规则）。
  * cg 区：剧情走到特别时刻，AI 只写一个回忆编号（「3」）；舞台解锁、弹出（编号 → 图走 SDK 的 imageUrl）。
  * game 区：AI 想请主人玩抓娃娃时写「硬币: 2」（每轮最多 COINS_PER_TURN_MAX 枚），舞台加进存档。
  */
 import { zoneText, type StageSetup, type StageUser, type StageZones } from '@dianziji/stage'
 import { COINS_PER_TURN_MAX, isPlush, plushName, START_COINS, type PlushId } from '../claw/data'
-import { isExpr, isPlace, placeName, type ExprId, type PlaceId } from './content'
+import { isPlace, PLACES, placeName, type PlaceId } from './content'
 
 /** 抓娃娃机：硬币、收藏（娃娃 id → 个数）、玩了几局、抓到几只 */
 export type ClawSave = { coins: number; collection: Partial<Record<PlushId, number>>; plays: number; wins: number }
@@ -42,22 +43,32 @@ const clamp = (n: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, M
 
 /*
  * 画面要的几样，从分区取（分区由 SDK 的 useZone 按区订阅拿到，这里只管「怎么解读」）：
- *   地点 / 时间 ← 场景区，表情 ← 表情区（都是 hold + complete：这一轮没写到用上一次的、写完才换）
+ *   地点 / 时间 ← 场景区（hold + complete：这一轮没写到用上一次的、写完才换）
  *   好感 / 心情 / 天数 ← 存档（一轮写完才结算进存档，流到一半不跳）
+ *   立绘 ← 对话区里她每一句的表情（beats.ts）
  */
 export function placeOf(scene: Record<string, unknown>, fallback: PlaceId): PlaceId {
   return isPlace(scene['地点']) ? scene['地点'] : fallback
-}
-export function exprOf(face: Record<string, unknown>): ExprId {
-  return isExpr(face['表情']) ? face['表情'] : 'normal'
 }
 export function timeOf(scene: Record<string, unknown>): string {
   const t = scene['时间']
   return t === undefined || t === null ? '' : String(t)
 }
-/** 心声：最多 40 字（模型偶尔写长了不让气泡撑满屏） */
-export function thoughtOf(text: string): string {
-  return text.trim().slice(0, 40)
+
+/**
+ * 换场选项：选项区可选的第 4 条「【前往：cafe】拉着她去楼下的小鸡咖啡馆吃蛋糕」。
+ * 认出来＝{ 去哪、点了发什么 }；不是换场、或地点不在地图里（只认 6 个地点的 id 或中文名）＝null。
+ * ★地图外的整条不出（返回 null 的调用方把它丢掉），也不当普通选项露出「【前往：…】」。
+ */
+export type Travel = { place: PlaceId; text: string }
+const TRAVEL = /^【前往[：:]\s*([^】]+)】\s*(.*)$/
+export function travelOf(choice: string): Travel | null {
+  const m = choice.trim().match(TRAVEL)
+  if (!m) return null
+  const key = m[1].trim()
+  const place = isPlace(key) ? key : PLACES.find((p) => key.includes(p.name.replace('主人的', '')))?.id
+  if (!place) return null
+  return { place, text: m[2].trim() || `（和电子姬一起去${placeName(place)}）` }
 }
 
 /** 一轮写完：按这轮的分区和原文算新存档 + 本轮新解锁的 CG（按出现顺序）+ 好感实际变了多少 */
@@ -93,7 +104,7 @@ export function nextSave(z: StageZones, prev: GameSave): { save: GameSave; newCg
 
 /**
  * 玩家：进场前在平台初始设定里填的（卡里两个宏字段：user＝你的名字、call＝她怎么叫你）。
- * 没填（老会话 / 卡没设字段）→ 名字空、称呼「主人」，界面照常。avatar＝玩家站内头像（记录页用；没有就用名字首字）。
+ * 没填（老会话 / 卡没设字段）→ 名字空、称呼「主人」，界面照常。avatar＝玩家站内头像。
  */
 export type Player = { name: string; call: string; avatar: string }
 export function playerOf(setup: StageSetup | undefined, user?: StageUser | null): Player {

@@ -23,6 +23,15 @@ const PATHS = {
     </>
   ),
   play: <path d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H9l-5 4z" />,
+  /** 说话气泡（三个点）：手机上「自己说点什么」 */
+  chat: (
+    <>
+      <path d="M12 4c4.7 0 8.5 3.1 8.5 7s-3.8 7-8.5 7c-1 0-2-.1-2.9-.4L4.5 20l1.2-3.6C4.3 15 3.5 13.1 3.5 11c0-3.9 3.8-7 8.5-7z" />
+      <circle cx="8.3" cy="11" r="1" fill="currentColor" stroke="none" />
+      <circle cx="12" cy="11" r="1" fill="currentColor" stroke="none" />
+      <circle cx="15.7" cy="11" r="1" fill="currentColor" stroke="none" />
+    </>
+  ),
 } as const
 
 export type IconName = keyof typeof PATHS

@@ -1,6 +1,6 @@
 /**
  * 这张卡的固定内容：地点、表情、素材地址、解锁规则。
- * 和卡里的提示词 / 分区约定一一对应（场景.地点 ∈ PLACES 的 id，表情.表情 ∈ EXPRESSIONS）。
+ * 和卡里的提示词 / 分区约定一一对应（场景.地点 ∈ PLACES 的 id；对话区「表情」的中文词表在 expression.ts）。
  */
 
 import manifest from './manifest.json'
@@ -38,7 +38,6 @@ export const withCall = (text: string, call: string) => (call && call !== '主�
 
 export type ExprId = 'normal' | 'happy' | 'shy' | 'pout' | 'surprised' | 'sad' | 'wink' | 'love'
 export const EXPRESSIONS: ExprId[] = ['normal', 'happy', 'shy', 'pout', 'surprised', 'sad', 'wink', 'love']
-export const isExpr = (v: unknown): v is ExprId => EXPRESSIONS.includes(v as ExprId)
 
 export const bgUrl = (id: PlaceId) => M.bg[id] ?? ''
 export const spriteUrl = (id: ExprId) => M.sprites[id] ?? ''

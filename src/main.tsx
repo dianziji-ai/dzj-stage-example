@@ -1,10 +1,11 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import App from './App.tsx'
-import { bgUrl, isExpr, spriteUrl } from './game/content'
+import { parseBeats, spriteAt } from './game/beats'
+import { bgUrl, spriteUrl } from './game/content'
 import { normalizeSave } from './game/logic'
 import { rules } from './game/rules'
-import { readZones, type StageSnapshot } from '@dianziji/stage'
+import { readZones, zoneText, type StageSnapshot } from '@dianziji/stage'
 import { StageBoot } from '@dianziji/stage/react'
 import './index.css'
 import { stage } from './stage'
@@ -18,10 +19,10 @@ createRoot(document.getElementById('root')!).render(
   </StrictMode>,
 )
 
-/** 首屏要用的图：当前地点的背景 + 当前表情的立绘（其余表情进游戏后空闲时再拉，不拖慢启动） */
+/** 首屏要用的图：当前地点的背景 + 最后一轮第一句的立绘（其余表情进游戏后空闲时再拉，不拖慢启动） */
 function firstScreen(snap: StageSnapshot): string[] {
   const last = [...snap.history].reverse().find((m) => m.role === 'assistant')?.content ?? ''
-  const face = readZones(last, snap).face
-  const expr = face?.type === 'data' ? (face.value as Record<string, unknown>)['表情'] : undefined
-  return [bgUrl(normalizeSave(snap.save).location), spriteUrl(isExpr(expr) ? expr : 'normal')]
+  const z = readZones(last, snap)
+  const expr = spriteAt(parseBeats(zoneText(z, 'narrative'), z.talk?.value), 0, 'normal')
+  return [bgUrl(normalizeSave(snap.save).location), spriteUrl(expr)]
 }

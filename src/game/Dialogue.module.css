@@ -1,0 +1,103 @@
+/*
+ * 对话区：没有白板——整条屏幕底部铺一层由透明到夜紫的幕布（.veil），字直接写在画面上，立绘和房间一直露着。
+ * 情绪色：data-tone 挂在 .box 上（她这句的表情 / 你 / 屏幕消息），名牌、顶上那道细光、台词的光一起换。
+ *   只换颜色，换句时 0.35s 过渡；不做循环动画（读字的时候画面不能晃）。
+ * ★不用 backdrop-filter（手机掉帧），幕布是纯渐变。
+ */
+
+/* 幕布：贴住屏幕底、左右满宽，往上多伸出一截渐隐，对话区和画面之间没有硬边 */
+.veil {
+  position: absolute;
+  inset: -6rem 0 0 0;
+  z-index: -1;
+  pointer-events: none;
+  background: linear-gradient(0deg, rgb(28 12 44 / 0.94) 0%, rgb(32 14 50 / 0.84) 40%, rgb(36 16 56 / 0.5) 70%, transparent 100%);
+}
+
+.box {
+  --t1: #ff5fa2; /* 主色：名牌、细光 */
+  --t2: #ffd23f; /* 副色：名牌渐变的另一头、台词的光 */
+  position: relative;
+  color: #fff;
+  text-shadow: 0 1px 2px rgb(0 0 0 / 0.55);
+}
+/* 顶上一道细光：从名牌那边亮起、往右隐掉 */
+.box::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 1px;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent, var(--t1) 10%, color-mix(in srgb, var(--t2) 50%, transparent) 45%, transparent 85%);
+  transition: background 0.35s ease;
+}
+
+/* 名牌：头像 + 名字的小胶囊，颜色跟情绪 */
+.plate {
+  background: linear-gradient(135deg, var(--t1), var(--t2));
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--t1) 45%, transparent), inset 0 1px 0 rgb(255 255 255 / 0.4);
+  transition: background 0.35s ease, box-shadow 0.35s ease;
+}
+
+/* 「」台词：比叙述亮一档，带一点情绪色的光 */
+.say {
+  font-weight: 700;
+  color: #fff;
+  text-shadow: 0 0 10px color-mix(in srgb, var(--t1) 45%, transparent), 0 1px 2px rgb(0 0 0 / 0.6);
+}
+
+/* 还有下一句：右下角一颗轻轻起伏的小三角（galgame 的「点击继续」） */
+.next {
+  color: var(--t2);
+  text-shadow: 0 0 8px var(--t1);
+  animation: nudge 1.4s ease-in-out infinite;
+}
+@keyframes nudge {
+  0%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.55;
+  }
+  50% {
+    transform: translateY(3px);
+    opacity: 1;
+  }
+}
+
+/* 句子进度：一排细段，读过的亮 */
+.seg {
+  height: 3px;
+  flex: 1 1 0;
+  min-width: 3px;
+  max-width: 1.6rem;
+  border-radius: 2px;
+  background: rgb(255 255 255 / 0.18);
+  transition: background 0.3s ease;
+}
+.seg[data-on] {
+  background: linear-gradient(90deg, var(--t1), var(--t2));
+}
+
+/* 八种表情各一套颜色（和立绘对得上：害羞粉、生气红、委屈蓝……） */
+.box[data-tone='normal'] { --t1: #ff7eb6; --t2: #ffd23f; }
+.box[data-tone='happy'] { --t1: #ffb020; --t2: #ffe066; }
+.box[data-tone='shy'] { --t1: #ff6fa5; --t2: #ffc2dc; }
+.box[data-tone='pout'] { --t1: #ff4d5e; --t2: #ff9a62; }
+.box[data-tone='surprised'] { --t1: #b56cff; --t2: #ff9ee0; }
+.box[data-tone='sad'] { --t1: #6b8cff; --t2: #b7c6ff; }
+.box[data-tone='wink'] { --t1: #2ed3a2; --t2: #ffe066; }
+.box[data-tone='love'] { --t1: #ff3d8b; --t2: #ff9ed0; }
+/* 你说的：冷一点的雾蓝；屏幕消息：小鸡金 */
+.box[data-tone='you'] { --t1: #59a8ff; --t2: #a7d4ff; }
+.box[data-tone='note'] { --t1: #ffb800; --t2: #ffe58a; }
+
+@media (prefers-reduced-motion: reduce) {
+  .box::before,
+  .plate,
+  .seg {
+    transition: none;
+  }
+  .next {
+    animation: none;
+  }
+}
