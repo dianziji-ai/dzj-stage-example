@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState } from 'react'
 import { imageUrl, stripImages, withState, type SessionState, type StageShortcut, type StageSnapshot } from '@dianziji/stage'
 import { shallowEqual, useStage, useStageActions, useZone, useZoneData, useZoneList, useZoneText } from '@dianziji/stage/react'
-import { parseBeats, thoughtsOf } from './beats'
+import { parseBeats } from './beats'
 import { OPENING_FILM } from './content'
 import { markSeen, seen } from './seen'
 import { freshCgs, placeOf, playerOf, stateForAi, timeOf, type ClawSave, type GameSave } from './logic'
@@ -95,11 +95,11 @@ export function useChoices(): string[] {
   return busy ? NONE : list
 }
 
-/** 心声：旁白里 > 💭 开头的那句；写完才给（生成中不冒气泡，也不沿用上一轮的） */
+/** 心声：心声区（thought）那一句；写完才给（生成中不冒气泡，也不沿用上一轮的）。模型偶尔自己加了 💭 / 引号就去掉 */
 export function useThought(): string {
-  const narrative = useZoneText('narrative', undefined, { complete: true })
+  const text = useZoneText('thought', undefined, { complete: true })
   const busy = useStage((st) => st.busy)
-  return useMemo(() => (busy ? '' : (thoughtsOf(narrative)[0] ?? '')), [busy, narrative])
+  return useMemo(() => (busy ? '' : text.replace(/^[\s>💭「『（(]+|[\s」』）)]+$/gu, '').trim()), [busy, text])
 }
 
 const NONE: string[] = []

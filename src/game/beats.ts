@@ -3,12 +3,12 @@
  *
  * AI 每轮写两个区（卡里的约定，见 docs/example-card.md）：
  *   narrative 旁白区（markdown）：2～4 段旁白，可穿插
- *       > 💭 一句心声              ← 不进对话框，整轮飘在立绘旁（thoughtsOf）
  *       > **💻 电子姬 App**        ← 首行粗体＝来源，合成一句「屏幕消息」
  *       ---                        ← 转场，不成句
  *   talk 对话区（YAML 列表）：一句一条
  *       - 谁: '电子姬'  表情: '害羞'  动作: '揪着衣角'  说: '才、才没有呢'
  *       - 谁: '我'      ……（只照抄玩家原话）
+ *   thought 心声区（markdown）：一句她没说出口的话 ← 不进对话框，整轮飘在立绘旁（useThought）
  *
  * 播放顺序＝先旁白（把场景铺开），再对话（你和她一来一回）。
  * 她的每一句自带「样子」（表情 + 小动作的原文）→ 立绘一句一换。这里不认词：拿原文去配图库挑图（art.ts 的 spriteOf）。
@@ -45,7 +45,7 @@ const cleanSaid = (said: string) => said.replace(/<dj_state>[\s\S]*?<\/dj_state>
 export function parseBeats(narrative: string, talk: unknown = null, said = ''): Beat[] {
   const out: Beat[] = []
 
-  // ① 旁白：一行一句；连续的 > 引用行合成一块（心声跳过，有粗体来源的是屏幕消息）
+  // ① 旁白：一行一句；连续的 > 引用行合成一块（有粗体来源的是屏幕消息；心声该写在心声区，模型万一写进旁白也跳过）
   let quote: string[] | null = null
   const flush = () => {
     const lines = (quote ?? []).filter(Boolean)
@@ -112,22 +112,4 @@ export function lastLook(beats: Beat[]): Look | null {
     if (b.kind === 'her') return b.look
   }
   return null
-}
-
-/** 这一轮她的心声（旁白里 > 💭 开头的引用块）：不进对话框，整轮飘在立绘旁 */
-export function thoughtsOf(narrative: string): string[] {
-  const out: string[] = []
-  let cur: string[] | null = null
-  const flush = () => {
-    const t = (cur ?? []).filter(Boolean).join(' ')
-    if (t.startsWith('💭')) out.push(t.replace(/^💭\s*/, '').trim().slice(0, 40))
-    cur = null
-  }
-  for (const raw of narrative.split('\n')) {
-    const l = raw.trim()
-    if (l.startsWith('>')) (cur ??= []).push(l.replace(/^>\s?/, '').trim())
-    else flush()
-  }
-  flush()
-  return out.filter(Boolean)
 }

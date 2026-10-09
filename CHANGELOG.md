@@ -7,6 +7,8 @@
 | `@dianziji/stage` 舞台 SDK | 0.3.3（详见 [packages/stage/CHANGELOG.md](packages/stage/CHANGELOG.md)） |
 
 - ★**卡上有的一律从快照读**：快照新增 `shortcuts` 快捷指令、`bgm` 背景音乐、`characters` 角色包，`card` 多了封面 / 背景 / 菜单背景。作者在编辑器改一处，对话模式和舞台都跟着变。用法见 [docs/bridge.md](docs/bridge.md#卡上有的一律从快照读)；给 AI 的规则写进了 AGENTS.md 和 skills（stage-game-logic、stage-assets）。
+- ★官方例子心声改成独立分区 `thought`（原来是旁白里的 `> 💭` 引用块，可选格式模型常不写）：每轮一句，舞台 `useZoneText('thought')` 读，手册第 1 节有说明。
+- ★SDK 0.3.4 `pickImage`：挑图规则写在卡的配图库分组名里；官方例子立绘 / 背景 / 地图全从配图库挑，加了睡衣、外出服、打游戏、睡着和房间白天。手册第 3 节重写。
 - 官方例子接上快捷指令：卡上配了 8 条，舞台 ⚡ 按钮从快照读（`useShortcuts` + `ShortcutTray`），手册见 [docs/example-card.md](docs/example-card.md) 第 6 节。
 - 0.3.2 修了 `<CrossfadeImage>` 立绘被原图尺寸撑大（只剩一个大头）。
 

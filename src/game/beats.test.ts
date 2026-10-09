@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { readZones, zoneText, type StageSnapshot } from '@dianziji/stage'
 import fx from './__fixtures__/card.json'
-import { lastLook, lookAt, parseBeats, thoughtsOf, type Beat } from './beats'
+import { lastLook, lookAt, parseBeats, type Beat } from './beats'
 
 // 这张卡真实的分区定义 + 开场原文（从卡数据抄出来的）
 const snap = { slots: fx.slots, image_pack: fx.image_pack } as unknown as Pick<StageSnapshot, 'slots' | 'image_pack'>
@@ -22,7 +22,7 @@ describe('真实开场拆成一句一句', () => {
     expect(her[0].text).toBe('（两手撑着显示器边框，低头看看自己的手，又抬头看看你）「欸？欸欸？！真、真的出来了？！」')
   })
   it('心声单独取出来（飘在立绘旁）', () => {
-    expect(thoughtsOf(narrative)).toEqual(['真、真的出来了……希望{{call}}别觉得我奇怪'])
+    expect(String(opening.thought?.value ?? '').trim()).toBe('真、真的出来了……希望{{call}}别觉得我奇怪')
   })
 })
 
