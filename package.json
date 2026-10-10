@@ -17,7 +17,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@dianziji/stage": "^0.4.0",
+    "@dianziji/stage": "^0.5.0",
     "@dianziji/stage-panel": "^0.2.2",
     "@dianziji/stage-settings": "^0.2.0",
     "@dianziji/stage-sfx": "^0.1.1",

@@ -55,12 +55,13 @@ const body  = useZoneText('narrative')                              // 文字区
 const mood  = useZoneText('status', '心情')                          // 数据区的一行
 const scene = useZoneData('scene', { hold: true, complete: true })  // 数据区整块（{ 地点: 'home', 时间: '周五 23:47' }）
 const items = useZoneList('action')                                 // 选项区每一条
+const rows  = useZoneRows('narrative')                              // 列表区每一条（剧本式正文）；生成中只给写完的条目、只增不减
 const talk  = useZone('talk')?.value                               // 原始的区（{ type, value }）：YAML 列表区的 value 是数组
 const id    = useWritingZone()                                      // AI 正在写哪个区；没在生成＝null
 const p     = useTurnProgress()                                     // { zone, label, ratio }；没在生成＝null
 ```
 
-`useZoneText(id, key?, opts?)`、`useZoneData(id, opts?)`、`useZoneList(id, opts?)`、`useZone(id, opts?)` 都能传选项。给文字区加 hold 这样写：`useZoneText('scene', undefined, { hold: true, complete: true })`。
+`useZoneText(id, key?, opts?)`、`useZoneData(id, opts?)`、`useZoneList(id, opts?)`、`useZoneRows(id, opts?)`、`useZone(id, opts?)` 都能传选项。给文字区加 hold 这样写：`useZoneText('scene', undefined, { hold: true, complete: true })`。
 
 | 选项 | 意思 | 用在 |
 |---|---|---|
@@ -97,7 +98,7 @@ const p     = useTurnProgress()                                     // { zone, l
 
 ## 上一轮 / 下一轮：`useTurnCursor`
 
-回看之前 AI 写的每一轮。回看时 `useZone` / `useZoneText` / `useZoneData` / `useZoneList` 拿到的都是**那一轮**的分区：场景、立绘、正文、心声、状态区……全部自动倒回，组件一行不用改。
+回看之前 AI 写的每一轮。回看时 `useZone` / `useZoneText` / `useZoneData` / `useZoneList` / `useZoneRows` 拿到的都是**那一轮**的分区：场景、立绘、正文、心声、状态区……全部自动倒回，组件一行不用改。
 
 ```tsx
 const c = useTurnCursor()

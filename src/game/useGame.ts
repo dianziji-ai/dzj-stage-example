@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState } from 'react'
 import { aiTurns, imageUrl, saidBefore, withState, type SessionState, type StageShortcut, type StageSnapshot } from '@dianziji/stage'
-import { shallowEqual, useStage, useStageActions, useZoneData, useZoneList, useZoneText } from '@dianziji/stage/react'
-import { keepGrowing, turnBeats, type Beat } from './beats'
+import { shallowEqual, useStage, useStageActions, useZoneData, useZoneList, useZoneRows, useZoneText } from '@dianziji/stage/react'
+import { scriptBeats, type Beat } from './beats'
 import { OPENING_FILM } from './content'
 import { markSeen, seen } from './seen'
 import { freshCgs, placeOf, playerOf, stateForAi, timeOf, type ClawSave, type GameSave } from './logic'
@@ -78,29 +78,12 @@ export function useGame() {
 }
 
 /**
- * 这一轮拆好的一句一句（剧本式：照正文区列表的顺序，旁白和台词交替；老消息：旁白 → 你和她一来一回。规则在 beats.ts）。
- * ★从这一轮的原文读（生成中＝live，回看＝那一条），不依赖卡上现在开着哪个区——老消息的对话区关掉了也照样显示。
- * ★生成中只给「完整写完的条目」，只增不减（keepGrowing）：界面不跟着半截解析抖。
+ * 这一轮拆好的一句一句：照正文区列表的顺序，旁白和台词交替（规则在 beats.ts）。
+ * ★列表由 SDK 拆好（useZoneRows，和网站聊天页同一套解析）：生成中＝写完的条目，只增不减；回看＝那一轮的。
  */
 export function useBeats(): Beat[] {
-  const content = useTurnContent()
-  const busy = useStage((st) => st.busy)
-  const said = useSaid()
-  const [mem, setMem] = useState<{ shown: Beat[]; busy: boolean }>({ shown: NO_BEATS, busy })
-  const done = useMemo(() => turnBeats(content, said, busy), [content, said, busy])
-  const shown = busy && mem.busy ? keepGrowing(done, mem.shown) : done
-  if (shown !== mem.shown || busy !== mem.busy) setMem({ shown, busy })
-  return shown
-}
-const NO_BEATS: Beat[] = []
-
-/** 正在看的这一轮的原文：生成中＝到目前为止写出来的；回看 / 写完＝那一条 AI 回复 */
-function useTurnContent(): string {
-  return useStage((st: SessionState<GameSave>) => {
-    if (st.busy) return st.live ?? ''
-    const id = st.view ?? aiTurns(st.history).at(-1)?.id
-    return id === undefined ? '' : (st.history.find((m) => m.id === id)?.content ?? '')
-  })
+  const rows = useZoneRows('narrative')
+  return useMemo(() => scriptBeats(rows), [rows])
 }
 
 /** 正在看的这一轮之前你说的那句：生成中＝刚发的；回看＝那一轮的；开场之前没有＝''（舞台附的 <dj_state> 状态块去掉） */

@@ -33,6 +33,7 @@ readZones(原文, snap)          // 原文 → 分区（和网站聊天页同一
 zoneNum(zones, 'status', '好感变化')   // 安全取值：没写 → null（AI 不一定每轮都写每一行）
 zoneText(zones, 'status', '心情')      // 没写 → ''
 zoneList(zones, 'action')              // 没写 → []
+zoneRows(zones, 'narrative')           // 列表区（剧本式正文）每一条：[{ 谁, 说, … }]；没写 / 不是列表 → []
 zoneData(zones, 'scene')               // 没写 → {}
 renderMarkdown(md)             // markdown → 安全 HTML（原始 HTML 转义、危险链接清空；对白「」包成 <span class="quote">）
 createSaver(stage)             // 单独用存档器：save(next) / save(next, { now: true }) / saveNow() / flush()

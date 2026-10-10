@@ -2,10 +2,10 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import App from './App.tsx'
 import { allSprites, bgOf, NO_LOOK, spriteOf } from './game/art'
-import { lastLook, turnBeats } from './game/beats'
+import { lastLook, scriptBeats } from './game/beats'
 import { normalizeSave } from './game/logic'
 import { rules } from './game/rules'
-import { readZones, zoneData, type StageSnapshot } from '@dianziji/stage'
+import { readZones, zoneData, zoneRows, type StageSnapshot } from '@dianziji/stage'
 import { StageBoot } from '@dianziji/stage/react'
 import './index.css'
 import { stage } from './stage'
@@ -24,7 +24,7 @@ function firstScreen(snap: StageSnapshot): string[] {
   const last = [...snap.history].reverse().find((m) => m.role === 'assistant')?.content ?? ''
   const z = readZones(last, snap)
   const scene = zoneData(z, 'scene')
-  const look = lastLook(turnBeats(last)) ?? NO_LOOK // 两种格式都认（剧本式 / 老的旁白 + 对话区），从原文读
+  const look = lastLook(scriptBeats(zoneRows(z, 'narrative'))) ?? NO_LOOK
   const sprite = spriteOf(snap, look, String(scene['穿着'] ?? ''))?.src ?? allSprites(snap)[0]
   return [bgOf(snap, normalizeSave(snap.save).location, String(scene['时间'] ?? '')), sprite].filter(Boolean)
 }
