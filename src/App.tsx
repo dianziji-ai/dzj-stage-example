@@ -181,8 +181,10 @@ export default function App() {
         <Hud user={hudUser} place={g.location} call={g.player.call} time={g.time} love={g.status.好感} loveTick={g.loveTick} mood={g.status.心情} day={g.status.天数} coins={g.save.claw.coins} onStatus={showStatus} actions={actions} onMore={openMenu} musicOn={music.on} onMusic={toggleMusic} />
         {/* 手机：右侧细竖栏（顶栏下面 10px）——抓娃娃小圆钮 + 存档时才冒的小图标；立绘在中间，右边本来就空 */}
         <div className="pointer-events-none absolute inset-x-0 top-[calc(var(--safe-top)+60px)] z-20 px-safe transition-[top] duration-300 lg:hidden [html[data-hud-folded='1']_&]:top-[calc(var(--safe-top)+8px)]">
-          {/* 和顶栏同一列（平板上不贴屏幕边、角标不被裁），右边缘对齐细胶囊 */}
-          <div className="pointer-events-auto mx-auto flex max-w-2xl flex-col items-end gap-2.5 px-3 pt-1 pr-4">
+          {/* 和顶栏同一列（平板上不贴屏幕边、角标不被裁），右边缘对齐细胶囊。
+              ★这层是整行宽、且排在顶栏后面（同 z-20）：自己必须不接点击、只让里面的按钮接——
+                顶栏收起后这一列挪到最顶上，跟左上角的圆头像同一行，整行接点击就把头像盖住、点了展不开（实拍） */}
+          <div className="pointer-events-none mx-auto flex max-w-2xl flex-col items-end gap-2.5 px-3 pt-1 pr-4 [&>*]:pointer-events-auto">
             <EntryButton variant="rail" coins={g.save.claw.coins} hint={clawHint} onOpen={() => setPage('claw')} onLocked={clawLocked} />
             <SaveIndicator quiet className="glass text-white" />
           </div>
