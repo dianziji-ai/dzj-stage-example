@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState } from 'react'
-import { imageUrl, stripImages, withState, type SessionState, type StageShortcut, type StageSnapshot } from '@dianziji/stage'
-import { shallowEqual, useStage, useStageActions, useZone, useZoneData, useZoneList, useZoneText } from '@dianziji/stage/react'
-import { parseBeats } from './beats'
+import { aiTurns, imageUrl, saidBefore, withState, type SessionState, type StageShortcut, type StageSnapshot } from '@dianziji/stage'
+import { shallowEqual, useStage, useStageActions, useZoneData, useZoneList, useZoneText } from '@dianziji/stage/react'
+import { keepGrowing, turnBeats, type Beat } from './beats'
 import { OPENING_FILM } from './content'
 import { markSeen, seen } from './seen'
 import { freshCgs, placeOf, playerOf, stateForAi, timeOf, type ClawSave, type GameSave } from './logic'
@@ -78,14 +78,39 @@ export function useGame() {
 }
 
 /**
- * 这一轮拆好的一句一句（旁白 → 你和她一来一回，规则在 beats.ts）。生成中跟着流长：最后一句可能是半截。
- * ★旁白不出图：AI 万一在旁白里写了 ![](编号) 也去掉（回忆 CG 只走 cg 区 → 全屏弹出）。
+ * 这一轮拆好的一句一句（剧本式：照正文区列表的顺序，旁白和台词交替；老消息：旁白 → 你和她一来一回。规则在 beats.ts）。
+ * ★从这一轮的原文读（生成中＝live，回看＝那一条），不依赖卡上现在开着哪个区——老消息的对话区关掉了也照样显示。
+ * ★生成中只给「完整写完的条目」，只增不减（keepGrowing）：界面不跟着半截解析抖。
  */
-export function useBeats() {
-  const narrative = useZoneText('narrative')
-  const talk = useZone('talk')?.value
-  const said = useStage((st) => st.said) // 刚发出去的那句（对话区里还没有「我」时补在最前面）
-  return useMemo(() => parseBeats(stripImages(narrative), talk, said), [narrative, talk, said])
+export function useBeats(): Beat[] {
+  const content = useTurnContent()
+  const busy = useStage((st) => st.busy)
+  const said = useSaid()
+  const [mem, setMem] = useState<{ shown: Beat[]; busy: boolean }>({ shown: NO_BEATS, busy })
+  const done = useMemo(() => turnBeats(content, said, busy), [content, said, busy])
+  const shown = busy && mem.busy ? keepGrowing(done, mem.shown) : done
+  if (shown !== mem.shown || busy !== mem.busy) setMem({ shown, busy })
+  return shown
+}
+const NO_BEATS: Beat[] = []
+
+/** 正在看的这一轮的原文：生成中＝到目前为止写出来的；回看 / 写完＝那一条 AI 回复 */
+function useTurnContent(): string {
+  return useStage((st: SessionState<GameSave>) => {
+    if (st.busy) return st.live ?? ''
+    const id = st.view ?? aiTurns(st.history).at(-1)?.id
+    return id === undefined ? '' : (st.history.find((m) => m.id === id)?.content ?? '')
+  })
+}
+
+/** 正在看的这一轮之前你说的那句：生成中＝刚发的；回看＝那一轮的；开场之前没有＝''（舞台附的 <dj_state> 状态块去掉） */
+export function useSaid(): string {
+  const said = useStage((st: SessionState<GameSave>) => {
+    if (st.busy) return st.said
+    const id = st.view ?? aiTurns(st.history).at(-1)?.id
+    return id === undefined ? '' : saidBefore(st.history, id)
+  })
+  return said.replace(/<dj_state>[\s\S]*?<\/dj_state>/g, '').trim()
 }
 
 /** 选项：生成中不给（还没写完） */

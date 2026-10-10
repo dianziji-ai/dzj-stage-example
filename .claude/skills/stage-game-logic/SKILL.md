@@ -9,11 +9,12 @@ description: 舞台的游戏逻辑：卡的分区怎么读、onTurn 每轮结算
 
 ## 分区
 - AI 的回复按卡的分区写成 `<区id>…</区id>`。`snap.slots` 是卡注册过的分区，**只有注册过的才算**。
-- 分区 id 以作者的卡为准（例子用 `scene` / `narrative` 旁白 / `talk` 对话 / `status` / `cg` / `game` / `action`，见 docs/example-card.md），写代码前先看 `snap.slots`，别照抄例子的 id。
+- 分区 id 以作者的卡为准（例子用 `scene` / `narrative` 剧本式正文 / `status` / `cg` / `game` / `action`，见 docs/example-card.md），写代码前先看 `snap.slots`，别照抄例子的 id。
 - 三种类型：文字区（正文，markdown）→ `useZoneText(id)`；数据区（`kind: yaml` 或 `data`）→ `useZoneData(id)` / `useZoneText(id, '键')`；选项区 → `useZoneList('action')`。
 - ★**选项区的 id 必须叫 `action`**：SDK 只认这个 id 是选项。作者的卡里选项区叫别的名字，`useZoneList` 永远是空数组、也不报错：让作者在网站编辑器「分区」页把它改成 `action`。
 - 文字区要显示 markdown 用 SDK 的 `renderMarkdown()` 转成安全 HTML；纯文本按行拆开显示更省事（例子：`beats.ts` + `BeatText.tsx`，不当 HTML 解析，不会被注入）。
-- ★让 AI 写「事实」不写「画面」：台词放进 YAML 列表区（谁 / 表情 / 动作 / 说），舞台拿这些事实去配图库挑图（SDK 的 `pickImage`，例子：`art.ts`、`beats.ts` 的 `lookAt`）。别让 AI 写图片编号。
+- ★正文推荐**剧本式**：旁白和台词按发生的先后写在 `narrative` 一个 YAML 列表里（`role: content`），舞台从这一轮原文按顺序拆（例子 `beats.ts` 的 `turnBeats`，新旧格式都认）。别再拆成「旁白区 + 对话区」：界面只能先播完旁白再播对话，换场时时间线倒回去。详见 docs/script-narrative.md。
+- ★让 AI 写「事实」不写「画面」：台词写成列表的条目（谁 / 表情 / 动作 / 说），舞台拿这些事实去配图库挑图（SDK 的 `pickImage`，例子：`art.ts`、`beats.ts` 的 `lookAt`）。别让 AI 写图片编号。
 - ★★「事实 → 哪张图」写在**卡的配图库分组名**里，不写在舞台代码里：`立绘/穿着=睡衣|睡裙`、`立绘/表情=害羞|脸红`、`背景/地点=cafe|咖啡馆`、`立绘/默认`。代码里只排维度的先后（谁 must → 动作 → 穿着 → 表情）。作者加图、加衣服、调近义词只改配图库。不许在 `src/` 里写图片地址表、近义词表、替补表。规则见 `docs/example-card.md` 第 3 节。
 
 ## 每轮结算：onTurn

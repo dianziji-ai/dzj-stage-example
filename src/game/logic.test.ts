@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { readZones, writingZone, zoneData, zoneText, type StageSnapshot } from '@dianziji/stage'
+import { readZones, writingZone, zoneData, type StageSnapshot } from '@dianziji/stage'
 import fx from './__fixtures__/card.json'
 import schema from './state.schema.json'
 import { cgOf, freshCgs, DEFAULT_SAVE, nextSave, normalizeSave, placeOf, playerOf, stateForAi, timeOf, travelOf } from './logic'
@@ -12,10 +12,9 @@ const opening = readZones(fx.opening, snap)
 describe('开场能正确拆区', () => {
   it('每个区都在、形状对', () => {
     expect(opening.scene).toMatchObject({ type: 'data', value: { 地点: 'home' } })
-    expect(opening.narrative?.type).toBe('narrative')
-    expect(zoneText(opening, 'narrative').length).toBeGreaterThan(200)
-    expect(Array.isArray(opening.talk?.value)).toBe(true) // 对话区：SDK 已把 YAML 列表解析成数组
-    expect(opening.talk?.value).toHaveLength(4)
+    expect(opening.narrative?.type).toBe('data') // 剧本式正文是 YAML 列表
+    expect(Array.isArray(opening.narrative?.value)).toBe(true) // 剧本式正文：SDK 已把 YAML 列表解析成数组
+    expect(opening.talk).toBeUndefined() // 对话区已关（台词并进正文区）
     expect(opening.status).toBeUndefined() // 开场状态区留空：初值由存档默认值给（好感 20 / 好奇 / 第 1 天）
     expect(opening.action?.type).toBe('action')
     expect(opening.action?.value).toHaveLength(4)
@@ -54,9 +53,8 @@ describe('换场选项（travelOf）', () => {
 
 describe('正在写哪个区（SDK 的 writingZone + 这张卡的分区顺序）', () => {
   const ids = fx.slots.map((sl: { zone: string }) => sl.zone)
-  it('旁白写完、下一个就是对话（输入栏里的「正在写 · 对话」靠它）', () => {
-    expect(writingZone('<narrative>旁白</narrative>\n', ids)).toBe('talk')
-    expect(writingZone('<talk>\n- 谁: 电子姬\n</talk>', ids)).toBe('status')
+  it('正文写完、下一个就是状态（输入栏里的「正在写 · 状态」靠它）', () => {
+    expect(writingZone('<narrative>\n- 谁: 旁白\n</narrative>\n', ids)).toBe('status')
   })
 })
 

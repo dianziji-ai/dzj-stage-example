@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { StageSnapshot } from '@dianziji/stage'
 import fx from './__fixtures__/card.json'
+import { PLUSHIES, plushUrl } from '../claw/data'
 import { bgOf, mapOf, periodOf, spriteOf, toneOf, type Look } from './art'
 
 // 这张卡线上的配图库（立绘 / 背景 / 地图的挑图规则全写在分组名里）
@@ -69,5 +70,13 @@ describe('背景：地点 + 时段', () => {
 describe('对话框配色', () => {
   it('跟着表情；认不出＝平常', () => {
     expect([toneOf('脸红'), toneOf('有点不开心'), toneOf('嗯')]).toEqual(['shy', 'sad', 'normal'])
+  })
+})
+
+describe('娃娃：配图库「娃娃/名字=…」组按名字挑', () => {
+  it('每只娃娃都有图，各不相同', () => {
+    const urls = PLUSHIES.map((p) => plushUrl(pack, p.id))
+    expect(urls.every(Boolean)).toBe(true)
+    expect(new Set(urls).size).toBe(PLUSHIES.length)
   })
 })

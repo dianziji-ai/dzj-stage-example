@@ -1,5 +1,6 @@
 import { PLUSHIES, plushUrl, RARITY_LABEL, type PlushId } from '../../claw/data'
 import { showTip } from '../tipStore'
+import { usePack } from '../useGame'
 import { CG_NAMES, EGGS } from '../content'
 import Page from './Page'
 
@@ -15,6 +16,7 @@ export default function GalleryPage({ unlocked, url, onOpen, onEgg, collection, 
   /** 去抓娃娃：label＝按钮字（「去抓娃娃」/「去电玩城」…），go＝点了做什么（进机器 / 开地图 / 弹提示） */
   claw: { label: string; go: () => void }
 }) {
+  const pack = usePack() // 娃娃图在配图库
   const got = PLUSHIES.filter((p) => (collection[p.id] ?? 0) > 0).length
   return (
     <Page title="回忆图册" onBack={onBack} sub={`已收集 ${unlocked.length} / 8 · 和她一起的每个瞬间`}>
@@ -76,7 +78,7 @@ export default function GalleryPage({ unlocked, url, onOpen, onEgg, collection, 
         <div className="mx-auto max-w-3xl px-4 pt-1">
           {/* 收集引导：街机风小横幅 */}
           <div className="flex items-center gap-3 rounded-2xl border-2 border-amber-100 bg-gradient-to-r from-amber-50 to-pink-50 p-2.5 pr-3">
-            <img src={plushUrl('goldchick')} alt="" loading="lazy" decoding="async" className="size-11 shrink-0 animate-[wiggle_1.8s_ease-in-out_infinite] object-contain" />
+            <img src={plushUrl(pack, 'goldchick')} alt="" loading="lazy" decoding="async" className="size-11 shrink-0 animate-[wiggle_1.8s_ease-in-out_infinite] object-contain" />
             <div className="min-w-0 flex-1">
               <div className="text-[13px] font-bold">去电玩城抓娃娃！</div>
               <div className="text-[11px] leading-snug text-[#9a7b72]">小鸡抓抓乐里还有 {PLUSHIES.length - got} 只没抓到，金色小鸡王最难抓哦</div>
@@ -103,7 +105,7 @@ export default function GalleryPage({ unlocked, url, onOpen, onEgg, collection, 
               }
               className={`rounded-2xl bg-white p-2 text-center shadow-[0_8px_20px_-12px_rgba(236,72,153,0.35)] ${n ? 'cursor-default' : 'active:scale-95'}`}
             >
-              <img src={plushUrl(p.id)} alt="" loading="lazy" decoding="async" className={`mx-auto aspect-square w-full object-contain ${n ? '' : 'opacity-25 grayscale'}`} />
+              <img src={plushUrl(pack, p.id)} alt="" loading="lazy" decoding="async" className={`mx-auto aspect-square w-full object-contain ${n ? '' : 'opacity-25 grayscale'}`} />
               <div className={`truncate text-xs ${n ? 'font-semibold' : 'text-[#c2a59c]'}`}>{n ? p.name : '？？？'}</div>
               <div className="text-[10px] text-[#c2a59c]">
                 {RARITY_LABEL[p.rarity]}

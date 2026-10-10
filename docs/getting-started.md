@@ -38,12 +38,12 @@ npm run lint
 
 | 想改什么 | 改哪里 |
 |---|---|
-| 地点、视频 / 娃娃素材地址 | `src/game/content.ts`、`src/game/manifest.json` |
+| 地点、视频地址 | `src/game/content.ts`、`src/game/manifest.json`（图都在配图库） |
 | 一轮怎么拆成一句一句 | `src/game/beats.ts` |
 | 立绘、背景怎么挑（配图库当对照表） | `src/game/art.ts` + 卡的配图库 |
 | 存档里有什么、每轮怎么变 | `src/game/logic.ts`（`GameSave` / `nextSave`）+ `src/game/rules.ts`；网站编辑器的存档结构要对上 |
 | 每句话附给 AI 的状态 | `src/game/logic.ts` 的 `stateForAi` |
-| 画面 | `src/game/` 下的组件；分区 id（`scene` / `narrative` / `talk` …）要和你卡里定义的对上 |
+| 画面 | `src/game/` 下的组件；分区 id（`scene` / `narrative` / `status` …）要和你卡里定义的对上；正文推荐剧本式（[script-narrative.md](script-narrative.md)） |
 | 样式 | Tailwind 类名写在组件上；全局的放 `src/styles/`；组件专属的复杂样式用 `组件名.module.css` |
 | 不要的玩法 | 抓娃娃：删 `src/claw/` 之后还要改这几处（它们引用了抓娃娃的数据）：`game/logic.ts`（`GameSave.claw`、`stateForAi` 的抓娃娃一行、`START_COINS` 等）、`game/pages/GalleryPage.tsx`（娃娃收藏柜）、`game/Hud.tsx`（硬币）、`App.tsx`（入口、送娃娃、`clawCta`）、`game/logic.test.ts`，存档结构里的 `claw` 字段也删掉，再粘进编辑器「舞台 → ② 存档结构」。音乐：删 `src/audio/` 和 `App.tsx` 里的 `useBgm` / 音乐按钮。删完跑 `npx tsc -b`，报错的地方就是还要改的 |
 

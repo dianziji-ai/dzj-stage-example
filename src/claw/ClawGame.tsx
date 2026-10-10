@@ -322,7 +322,7 @@ export default function ClawGame({ claw, busy, call, onUpdate, onGift, onLeave }
                 className="absolute top-0 left-0 z-10 w-[20%]"
                 style={{ transform: size.current.w ? baseTransform(p) : undefined }}
               >
-                <img src={plushUrl(p.id)} alt="" decoding="async" draggable={false} className="aspect-square w-full object-contain" />
+                <img src={plushUrl(pack, p.id)} alt="" decoding="async" draggable={false} className="aspect-square w-full object-contain" />
               </div>
             ))}
 
@@ -362,7 +362,7 @@ export default function ClawGame({ claw, busy, call, onUpdate, onGift, onLeave }
             <div className={`mx-auto mb-1 w-fit rounded-full px-3 py-0.5 text-xs font-bold ${won.rarity === 'gold' ? 'bg-amber-300 text-amber-900' : won.rarity === 'rare' ? 'bg-violet-200 text-violet-800' : 'bg-pink-100 text-pink-700'}`}>
               {RARITY_LABEL[won.rarity]}
             </div>
-            <img src={plushUrl(won.id)} alt="" className="mx-auto size-36 animate-pop object-contain" />
+            <img src={plushUrl(pack, won.id)} alt="" className="mx-auto size-36 animate-pop object-contain" />
             <div className="mt-1 text-lg font-bold">抓到了「{plushName(won.id)}」！</div>
             <div className="mt-4 grid grid-cols-2 gap-2">
               <button onClick={gift} disabled={busy} className="rounded-full bg-gradient-to-br from-pink-400 to-rose-400 py-2.5 text-sm font-semibold text-white disabled:opacity-50">

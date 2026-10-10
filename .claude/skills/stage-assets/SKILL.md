@@ -11,7 +11,7 @@ description: 舞台的素材怎么放：图片 / 视频一律进卡的素材库�
 3. 小文件（图标、logo、音效、自托管字体）可以放 `public/` 打进包里；**大图别放 `public/`**（包上限 30MB，而且每次上传都要重传）。
 
 ## 地址放哪
-- 例子的做法：`src/game/manifest.json` 记素材库地址（按用途分组：`bg`、`sprites`…），`src/game/content.ts` 按 id 取。换成自己的卡，就换这份清单。
+- 例子的做法：图（立绘 / 背景 / 地图 / 娃娃 / 回忆 CG）全在卡的配图库，按组名挑（`art.ts`、`claw/data.ts`）；`src/game/manifest.json` 只记配图库管不到的视频地址，`src/game/content.ts` 取。换成自己的卡，就换这份清单。
 - AI 回复里按编号引用的配图：在网站编辑器的「素材库 → 相册」（配图库）里配好，`snap.image_pack` 就是它。**SDK 不会自动把编号换成图**：用 `imageUrl(snap, 编号)` 取地址（数字、`'3'`、`'![](3)'` 都行），其余 helper 见 `docs/sdk-session.md` 的「配图编号」。
 - 卡数据里写的 `{{asset}}/卡id/assets/…`：把 `{{asset}}` 换成 `snap.asset_base`。
 
@@ -48,5 +48,5 @@ const LOGO = '/brand/logo.webp'                             // ✗ 上传后在 
 
 - 背景音乐配在卡的「背景音乐」里，舞台读 `snap.bgm`（`{ name, url }`），**别把音频地址写进代码**。按场景换曲：给曲子起能分辨的名字（「白天」「深夜」），代码按名字挑。
 - 封面、对话背景、菜单背景读 `snap.card.avatar / background / menu_background`；角色立绘和简介读 `snap.characters`。
-- 只有卡上没有的（多表情立绘清单、地图、CG 这些游戏自己的素材）才写进 `manifest.json`。
+- 图一律进配图库（不公开的技术分组 rounds 设 -1）；只有配图库收不了的（视频）才写进 `manifest.json`。
 

@@ -3,7 +3,8 @@
 | 篇 | 讲什么 |
 |---|---|
 | [getting-started.md](getting-started.md) | 上手：准备卡 → `npm run dev` → 在网站里打开本机页面 → 改成你自己的卡 |
-| [example-card.md](example-card.md) | 官方例子卡：8 个分区、存档结构、开场、素材——想看到例子的效果先照它建卡 |
+| [example-card.md](example-card.md) | 官方例子卡：7 个分区、存档结构、开场、素材——想看到例子的效果先照它建卡 |
+| [script-narrative.md](script-narrative.md) | **剧本式正文**：旁白和台词写在一个列表里（推荐写法）——分区怎么定义、舞台怎么读、对话皮肤怎么写、老消息要不要转 |
 | [deploy.md](deploy.md) | 上线：`npm run pack`、上传、玩家怎么进来、路径、上传前自检 |
 | [mobile.md](mobile.md) | 电脑 / 手机：断点、安全区、键盘、输入、布局、验收尺寸 |
 | [state.md](state.md) | 存档结构（JSON Schema）、每轮怎么改存档（onTurn）、附给 AI 的「此刻状态」 |

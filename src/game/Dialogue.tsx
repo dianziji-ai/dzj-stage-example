@@ -15,12 +15,13 @@ import ErrorNotice, { type NoticeError } from './ErrorNotice'
 import ReviewBar from './ReviewBar'
 import PlayControl from './PlayControl'
 import ShortcutTray from './ShortcutTray'
-import { useBeats, useChoices, useShortcuts } from './useGame'
+import { useBeats, useChoices, useSaid, useShortcuts } from './useGame'
 import { usePref } from './usePref'
 import d from './Dialogue.module.css'
 
 /**
- * 底部对话区（galgame 式）：一轮拆成一句一句播——旁白 → 你说的 → 她说的（每句自带表情）。
+ * 底部对话区（galgame 式）：一轮拆成一句一句播——旁白和你们的台词按发生的先后交替（剧本式正文，她的每句自带表情）。
+ *  · 你刚说完、回复还没写出第一句：对话框里就是你说的这句（名牌是你）；回复第一句一到就翻过去。
  *  · 点正文 / 「▶」看下一句；「◀ ▶」翻句、「‹ ›」翻轮（回看上一轮，SDK 的 useTurnCursor）。
  *  · 每换一句，把她这句的样子交给 App（onFocus，只在变了的时候交）：立绘一句一换。读到最后一句告诉 App（onEnd）：心声这时才冒。
  *  · 新一轮从第一句开始；生成中边写边读，读到最新那句它会继续长。
@@ -51,6 +52,7 @@ export default function Dialogue({ me, call, busy, error, topupUrl, onSend, onDi
   advanceRef?: RefObject<() => void>
 }) {
   const beats = useBeats()
+  const said = useSaid()
   const choices = useChoices()
   const cursor = useTurnCursor()
   const [text, setText] = useState('')
@@ -70,7 +72,7 @@ export default function Dialogue({ me, call, busy, error, topupUrl, onSend, onDi
   const turn = busy ? 'live' : `t${cursor.id ?? 'latest'}`
   const [pos, setPos] = useState({ turn, idx: 0, text: '' })
   // 换了一轮才回到第一句；★生成中玩家已经点着往下读了，写完（live → 最新一轮）就从读到的那句接着播，不跳回开头
-  //   按句子内容找回来（写完后句子顺序可能变：生成中先把你说的那句补在最前，写完它挪到旁白后面）；找不到再按位置。生成中那句可能只写了半截，所以也认「开头一样」
+  //   按句子内容找回来（老格式写完后句子顺序可能变）；找不到再按位置。生成中那句可能只写了半截，所以也认「开头一样」
   if (pos.turn !== turn) {
     const keep = pos.turn === 'live' && turn === 'tlatest'
     const at = keep && pos.text ? beats.findIndex((b) => b.text === pos.text || b.text.startsWith(pos.text)) : -1
@@ -78,7 +80,11 @@ export default function Dialogue({ me, call, busy, error, topupUrl, onSend, onDi
   }
   const last = Math.max(0, beats.length - 1)
   const idx = Math.min(pos.idx, last)
-  const beat: Beat | undefined = beats[idx]
+  // ★galgame 式：你刚说完、回复还没写出第一句时，对话框里就是你说的这句（名牌是你）；回复的第一句一到就翻过去、从回复第一句往下播。
+  //   它不是回复里的一句——不会被撤、后面的句子也不挪位（以前把它塞成回复第 0 句，模型写到「我」条目时它被撤掉、整列前移＝画面在跳）。
+  //   想再看自己说了什么：回看上一轮时顶上的回看条里有
+  const waiting: Beat | undefined = busy && beats.length === 0 && said ? { kind: 'you', text: said } : undefined
+  const beat: Beat | undefined = waiting ?? beats[idx]
   const go = (i: number) => setPos({ turn, idx: Math.max(0, Math.min(last, i)), text: beats[Math.max(0, Math.min(last, i))]?.text ?? '' })
 
   // 播放设置（独立模块 @dianziji/stage-settings）：

@@ -1,8 +1,8 @@
 /**
  * 抓娃娃机（这张卡专属的小游戏，演示「舞台里能放任何玩法」；做自己的卡时可以删掉：要一起改的地方见 docs/getting-started.md「不要的玩法」）。
- * 娃娃清单 / 稀有度 / 硬币规则。图在卡的素材库里，地址见 game/manifest.json 的 plush。
+ * 娃娃清单 / 稀有度 / 硬币规则。图在卡的配图库里：分组「娃娃/名字=小黄鸡|chick」（不公开），按名字挑（plushUrl）。
  */
-import manifest from '../game/manifest.json'
+import { pickImage, type StageSnapshot } from '@dianziji/stage'
 
 export type Rarity = 'normal' | 'rare' | 'gold'
 export type PlushId = 'chick' | 'eggchick' | 'pinkchick' | 'starchick' | 'dianji' | 'goldchick'
@@ -29,5 +29,6 @@ export const RARITY_LABEL: Record<Rarity, string> = { normal: '普通', rare: '�
 export const START_COINS = 5
 export const COINS_PER_TURN_MAX = 3
 
-const M = manifest as unknown as { plush?: Record<string, string> }
-export const plushUrl = (id: PlushId) => M.plush?.[id] ?? ''
+/** 娃娃的图：配图库「娃娃」类里名字对得上的那张（中文名或 id 都认）；没有＝'' */
+export const plushUrl = (pack: Pick<StageSnapshot, 'image_pack'>, id: PlushId) =>
+  pickImage(pack, '娃娃', [{ value: plushName(id), key: '名字', must: true }])?.src ?? ''

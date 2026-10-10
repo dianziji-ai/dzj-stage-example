@@ -1,14 +1,6 @@
 {
     "cardId": "ca44070d",
     "base": "https://r2.picimgdzj.me/card_assets",
-    "plush": {
-        "chick": "https://r2.picimgdzj.me/card_assets/ca44070d/assets/image/3UqkW7J3UHtAdHVZEWTh.webp",
-        "eggchick": "https://r2.picimgdzj.me/card_assets/ca44070d/assets/image/B2vLy547Tl3vX8yZG98B.webp",
-        "pinkchick": "https://r2.picimgdzj.me/card_assets/ca44070d/assets/image/xlNlqD20CWrArkrPz3Wi.webp",
-        "starchick": "https://r2.picimgdzj.me/card_assets/ca44070d/assets/image/I6DOuUESTEMyJ28lhUDJ.webp",
-        "dianji": "https://r2.picimgdzj.me/card_assets/ca44070d/assets/image/5nk8LatizxGV3L9qzomR.webp",
-        "goldchick": "https://r2.picimgdzj.me/card_assets/ca44070d/assets/image/TAKvauSL7XyqnMqLqIY2.webp"
-    },
     "film": {
         "src": "https://r2.picimgdzj.me/card_assets/ca44070d/assets/video/IbLssuLNITx7me4Gxd5w.mp4",
         "poster": "https://r2.picimgdzj.me/card_assets/ca44070d/assets/image/MeBCKh9I4ZfdGKqKm08K.webp"
