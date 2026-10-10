@@ -8,7 +8,7 @@ description: 舞台交付前的自检清单和上线步骤：测试、类型检�
 ## 自检清单（全部打勾才能说「做完了」）
 
 **命令**
-- [ ] `npm test`（会先检查 `packages/` 没被改过）
+- [ ] `npm test`
 - [ ] `npx tsc -b`
 - [ ] `npm run lint`
 - [ ] `npm run pack` 成功生成 `stage.zip`
@@ -22,7 +22,7 @@ description: 舞台交付前的自检清单和上线步骤：测试、类型检�
 - [ ] 没有浏览器 / 没法在网站里打开、看不到画面的：照实告诉作者哪些没看，别写「已验证」
 
 **规矩**
-- [ ] 没改 `packages/`
+- [ ] 没改 `node_modules/` 里的 SDK；`package-lock.json` 跟着提交
 - [ ] 没外链别的网站的素材
 - [ ] `public/` 的路径用 `BASE_URL` 拼
 - [ ] 没有 `alert` / `confirm`

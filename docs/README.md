@@ -7,6 +7,7 @@
 | [deploy.md](deploy.md) | 上线：`npm run pack`、上传、玩家怎么进来、路径、上传前自检 |
 | [mobile.md](mobile.md) | 电脑 / 手机：断点、安全区、键盘、输入、布局、验收尺寸 |
 | [state.md](state.md) | 存档结构（JSON Schema）、每轮怎么改存档（onTurn）、附给 AI 的「此刻状态」 |
+| [sdk.md](sdk.md) | **SDK 总览**：有哪几个包、怎么装、去哪查 API（类型声明 / README / 源码）、怎么升级、不够用怎么办 |
 | [sdk-react.md](sdk-react.md) | React 外壳：`StageBoot`、`useStage`、按分区订阅、现成组件 |
 | [sdk-session.md](sdk-session.md) | 会话引擎：`createSession`、存档器、分区解析、markdown |
 | [sdk-client.md](sdk-client.md) | 客户端：SDK 分三层、`createStage`（快照、请求、打开网站工具）、事件 |

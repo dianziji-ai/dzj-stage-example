@@ -1,10 +1,25 @@
 # 更新记录
 
+## 2026-10-10 · 舞台 SDK 改成 npm 包
+
+| 包 | 版本 |
+|---|---|
+| `@dianziji/stage` | 0.4.0 |
+| `@dianziji/stage-panel` | 0.2.2 |
+| `@dianziji/stage-settings` | 0.2.0 |
+| `@dianziji/stage-voice` | 0.1.1 |
+| `@dianziji/stage-sfx` | 0.1.1 |
+
+- ★**SDK 从本仓库拆出去了**：`packages/` 和 `scripts/sdk-lock.mjs` 删掉，五个包发布在 npm（`@dianziji/*`），源码在 [dianziji-ai/dzj-stage-sdk](https://github.com/dianziji-ai/dzj-stage-sdk)。`npm install` 就装好，代码里的 `import` 一行不用改。
+- 新手册 [docs/sdk.md](docs/sdk.md)：有哪几个包、去哪查 API（编辑器悬停看类型说明 / 包里的 README / 源码）、怎么升级（`npm outdated`、`npm update`）、不够用怎么办。
+- AGENTS.md 和 skills 同步：「packages/ 只读、不跑 sdk:lock」改成「别改 node_modules 里的 SDK、查 API 先看类型声明、升级先问作者」。
+- 从旧版迁过来：删掉自己仓库里的 `packages/`、`scripts/sdk-lock.mjs`，`package.json` 去掉 `workspaces` 和 `pretest` / `test:sdk` / `sdk:lock` 三个脚本，SDK 依赖改成 `"^0.4.0"` 这种版本号，删掉 `package-lock.json` 和 `node_modules` 重新 `npm install`；游戏有用 jsdom 的测试就自己加 `jsdom` 开发依赖。
+
 ## 内测版 v0.3.1-beta — 2026-10-09
 
 | 包 / 部分 | 版本 |
 |---|---|
-| `@dianziji/stage` 舞台 SDK | 0.3.3（详见 [packages/stage/CHANGELOG.md](packages/stage/CHANGELOG.md)） |
+| `@dianziji/stage` 舞台 SDK | 0.3.3（详见 [packages/stage/CHANGELOG.md](https://github.com/dianziji-ai/dzj-stage-sdk/blob/main/packages/stage/CHANGELOG.md)） |
 
 - ★**卡上有的一律从快照读**：快照新增 `shortcuts` 快捷指令、`bgm` 背景音乐、`characters` 角色包，`card` 多了封面 / 背景 / 菜单背景。作者在编辑器改一处，对话模式和舞台都跟着变。用法见 [docs/bridge.md](docs/bridge.md#卡上有的一律从快照读)；给 AI 的规则写进了 AGENTS.md 和 skills（stage-game-logic、stage-assets）。
 - ★新模块 **`@dianziji/stage-settings` 0.1.0**（播放设置，独立、只依赖 react）：一个面板管文本速度（逐字打出）、字号、动效、选项行为（默认填入确认）、自动播放，默认值照柳月儿原卡；存玩家本机。官方例子标题栏「▶ 自动」+「调节」接上了。手册 [docs/settings.md](docs/settings.md)，skill `stage-settings`。
@@ -21,7 +36,7 @@
 | 包 / 部分 | 版本 | 详细记录 |
 |---|---|---|
 | `@dianziji/stage` 舞台 SDK | 0.3.1 | 没变 |
-| `@dianziji/stage-panel` 本局面板 | 0.2.1 | 去掉「历史」标签，见 [packages/stage-panel/CHANGELOG.md](packages/stage-panel/CHANGELOG.md) |
+| `@dianziji/stage-panel` 本局面板 | 0.2.1 | 去掉「历史」标签，见 [packages/stage-panel/CHANGELOG.md](https://github.com/dianziji-ai/dzj-stage-sdk/blob/main/packages/stage-panel/CHANGELOG.md) |
 | 官方例子 | 0.3.0 | 本条 |
 
 - **卡的分区**：`face`（表情）、`thought`（心声）两个区去掉；新增 `talk` 对话区（YAML 列表，每句 `谁 / 表情 / 动作 / 说`），`narrative` 改成只写旁白（心声 / 屏幕消息写成引用块）。线上的例子卡已经换成新结构，`src/game/__fixtures__/card.json` 同步。
@@ -38,8 +53,8 @@
 
 | 包 / 部分 | 版本 | 详细记录 |
 |---|---|---|
-| `@dianziji/stage` 舞台 SDK | 0.3.1 | [packages/stage/CHANGELOG.md](packages/stage/CHANGELOG.md) |
-| `@dianziji/stage-panel` 本局面板 | 0.2.0 | [packages/stage-panel/CHANGELOG.md](packages/stage-panel/CHANGELOG.md) |
+| `@dianziji/stage` 舞台 SDK | 0.3.1 | [packages/stage/CHANGELOG.md](https://github.com/dianziji-ai/dzj-stage-sdk/blob/main/packages/stage/CHANGELOG.md) |
+| `@dianziji/stage-panel` 本局面板 | 0.2.0 | [packages/stage-panel/CHANGELOG.md](https://github.com/dianziji-ai/dzj-stage-sdk/blob/main/packages/stage-panel/CHANGELOG.md) |
 
 - **本地开发**：`npm run dev` → 网站上进入你的卡，工具行「开发」→ 填本机地址（如 `http://localhost:5173`），网站里的舞台就加载你本机的页面，热更新照常。没有凭证、没有 `.env`，直接打开 localhost 会提示去网站里打开。
 - **去掉的**：凭证（`readLaunch` / `.env` / 舞台地址 `#token=`）、舞台 HTTP 接口（`/api/v1/stage*`，平台已下线）、`npm run schema:push`（存档结构粘进网站编辑器「舞台 → ② 存档结构」）、`docs/api.md`（换成 [docs/bridge.md](docs/bridge.md)）。
@@ -54,8 +69,8 @@
 
 | 包 / 部分 | 版本 | 详细记录 |
 |---|---|---|
-| `@dianziji/stage` 舞台 SDK | 0.1.1 | [packages/stage/CHANGELOG.md](packages/stage/CHANGELOG.md) |
-| `@dianziji/stage-panel` 本局面板 | 0.1.0 | [packages/stage-panel/CHANGELOG.md](packages/stage-panel/CHANGELOG.md) |
+| `@dianziji/stage` 舞台 SDK | 0.1.1 | [packages/stage/CHANGELOG.md](https://github.com/dianziji-ai/dzj-stage-sdk/blob/main/packages/stage/CHANGELOG.md) |
+| `@dianziji/stage-panel` 本局面板 | 0.1.0 | [packages/stage-panel/CHANGELOG.md](https://github.com/dianziji-ai/dzj-stage-sdk/blob/main/packages/stage-panel/CHANGELOG.md) |
 | 官方例子「电子姬的同居日常」 | 0.1.0 | 本文件 |
 
 ### 舞台 SDK `@dianziji/stage`

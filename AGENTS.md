@@ -2,7 +2,7 @@
 
 你在帮作者给**电子姬平台**上的一张卡开发「舞台」：一个网页游戏界面。AI（平台那边的模型）照常按卡的提示词和分区写剧情，舞台把分区渲染成画面；聊天、存档、计费都走网站。舞台是网站页面里的一个 iframe，只通过 `stage`（`src/stage.ts`）和网站说话（postMessage，见 `docs/bridge.md`）。
 
-本仓库是官方例子（galgame「电子姬的同居日常」）+ 舞台 SDK。作者通常是**复制这个仓库，把 `src/` 换成自己的游戏**。
+本仓库是官方例子（galgame「电子姬的同居日常」）；舞台 SDK 是 npm 包（`@dianziji/stage` 等，源码在 dianziji-ai/dzj-stage-sdk），见 `docs/sdk.md`。作者通常是**复制这个仓库，把 `src/` 换成自己的游戏**。
 
 本文件是总规则；具体做法在 `.claude/skills/` 下按主题拆开（见文末「技能索引」）。规则冲突时以本文件为准。
 
@@ -22,7 +22,7 @@
 
 | 方面 | 规则 |
 |---|---|
-| **SDK** | **`packages/` 只读，一个字都不许改。** `npm test` 前会比对指纹，改了就失败。SDK 不够用：告诉作者向官方提需求，自己在 `src/` 里绕开。**不许跑 `npm run sdk:lock`**（那是官方发版用的，跑了等于掩盖改动） |
+| **SDK** | SDK 是 npm 包（`@dianziji/stage` 等，装在 `node_modules/`），**不许改 `node_modules/@dianziji/` 里的代码**（重装就没了）。**查 API 先看类型声明和 README，不许凭记忆猜**：`node_modules/@dianziji/<包>/dist/*.d.ts`（带注释）、同目录 README / CHANGELOG，再看 `docs/`（总览见 `docs/sdk.md`）。不够用：在 `src/` 里绕开，或请作者到 SDK 仓库提需求。升级 SDK（`npm update` / 改版本号）要先问作者 |
 | **React** | 函数组件 + hooks；**一个组件一个文件**，按功能分目录（`src/game/`、`src/xxx/`）；纯逻辑（存档怎么变、画面怎么解读）放 `logic.ts` 写成纯函数并配单测；数据**按分区订阅**（`useZoneText` / `useZoneData` …），不要在一个大组件里 `useStage()` 拿全部再往下传 |
 | **样式** | **Tailwind 类名优先**，直接写在组件上；全局复用的（变量、工具类、动画、质感）按主题放 `src/styles/`；只属于某个组件、Tailwind 写不动的用 `组件名.module.css` 放在组件旁边；**不许往 `src/index.css` 里加样式**（它只做引入） |
 | **适配** | 默认电脑和手机都适配；Tailwind 移动优先（先写手机，再 `lg:` 覆盖成电脑）；只做竖屏；**iOS 顶部刘海 / 底部 home 条必须让位**（`pt-safe` / `pb-safe` / `pb-composer`）；手机上的输入走全屏输入层 |
@@ -38,7 +38,7 @@
 
 ## 三、不要做的事
 
-- 不改 `packages/`；不跑 `npm run sdk:lock`。
+- 不改 `node_modules/` 里的 SDK；没问作者不升级 SDK 版本。
 - 不绕开 `stage` 自己和平台通信（`fetch` 平台接口、自己发 `postMessage`）。
 - 不外链别的网站的图片、字体、脚本。
 - 不用 `alert` / `confirm` / `prompt`：自己做弹窗组件。
@@ -70,12 +70,7 @@
 AGENTS.md / CLAUDE.md   本文件（CLAUDE.md 只是引用它）
 docs/                   开发手册（必读）
 .claude/skills/         技能
-packages/               舞台 SDK（只读）
-  stage/                  @dianziji/stage：client / 会话引擎 / react
-  stage-panel/            @dianziji/stage-panel：本局面板
-  stage-settings/         @dianziji/stage-settings：播放设置（文本速度 / 字号 / 动效 / 选项行为 / 自动播放 / 配音，独立模块，只依赖 react）
-  stage-voice/            @dianziji/stage-voice：角色配音（useVoice + VoiceButton，见 docs/voice.md）
-  stage-sfx/              @dianziji/stage-sfx：界面音效（useSfxRoot + data-sfx，见 docs/sfx.md）
+node_modules/@dianziji/ 舞台 SDK（npm 包：stage / stage-panel / stage-settings / stage-voice / stage-sfx），别改；API 看 dist/*.d.ts + README，总览 docs/sdk.md
 src/                    游戏（作者的代码都在这里）
   main.tsx                启动：<StageBoot>（预加载、游戏规则；自动接上快照里的安全区）
   stage.ts                createStage()，别改
@@ -84,5 +79,5 @@ src/                    游戏（作者的代码都在这里）
   styles/                 全局样式
   game/                   这张卡的内容、规则（logic.ts + 测试）、界面组件
 public/                 打包进 zip 的小文件（图标、字体、音效）
-scripts/sdk-lock.mjs    SDK 只读检查
+scripts/pack.mjs        打包成 stage.zip
 ```

@@ -58,4 +58,5 @@ description: 舞台开发踩过的坑（现象 → 原因 → 做法）：白屏
 ## SDK
 | 现象 | 原因 | 做法 |
 |---|---|---|
-| `npm test` 报「SDK（packages/）被改过了」 | 改了 `packages/` | 还原改动；SDK 不够用向官方提需求。**不要跑 `npm run sdk:lock` 掩盖** |
+| 改了 `node_modules/@dianziji/` 里的代码，重装 / 别人拉仓库后改动没了 | SDK 是 npm 包，`npm install` 会覆盖 | 改回 `src/` 里绕开；SDK 不够用向官方提需求（见 `docs/sdk.md`） |
+| 用 SDK 的函数报「没有这个导出」/ 参数对不上 | 凭记忆写的 API，或装的版本比文档旧 | 先看 `node_modules/@dianziji/<包>/dist/*.d.ts` 和 CHANGELOG；`npm ls @dianziji/stage` 看装的版本 |

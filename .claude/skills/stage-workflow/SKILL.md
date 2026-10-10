@@ -39,7 +39,7 @@ description: 开发电子姬舞台的完整流程（每次开工先读）：读�
 ## 4. 写
 - 照 `stage-react`、`stage-responsive`、`stage-assets`、`stage-performance`、`stage-game-logic` 的做法。
 - 纯逻辑先写、先测（`src/game/logic.ts` + `logic.test.ts`，用卡的真实数据做 fixture）。
-- 只改 `src/` 和 `public/`。**不碰 `packages/`。**
+- 只改 `src/` 和 `public/`。**不碰 `node_modules/` 里的 SDK**；用 SDK 的函数前先查类型声明（`node_modules/@dianziji/<包>/dist/*.d.ts`）和 `docs/sdk.md`，不凭记忆猜。
 
 ## 5. 自检（见 `stage-release` 的清单）
 - `npm test`、`npx tsc -b`、`npm run lint`、`npm run pack` 全过。

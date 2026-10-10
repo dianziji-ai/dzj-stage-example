@@ -20,4 +20,4 @@
 4. 接了配音（[voice.md](voice.md)）：`useEffect(() => duck(voice.playing), [voice.playing])`，她在念时音效压低一半。
 5. 设置面板 `sections` 加上 `'sfx'`。
 
-★不要改 `packages/stage-sfx/`。
+★不要改 `node_modules/` 里的包。

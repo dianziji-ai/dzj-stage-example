@@ -29,13 +29,12 @@ npm run dev        # 记下终端打印的地址，默认 http://localhost:5173
 
 ```bash
 npm test           # 游戏自己的测试（src/**/*.test.ts）
-npm run test:sdk   # SDK 的测试（只读，不用管，官方维护）
 npm run lint
 ```
 
 ## 3. 改成你自己的卡
 
-只改 `src/` 和 `public/`。**`packages/`（SDK）是只读的，不要改**：不够用就向官方提需求。
+只改 `src/` 和 `public/`。SDK 是 npm 包（`node_modules/@dianziji/`），**不要改它**：不够用就向官方提需求。查 API、升级 SDK 见 [sdk.md](sdk.md)。
 
 | 想改什么 | 改哪里 |
 |---|---|
@@ -51,9 +50,10 @@ npm run lint
 ## 目录
 
 ```
-packages/                     舞台 SDK（只读）
-  stage/        @dianziji/stage        客户端 / 会话引擎 / React 外壳
-  stage-panel/  @dianziji/stage-panel  「本局」面板
+node_modules/@dianziji/       舞台 SDK（npm 包，别改；见 sdk.md）
+  stage         客户端 / 会话引擎 / React 外壳
+  stage-panel   「本局」面板
+  stage-settings / stage-voice / stage-sfx   播放设置 / 配音 / 音效（可选）
 src/                          你的游戏
   main.tsx      启动：<StageBoot> + 首屏预加载 + 游戏规则
   stage.ts      舞台连接：一行 createStage()（和外层网站之间的桥，别改）

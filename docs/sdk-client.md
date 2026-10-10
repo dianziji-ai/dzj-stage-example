@@ -2,7 +2,7 @@
 
 ## 分三层
 
-上层只依赖下层（`packages/stage/test/layers.test.ts` 守着）。用哪层从哪层引：
+上层只依赖下层（SDK 仓库里 `packages/stage/test/layers.test.ts` 守着）。用哪层从哪层引：
 
 | 入口 | 是什么 | 什么时候用 |
 |---|---|---|

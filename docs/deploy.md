@@ -39,4 +39,4 @@ export const stage = createStage()
 - [ ] `npm run pack` 成功
 - [ ] 电脑（1280 宽和 2000 宽）、手机（375×667、390×844）各看一遍：顶部刘海、底部 home 条有没有被挡
 - [ ] 没有外链别的网站的素材
-- [ ] `packages/` 没被改过（`npm run test:sdk` 会检查）
+- [ ] 没改 `node_modules/` 里的 SDK；`package-lock.json` 提交了（SDK 版本固定，别人装的和你一样）

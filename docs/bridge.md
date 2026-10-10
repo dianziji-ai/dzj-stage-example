@@ -2,7 +2,7 @@
 
 舞台是网站页面里的一个 iframe。**网站把这一局的状态（快照）推给舞台，舞台有事就请网站去做。** 舞台不连后端、没有凭证、不调任何接口：聊天、生成、计费、换模型、MOD、记忆、回溯、重生、存档落库，全是网站现成的那一套。在网站输入框发的话、在对话模式里回溯 / 编辑 / 删除、换了模型，舞台都会立刻跟上，因为网站推来的就是「现在是什么样」。
 
-> 用官方 SDK 开发时不用自己处理这些消息：`createStage()`（[sdk-client.md](sdk-client.md)）已经全部包好了。这一篇写给想了解底层的作者，和实现网站那一侧的人。代码里的定义在 `packages/stage/src/client/protocol.ts`（消息）、`types.ts`（快照）。
+> 用官方 SDK 开发时不用自己处理这些消息：`createStage()`（[sdk-client.md](sdk-client.md)）已经全部包好了。这一篇写给想了解底层的作者，和实现网站那一侧的人。代码里的定义在 SDK 仓库的 [`packages/stage/src/client/protocol.ts`](https://github.com/dianziji-ai/dzj-stage-sdk/blob/main/packages/stage/src/client/protocol.ts)（消息）、[`types.ts`](https://github.com/dianziji-ai/dzj-stage-sdk/blob/main/packages/stage/src/client/types.ts)（快照）；装好后类型也在 `node_modules/@dianziji/stage/dist/client.d.ts`。
 
 ```
 ┌──────────────────── 网站页面 ─────────────────────┐
@@ -35,7 +35,7 @@
 
 ## 快照字段
 
-`init` 给整份，`update` 只给变了的那几项（整项替换，不做深合并：比如 `history` 变了就给完整的新 `history`）。类型见 `StageSnapshot`（`packages/stage/src/client/types.ts`）。
+`init` 给整份，`update` 只给变了的那几项（整项替换，不做深合并：比如 `history` 变了就给完整的新 `history`）。类型见 `StageSnapshot`（编辑器里跳转到定义即可）。
 
 | 字段 | 说明 | 什么时候变 |
 |---|---|---|

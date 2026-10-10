@@ -1,33 +1,27 @@
 {
   "name": "dzj-stage-example",
   "version": "0.1.0",
-  "description": "电子姬舞台官方例子：galgame「电子姬的同居日常」+ 舞台 SDK（packages/）",
+  "description": "电子姬舞台官方例子：galgame「电子姬的同居日常」（舞台 SDK 从 npm 装：@dianziji/stage 等）",
   "private": true,
   "license": "UNLICENSED",
   "type": "module",
   "engines": {
     "node": ">=20.11"
   },
-  "workspaces": [
-    "packages/*"
-  ],
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
     "pack": "npm run build && node scripts/pack.mjs",
     "lint": "oxlint",
     "preview": "vite preview",
-    "pretest": "node scripts/sdk-lock.mjs",
-    "test": "vitest run",
-    "test:sdk": "node scripts/sdk-lock.mjs && npm test -w @dianziji/stage -w @dianziji/stage-panel -w @dianziji/stage-settings -w @dianziji/stage-voice -w @dianziji/stage-sfx",
-    "sdk:lock": "node scripts/sdk-lock.mjs --write"
+    "test": "vitest run"
   },
   "dependencies": {
-    "@dianziji/stage": "0.4.0",
-    "@dianziji/stage-panel": "0.2.2",
-    "@dianziji/stage-settings": "0.2.0",
-    "@dianziji/stage-sfx": "0.1.0",
-    "@dianziji/stage-voice": "0.1.0",
+    "@dianziji/stage": "^0.4.0",
+    "@dianziji/stage-panel": "^0.2.2",
+    "@dianziji/stage-settings": "^0.2.0",
+    "@dianziji/stage-sfx": "^0.1.1",
+    "@dianziji/stage-voice": "^0.1.1",
     "react": "^19.2.8",
     "react-dom": "^19.2.8"
   },
@@ -37,6 +31,7 @@
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.7",
     "@vitejs/plugin-react": "^6.1.1",
+    "jsdom": "^30.1.2",
     "oxlint": "^1.81.0",
     "tailwindcss": "^4.3.3",
     "typescript": "~6.0.2",

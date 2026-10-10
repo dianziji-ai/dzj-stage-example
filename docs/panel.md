@@ -119,8 +119,8 @@ import { openStagePanel, StagePanel } from '@dianziji/stage-panel'
 
 - **字体**跟着页面走（面板没设字体），给 `body` 换字体面板也跟着换。
 - **悬浮按钮**的位置和字用 `buttonClassName` / `title`；想要完全不一样的按钮，就 `button={false}` 自己画一个，点了调 `openStagePanel()`。
-- 遮罩、圆角、阴影、动画这些不是变量，固定不可改（SDK 只读，见下一节）。
+- 遮罩、圆角、阴影、动画这些不是变量，固定不可改（见下一节）。
 
 ## 不够用
 
-面板是 SDK 的一部分，**只读、不改源码**。能用参数（`title` / `buttonClassName` / `button={false}` / `dev`）和配色变量解决的都能自己定；要加标签、改页面内容，向官方提需求。
+面板是 SDK 的一部分（npm 包），**不改 `node_modules/` 里的源码**。能用参数（`title` / `buttonClassName` / `button={false}` / `dev`）和配色变量解决的都能自己定；要加标签、改页面内容，向官方提需求。

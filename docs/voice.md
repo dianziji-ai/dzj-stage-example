@@ -41,7 +41,7 @@
 
 ## 换样子
 
-覆盖 `.dzj-vc` 的三个变量（`--dzj-vc-on` 开着的颜色、`--dzj-vc-fg` 平时的颜色、`--dzj-vc-alert` 出错红点），`className` 调尺寸；或者只用 `useVoice` 自己画按钮（`voice.state` / `voice.on` / `voice.toggle()`）。★不要改 `packages/stage-voice/`。
+覆盖 `.dzj-vc` 的三个变量（`--dzj-vc-on` 开着的颜色、`--dzj-vc-fg` 平时的颜色、`--dzj-vc-alert` 出错红点），`className` 调尺寸；或者只用 `useVoice` 自己画按钮（`voice.state` / `voice.on` / `voice.toggle()`）。★不要改 `node_modules/` 里的包。
 
 ## 要网站配合
 

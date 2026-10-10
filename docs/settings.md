@@ -1,6 +1,6 @@
 # 播放设置（文本速度 · 字号 · 动效 · 选项行为 · 自动播放）
 
-官方模块 `@dianziji/stage-settings`（在 `packages/stage-settings/`，只依赖 react），完整说明见它的 [README](../packages/stage-settings/README.md)。玩家在对话框标题栏点「调节」打开一个面板，五项全在里面；设置存本机，不进存档。
+官方模块 `@dianziji/stage-settings`（npm 包，只依赖 react），完整说明见它的 [README](https://www.npmjs.com/package/@dianziji/stage-settings)（装好后也在 `node_modules/@dianziji/stage-settings/README.md`）。玩家在对话框标题栏点「调节」打开一个面板，五项全在里面；设置存本机，不进存档。
 
 ## 规则（模块定死，所有舞台一样）
 
@@ -30,4 +30,4 @@
 
 ## 换样子
 
-覆盖四个颜色变量、`className` 调尺寸 / 窄屏只留图标、或者只用 hook 自己画——见包 README「界面是舞台自己的」。★不要改 `packages/stage-settings/`。
+覆盖四个颜色变量、`className` 调尺寸 / 窄屏只留图标、或者只用 hook 自己画——见包 README「界面是舞台自己的」。★不要改 `node_modules/` 里的包。

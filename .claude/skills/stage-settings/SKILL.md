@@ -5,7 +5,7 @@ description: 舞台的播放设置（官方模块 @dianziji/stage-settings）：
 
 # 播放设置
 
-官方模块 `packages/stage-settings/`（`@dianziji/stage-settings`，只依赖 react）。**先读** `docs/settings.md` 和 `packages/stage-settings/README.md`。
+官方模块 `@dianziji/stage-settings`（npm 包，只依赖 react）。**先读** `docs/settings.md` 和 `node_modules/@dianziji/stage-settings/README.md`，API 以 `dist/index.d.ts` 为准。
 
 ## 规则
 
@@ -17,7 +17,7 @@ description: 舞台的播放设置（官方模块 @dianziji/stage-settings）：
    - 尊重设置：`settings.choiceMode === 'send'` 才直接发；默认 `fill` 用 `fillChoice` 填进输入框（换场 / 地图「前往」也一样）。发出去后把叠加记录清空。
    - 或者照官方例子固定直接发：第一次点弹确认框（带「以后不再提示」，勾了记在本机，见 `src/game/ChoiceConfirm.tsx` + `choicePref.ts`），并且 `<SettingsPanel sections={['text', 'font', 'motion', 'auto']}>` 去掉 `choice`。
 6. **字号**：App 顶层 `useSettingsRoot()`，对话（和想跟着变的面板）字号写 `calc(Npx * var(--dzj-font-scale, 1))`。**动效**：模块的 styles.css 已经处理「减少」，舞台自己的动画照常写，别另做开关。
-7. **界面舞台自己定**：默认按钮很低调；要别的样子就覆盖 CSS 变量 / 加 className / 只用 hook 自己画；舞台没有选项就 `<SettingsPanel sections={…}>` 去掉 `choice`。**绝不改 `packages/stage-settings/`**（只读，`npm test` 会拦）。
+7. **界面舞台自己定**：默认按钮很低调；要别的样子就覆盖 CSS 变量 / 加 className / 只用 hook 自己画；舞台没有选项就 `<SettingsPanel sections={…}>` 去掉 `choice`。**绝不改 `node_modules/` 里的包**（重装就没了）。
 8. 设置存玩家本机，模块自己管；**不要把它们放进存档**。
 
 ## 接法（照抄例子）
