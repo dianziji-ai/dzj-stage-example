@@ -1,6 +1,7 @@
 import { memo, useEffect, useState } from 'react'
 import { Icon, type IconName } from '../components/icons'
 import { LOGO_URL, placeName, type PlaceId } from './content'
+import { HUD_FOLD_EVENT } from './useFoldFlip'
 import { favorStage, weatherIcon } from './logic'
 
 /** dot＝右上角亮小红点（有没看过的新东西，比如更新日志） */
@@ -40,7 +41,7 @@ type Props = {
  *
  * 头像点了打开「本局」面板；状态条点了弹状态说明。
  * ★可以收起：︿ 收起后整条只剩左上角她的圆头像（带好感数 / 红点），点头像展开；收起与否记在本机。
- *   收起与否也标在 <html data-hud-folded> 上：顶栏下面那一列（手机抓娃娃小圆钮）跟着挪到顶上。
+ *   收起与否也标在 <html data-hud-folded> 上：手机右侧那一列（抓娃娃 / 检定 / 日志）跟着挪到顶上、改成横排（照柳月儿）。
  * ★改高度要同步 App.tsx 里「顶栏下面」那些东西的 top（手机 60px、电脑 80px）。
  * memo：只收数值，打字时数值没变就不重渲染。
  */
@@ -50,12 +51,17 @@ export default memo(function Hud(p: Props) {
     document.documentElement.setAttribute('data-hud-folded', folded ? '1' : '0')
     writeFolded(folded)
   }, [folded])
-  const fold = () => setFolded(true)
+  // 先发事件让右侧那一列记下位置（useFoldFlip），再切：竖列 ⇄ 顶部横排丝滑滑过去
+  const setFold = (v: boolean) => {
+    window.dispatchEvent(new Event(HUD_FOLD_EVENT))
+    setFolded(v)
+  }
+  const fold = () => setFold(true)
   if (folded)
     return (
       <div className="pointer-events-none absolute inset-x-0 top-0 z-20 pt-safe px-safe">
         <div className="mx-auto max-w-2xl px-3 pt-2.5 lg:max-w-6xl lg:px-5 lg:pt-4">
-          <button onClick={() => setFolded(false)} aria-label="展开顶栏" title="展开顶栏" className="pointer-events-auto relative block animate-fade-in rounded-full active:scale-95">
+          <button onClick={() => setFold(false)} aria-label="展开顶栏" title="展开顶栏" className="pointer-events-auto relative block animate-fade-in rounded-full active:scale-95">
             <img src={LOGO_URL} alt="" className="size-11 rounded-full bg-white/30 object-cover ring-2 ring-white/80 shadow-[0_6px_18px_rgb(0_0_0/0.35)] lg:size-14" />
             <span className="absolute -right-1.5 -bottom-1 rounded-full bg-pink-500 px-1.5 text-[10px] leading-4 font-bold text-white shadow">♥{p.love}</span>
             {p.actions.some((a) => a.dot) && <Dot />}

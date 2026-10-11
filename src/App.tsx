@@ -21,6 +21,7 @@ import DiaryBook from './game/DiaryBook'
 import DiaryButton from './game/DiaryButton'
 import { hasUnread } from './game/diary'
 import DiceButton from './game/DiceButton'
+import { useFoldFlip } from './game/useFoldFlip'
 import DiceSheet from './game/DiceSheet'
 import FavorBurst from './game/FavorBurst'
 import StatusSheet from './game/StatusSheet'
@@ -183,6 +184,8 @@ export default function App() {
 
   // 鼠标手势：右键藏起全部界面（只看背景和立绘）/ 再右键回来；左键点空白处翻下一句（对话框把它的「下一句」交上来）
   const advance = useRef<() => void>(() => {})
+  const railRef = useRef<HTMLDivElement>(null)
+  useFoldFlip(railRef)
   const gestures = usePlayGestures({ enabled: page === 'play' && !menu && !logOpen && !statusOpen && !dice && !diaryOpen && view === null && egg === null, advance: () => advance.current() })
 
   return (
@@ -200,10 +203,11 @@ export default function App() {
           {/* 和顶栏同一列（平板上不贴屏幕边、角标不被裁），右边缘对齐细胶囊。
               ★这层是整行宽、且排在顶栏后面（同 z-20）：自己必须不接点击、只让里面的按钮接——
                 顶栏收起后这一列挪到最顶上，跟左上角的圆头像同一行，整行接点击就把头像盖住、点了展不开（实拍） */}
-          <div className="pointer-events-none mx-auto flex max-w-2xl flex-col items-end gap-2.5 px-3 pt-1 pr-4 [&>*]:pointer-events-auto">
+          {/* 顶栏展开＝竖一列；收起＝挪到最顶上横排（抓娃娃贴右边，检定、日志排在它左边），切换时 useFoldFlip 丝滑滑过去 */}
+          <div ref={railRef} className="pointer-events-none mx-auto flex max-w-2xl flex-col items-end gap-2.5 px-3 pt-1 pr-4 [&>*]:pointer-events-auto [html[data-hud-folded='1']_&]:flex-row-reverse [html[data-hud-folded='1']_&]:items-start [html[data-hud-folded='1']_&]:gap-1">
             <EntryButton variant="rail" coins={g.save.claw.coins} hint={clawHint} onOpen={() => setPage('claw')} onLocked={clawLocked} />
-            {/* 检定骰子 + 日志：手机上缩到 80%，右边缘对齐 */}
-            <span className="flex origin-top-right scale-[0.8] flex-col items-center gap-1.5">{side}</span>
+            {/* 检定骰子 + 日志：手机上缩到 80%，右边缘对齐；横排时并排 */}
+            <span className="flex origin-top-right scale-[0.8] flex-col items-center gap-1.5 [html[data-hud-folded='1']_&]:flex-row [html[data-hud-folded='1']_&]:items-start [html[data-hud-folded='1']_&]:gap-2">{side}</span>
             <SaveIndicator quiet className="glass text-white" />
           </div>
         </div>
