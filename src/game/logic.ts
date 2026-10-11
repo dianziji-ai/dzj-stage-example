@@ -2,19 +2,23 @@
  * 游戏规则（纯函数，可单测）。
  *
  * ★状态（好感 / 心情 / 天数）存在舞台的存档里，AI 每轮只写「变化」：
- *     status 区：好感变化: 3 / 好感变化: -2 · 心情: 害羞（变了才写）· 天数变化: 1（过了午夜才写）· 全没变就留空
- *   舞台负责累计、夹范围、每轮最多 ±5——规则在这里，不靠 AI 自觉。
+ *     status 区：好感变化: 3 / 好感变化: -2（整数，没变写 0）· 原因: 一句话 · 心情: 害羞
+ *     scene 区：第几天: 2（睡了一觉第二天醒来才 +1）
+ *   舞台负责累计、夹范围、好感每轮最多 ±5、天数只增不减且每轮最多 +1——规则在这里，不靠 AI 自觉。
  *   AI 要知道当前值：每句话末尾用 withState(话, stateForAi(save)) 附上 <dj_state> 状态块（useGame 的 send；平台只给模型看最新一份）。
  *   ⚠ 别用「好感: +3」：YAML 会把 +3 解析成 3，正号丢了，分不清是加 3 还是等于 3。
  *
- * 分区 id（卡里定义，英文）：scene{地点,时间,天气} · narrative 旁白 · talk 对话 · status{好感变化,心情,天数变化} · cg · game{硬币} · action
+ * 分区 id（卡里定义，英文）：
+ *   scene{第几天,时间,时段,天气,地点,穿着,今日安排} · narrative 剧本式正文 · status{好感变化,原因,心情}
+ *   check{行动,属性,难度,目标,掷骰,结果}（玩家掷了骰才写）· cg · game{硬币}
+ *   system「系统后台」{电量,心跳,CPU温度,新学会,后台进程,存进C盘} · thought 心声 · diary 日志（一天结束才写，diary.ts）· action
  *   旁白 / 对话怎么拆成一句一句：beats.ts；立绘、背景怎么挑：art.ts（这里只管存档和规则）。
  * cg 区：剧情走到特别时刻，AI 只写一个回忆编号（「3」）；舞台解锁、弹出（编号 → 图走 SDK 的 imageUrl）。
  * game 区：AI 想请主人玩抓娃娃时写「硬币: 2」（每轮最多 COINS_PER_TURN_MAX 枚），舞台加进存档。
  */
 import { zoneText, type StageSetup, type StageUser, type StageZones } from '@dianziji/stage'
 import { COINS_PER_TURN_MAX, isPlush, plushName, START_COINS, type PlushId } from '../claw/data'
-import { isPlace, PLACES, placeName, type PlaceId } from './content'
+import { FAVOR_STAGES, isPlace, PLACES, placeName, type PlaceId } from './content'
 
 /** 抓娃娃机：硬币、收藏（娃娃 id → 个数）、玩了几局、抓到几只 */
 export type ClawSave = { coins: number; collection: Partial<Record<PlushId, number>>; plays: number; wins: number }
@@ -39,6 +43,7 @@ const data = (z: StageZones, id: string): Record<string, unknown> | null => {
   return v?.type === 'data' && v.value && typeof v.value === 'object' ? (v.value as Record<string, unknown>) : null
 }
 const num = (v: unknown): number | null => (v === null || v === undefined || v === '' || !Number.isFinite(Number(v)) ? null : Number(v))
+const str = (v: unknown) => (typeof v === 'string' ? v : typeof v === 'number' ? String(v) : '').trim()
 const clamp = (n: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, Math.round(n)))
 
 /*
@@ -51,8 +56,57 @@ export function placeOf(scene: Record<string, unknown>, fallback: PlaceId): Plac
   return isPlace(scene['地点']) ? scene['地点'] : fallback
 }
 export function timeOf(scene: Record<string, unknown>): string {
-  const t = scene['时间']
-  return t === undefined || t === null ? '' : String(t)
+  return str(scene['时间'])
+}
+/** 天气：晴 / 多云 / 雨 / 雪（写了别的原样给）；没写＝'' */
+export const weatherOf = (scene: Record<string, unknown>) => str(scene['天气'])
+/** 今日安排：她今天想做的事（一句话）；没写＝'' */
+export const planOf = (scene: Record<string, unknown>) => str(scene['今日安排'])
+/** 天气 → 小图标（认不出＝''，只写字） */
+export function weatherIcon(w: string): string {
+  if (/雪/.test(w)) return '❄️'
+  if (/雨/.test(w)) return '🌧️'
+  if (/阴|云/.test(w)) return '⛅'
+  if (/晴/.test(w)) return '☀️'
+  return ''
+}
+/** 场景区的「第几天」：2、'2'、「第 2 天」都认；没写＝null */
+export function dayOf(scene: Record<string, unknown> | null): number | null {
+  const m = str(scene?.['第几天']).match(/\d+/)
+  return m ? Number(m[0]) : null
+}
+
+/** 好感阶段（阈值在 content.ts 的 FAVOR_STAGES）：给 AI 看（stateForAi）、顶栏 / 好感演出上显示 */
+export function favorStage(love: number) {
+  return [...FAVOR_STAGES].reverse().find((s) => love >= s.min) ?? FAVOR_STAGES[0]
+}
+
+/** 状态区的「原因」：好感为什么变（没写 / 写了「无」＝''） */
+export function reasonOf(z: StageZones): string {
+  const r = zoneText(z, 'status', '原因')
+  return r === '无' ? '' : r
+}
+
+/** 行动检定（check 区）：这一轮没检定（没写行动）＝null */
+export type Check = { action: string; attr: string; difficulty: string; target: string; roll: string; result: string }
+export function checkFrom(d: Record<string, unknown>): Check | null {
+  const c = { action: str(d['行动']), attr: str(d['属性']), difficulty: str(d['难度']), target: str(d['目标']), roll: str(d['掷骰']), result: str(d['结果']) }
+  return c.action ? c : null
+}
+
+/**
+ * 系统后台（system 区）：她自己看不见、玩家在状态弹窗里偷看的那一块。每项没写＝''（电量 / 心跳没写或不是数字＝null）。
+ * 电量写「76%」、心跳写「92」或「92 bpm」都认。
+ */
+export type Backstage = { battery: number | null; heart: number | null; temp: string; learned: string; process: string; saved: string }
+export function backstageFrom(d: Record<string, unknown>): Backstage | null {
+  const n = (k: string) => {
+    const m = str(d[k]).match(/\d+/)
+    return m ? Number(m[0]) : null
+  }
+  const none = (k: string) => (str(d[k]) === '无' ? '' : str(d[k]))
+  const b = { battery: n('电量'), heart: n('心跳'), temp: str(d['CPU温度']), learned: none('新学会'), process: none('后台进程'), saved: none('存进C盘') }
+  return b.battery === null && b.heart === null && !b.temp && !b.learned && !b.process && !b.saved ? null : { ...b, battery: b.battery === null ? null : Math.min(100, b.battery) }
 }
 
 /**
@@ -71,18 +125,18 @@ export function travelOf(choice: string): Travel | null {
   return { place, text: m[2].trim() || `（和电子姬一起去${placeName(place)}）` }
 }
 
-/** 一轮写完：按这轮的分区和原文算新存档 + 本轮新解锁的 CG（按出现顺序）+ 好感实际变了多少 */
-export function nextSave(z: StageZones, prev: GameSave): { save: GameSave; newCg: number[]; loveDelta: number } {
+/** 一轮写完：按这轮的分区和原文算新存档 + 本轮新解锁的 CG（按出现顺序）+ 好感实际变了多少 + 为什么（演出用） */
+export function nextSave(z: StageZones, prev: GameSave): { save: GameSave; newCg: number[]; loveDelta: number; reason: string } {
   const scene = data(z, 'scene')
   const st = data(z, 'status') ?? {}
 
-  // 好感：「好感变化」是加减量（夹到 ±LOVE_STEP）；旧格式「好感」是直接设定值（存量开场里有）
+  // 好感：「好感变化」是加减量，夹到 ±LOVE_STEP（模型偶尔写成 '3' 字符串、+3，num 都认）
   const delta = num(st['好感变化'])
-  const abs = num(st['好感'])
-  const love = clamp(delta !== null ? prev.love + clamp(delta, -LOVE_STEP, LOVE_STEP) : abs !== null ? abs : prev.love, 0, 100)
+  const love = clamp(delta !== null ? prev.love + clamp(delta, -LOVE_STEP, LOVE_STEP) : prev.love, 0, 100)
   const mood = typeof st['心情'] === 'string' && st['心情'].trim() ? st['心情'].trim().slice(0, 12) : prev.mood
-  const dayDelta = num(st['天数变化'])
-  const day = Math.max(1, dayDelta !== null ? prev.day + clamp(dayDelta, 0, 1) : (num(st['天数']) ?? prev.day))
+  // 天数：场景区的「第几天」，只增不减、每轮最多 +1（模型抄错成更小的、或一下跳好几天都不认）；没写沿用
+  const d = dayOf(scene)
+  const day = d === null ? prev.day : clamp(d, prev.day, prev.day + 1)
 
   const loc = isPlace(scene?.['地点']) ? (scene!['地点'] as PlaceId) : prev.location
   const newCg = cgOf(z).filter((n) => !prev.unlockedCg.includes(n))
@@ -99,6 +153,7 @@ export function nextSave(z: StageZones, prev: GameSave): { save: GameSave; newCg
     },
     newCg,
     loveDelta: love - prev.love,
+    reason: love !== prev.love ? reasonOf(z) : '',
   }
 }
 
@@ -118,11 +173,19 @@ export function stateForAi(s: GameSave, who = '主人'): Record<string, unknown>
   return {
     地点: placeName(s.location, who),
     好感: s.love,
+    好感阶段: favorStage(s.love).name,
     心情: s.mood,
     天数: s.day,
     已解锁的回忆: s.unlockedCg,
     抓娃娃: `硬币 ${s.claw.coins} 枚 · 玩了 ${s.claw.plays} 局抓到 ${s.claw.wins} 只 · 收藏：${got.join('、') || '还没有'}`,
   }
+}
+
+/** 状态对象 → 「键: 值」一行一个（数组 / 对象写成 JSON，和 SDK withState 收对象时一样）：要在后面再接一段文字（检定）时用 */
+export function stateLines(o: Record<string, unknown>): string {
+  return Object.entries(o)
+    .map(([k, v]) => `${k}: ${typeof v === 'object' && v !== null ? JSON.stringify(v) : String(v)}`)
+    .join('\n')
 }
 
 /** 这次结算新解锁、要弹出来的 CG（按编号排好；配图库里没有图的跳过，不弹黑屏） */
@@ -172,7 +235,3 @@ function normalizeClaw(v: unknown): ClawSave {
   return { coins: int(c.coins, START_COINS), collection, plays: int(c.plays, 0), wins: int(c.wins, 0) }
 }
 
-/**
- * 流式中 AI 正在写哪个区：最后一个打开、还没关上的 <区>。
- * 还没写出任何标签＝null（还在想）。只认这张卡的分区 id，别的尖括号不算。
- */

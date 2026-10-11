@@ -5,6 +5,7 @@
 export type ChangeEntry = { id: string; date: string; title: string; items: string[] }
 
 export const CHANGELOG: ChangeEntry[] = [
+  { id: '2026-10-11', date: '10 月 11 日', title: '掷骰、日志、好感阶段', items: ['🎲 掷骰检定', '偷看她的 log.txt 日志', '好感五阶段 · 系统后台'] },
   { id: '2026-10-10', date: '10 月 10 日', title: '剧情按顺序演', items: ['旁白和对话穿插着播，换场不再倒着来', '心声点开看全文'] },
   { id: '2026-10-09c', date: '10 月 9 日 · 晚', title: '更顺手', items: ['点选项直接发送', '顶栏可收起', '没选项时点提示直接说话'] },
   { id: '2026-10-09b', date: '10 月 9 日 · 傍晚', title: '播放设置', items: ['文字速度、字号、自动播放', '右键藏界面，点空白翻页'] },

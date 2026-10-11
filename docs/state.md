@@ -153,4 +153,4 @@ splitState(原文).text // 显示玩家的话时把状态块藏掉
 
 ★别把结果写进玩家的话里（「我偷看手机〖检定=…〗」）：玩家看得见一串标记，记忆摘要和搜索会收进去，AI 照抄玩家原话时也会带上。
 
-官方例子的做法：`src/game/logic.ts` 的 `stateForAi()` 决定附什么（地点、好感、心情、天数、已解锁的回忆、抓娃娃战况），`src/game/useGame.ts` 的 `send` 每次都用 `withState` 附上；替玩家发的话（地图出发、送娃娃）也走同一个 `send`。
+官方例子的做法：`src/game/logic.ts` 的 `stateForAi()` 决定附什么（地点、好感、好感阶段、心情、天数、已解锁的回忆、抓娃娃战况），`src/game/useGame.ts` 的 `send` 每次都用 `withState` 附上；替玩家发的话（地图出发、送娃娃）也走同一个 `send`。掷了骰：`send(行动, 检定)`——`withState` 收字符串时原样放进去，所以先用 `stateLines(stateForAi(...))` 把状态对象变成几行，再接上 `checkState(检定)` 那一段（`src/game/dice.ts`），一起放进同一个 `<dj_state>`。

@@ -4,7 +4,10 @@ import { shallowEqual, useStage, useStageActions, useZoneData, useZoneList, useZ
 import { scriptBeats, type Beat } from './beats'
 import { OPENING_FILM } from './content'
 import { markSeen, seen } from './seen'
-import { freshCgs, placeOf, playerOf, stateForAi, timeOf, type ClawSave, type GameSave } from './logic'
+import { checkState, type CheckDraft } from './dice'
+import { diaryPages, type DiaryPage } from './diary'
+import type { FavorTick } from './FavorBurst'
+import { checkFrom, freshCgs, placeOf, planOf, playerOf, reasonOf, stateForAi, stateLines, timeOf, weatherOf, type Check, type ClawSave, type GameSave } from './logic'
 
 export type { ClawSave, GameSave, Status } from './logic'
 
@@ -31,10 +34,15 @@ export function useGame() {
   const location = placeOf(scene, save.location)
   const time = timeOf(scene)
   const wear = typeof scene['穿着'] === 'string' ? scene['穿着'].trim() : '' // 挑立绘用（认不认得交给配图库）
+  const weather = weatherOf(scene)
+  const plan = planOf(scene)
   const status = useMemo(() => ({ 好感: save.love, 心情: save.mood, 天数: save.day }), [save.love, save.mood, save.day])
 
-  // 好感飘字：每次结算好感变了多少；n 当 key 让飘字重播
-  const loveTick = useMemo(() => ({ delta: lastTurn ? lastTurn.next.love - lastTurn.prev.love : 0, n: lastTurn?.n ?? 0 }), [lastTurn])
+  // 好感飘字 + 正中的好感演出：每次结算好感变了多少、为什么（状态区的原因）；n 当 key 让动效重播
+  const loveTick = useMemo<FavorTick>(() => {
+    const delta = lastTurn ? lastTurn.next.love - lastTurn.prev.love : 0
+    return { delta, reason: lastTurn && delta ? reasonOf(lastTurn.zones) : '', n: lastTurn?.n ?? 0 }
+  }, [lastTurn])
 
   /** 配图库编号 → 地址（没有＝''） */
   const cgUrl = useCallback((n: number) => imageUrl(snap, n) ?? '', [snap])
@@ -71,10 +79,19 @@ export function useGame() {
   /** 抓娃娃每局结束改存档：存档器会把 0.8 秒内的连续改动合并成一次 */
   const updateClaw = useCallback((fn: (c: ClawSave) => ClawSave) => setSave((x) => ({ ...x, claw: fn(x.claw) })), [setSave])
 
-  /** 发一句话：末尾附上此刻状态（<dj_state>，AI 看不到存档，靠它知道当前好感、地点……；附什么是这张卡自己定的） */
-  const send = useCallback((text: string) => rawSend(withState(text, stateForAi(save, player.name || '主人'))), [rawSend, save, player.name])
+  /**
+   * 发一句话：末尾附上此刻状态（<dj_state>，AI 看不到存档，靠它知道当前好感、阶段、地点……；附什么是这张卡自己定的）。
+   * 掷了骰（check）：状态后面再接上【行动检定】那一段（dice.ts 的 checkState），只在这一轮生效。
+   */
+  const send = useCallback(
+    (text: string, check?: CheckDraft) => {
+      const st = stateForAi(save, player.name || '主人')
+      return rawSend(withState(text, check ? `${stateLines(st)}\n${checkState(check)}` : st))
+    },
+    [rawSend, save, player.name],
+  )
 
-  return { ...s, player, location, time, wear, status, loveTick, cg, closeCg, film: film ? OPENING_FILM : null, closeFilm, updateClaw, send, retry, dismissError, loadOlder, cgUrl }
+  return { ...s, player, location, time, wear, weather, plan, status, loveTick, cg, closeCg, film: film ? OPENING_FILM : null, closeFilm, updateClaw, send, retry, dismissError, loadOlder, cgUrl }
 }
 
 /**
@@ -94,6 +111,25 @@ export function useSaid(): string {
     return id === undefined ? '' : saidBefore(st.history, id)
   })
   return said.replace(/<dj_state>[\s\S]*?<\/dj_state>/g, '').trim()
+}
+
+/** 这一轮的行动检定（check 区；没掷骰的轮＝null）。写完才给：生成中半截的不显示 */
+export function useCheck(): Check | null {
+  const d = useZoneData('check', { complete: true })
+  return useMemo(() => checkFrom(d), [d])
+}
+
+/**
+ * 她的日志 log.txt：历史里每条 AI 回复的日志区一页页取出来（不存档，见 diary.ts）。
+ * 历史只推最近一截：hasOlder 时 loadOlder 往前读，读到的随快照推来，页数自然变多。
+ */
+export function useDiary(): { pages: DiaryPage[]; hasOlder: boolean; loadOlder: () => Promise<boolean> } {
+  const { history, hasOlder } = useStage((st: SessionState<GameSave>) => ({ history: st.history, hasOlder: st.hasOlder }), shallowEqual)
+  const { readZones, loadOlder } = useStageActions()
+  // 解析缓存（按消息 id）：一个可变的 Map，整局只建一次
+  const [cache] = useState(() => new Map<number, DiaryPage | null>())
+  const pages = useMemo(() => diaryPages(history, readZones, cache), [history, readZones, cache])
+  return { pages, hasOlder, loadOlder }
 }
 
 /** 选项：生成中不给（还没写完） */

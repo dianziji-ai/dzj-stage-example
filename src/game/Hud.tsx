@@ -1,6 +1,7 @@
 import { memo, useEffect, useState } from 'react'
 import { Icon, type IconName } from '../components/icons'
 import { LOGO_URL, placeName, type PlaceId } from './content'
+import { favorStage, weatherIcon } from './logic'
 
 /** dot＝右上角亮小红点（有没看过的新东西，比如更新日志） */
 export type HudAction = { icon: IconName; label: string; onClick: () => void; dot?: boolean }
@@ -12,6 +13,8 @@ type Props = {
   /** 她对你的称呼（地点名「主人的房间」跟着换） */
   call: string
   time: string
+  /** 天气（场景区）：时间后面一颗小图标 */
+  weather: string
   love: number
   /** 好感刚变了多少：n 每次结算 +1，用作 key 让飘字重新播一次 */
   loveTick: { delta: number; n: number }
@@ -32,7 +35,8 @@ type Props = {
  * 顶部状态栏（液态玻璃，见 index.css 的 glass）。手机和电脑是两套独立布局，不硬塞一行：
  *
  *   手机（一条细胶囊）：[头像  地点 · 第几天 时间 ……  ♥ 82  ☰]   ← 音乐 / 保存 / 地图等收进菜单
- *   电脑（一行）：  [头像 昵称 @用户名·ID] [📍地点 · 第几天 时间] [♥ 好感条 🪙 心情]  ……  [🎵] [地图|图册]
+ *   电脑（一行）：  [头像 昵称 @用户名·ID] [📍地点 · 第几天 时间 ☀️] [♥ 好感条 阶段名 🪙 心情]  ……  [🎵] [地图|图册]
+ *   阶段名 / 今日安排 / 系统后台在状态弹窗里（StatusSheet），手机顶栏不塞。
  *
  * 头像点了打开「本局」面板；状态条点了弹状态说明。
  * ★可以收起：︿ 收起后整条只剩左上角她的圆头像（带好感数 / 红点），点头像展开；收起与否记在本机。
@@ -82,6 +86,7 @@ function Mobile(p: Props & { onFold: () => void }) {
         {placeName(p.place, p.call)}
         <span className="font-normal text-white/70">
           {' · '}第 {p.day} 天{p.time ? ` ${p.time.replace(/^周.\s*/, '')}` : ''}
+          {weatherIcon(p.weather) && <span className="ml-1">{weatherIcon(p.weather)}</span>}
         </span>
       </span>
       <button onClick={p.onStatus} aria-label={`状态：好感 ${p.love}，硬币 ${p.coins}，心情 ${p.mood}`} className="flex h-8 shrink-0 items-center rounded-full bg-white/12 px-2.5 text-[13px] active:bg-white/20">
@@ -114,7 +119,7 @@ function Desktop(p: Props & { onFold: () => void }) {
         </button>
       )}
       <div className="glass flex max-w-72 min-w-0 shrink items-center rounded-2xl px-4">
-        <Where place={p.place} call={p.call} day={p.day} time={p.time} large />
+        <Where place={p.place} call={p.call} day={p.day} time={p.time} weather={p.weather} large />
       </div>
       <button onClick={p.onStatus} aria-label={`状态：好感 ${p.love}，硬币 ${p.coins}，心情 ${p.mood}`} className="glass flex w-80 shrink-0 flex-col justify-center gap-1.5 rounded-2xl px-4 text-left text-sm">
         <span className="flex items-center gap-3">
@@ -122,7 +127,10 @@ function Desktop(p: Props & { onFold: () => void }) {
           <span className="font-semibold">🪙 {p.coins}</span>
           {p.mood && <span className="ml-auto min-w-0 truncate text-white/85">{p.mood}</span>}
         </span>
-        <Meter love={p.love} className="h-2" />
+        <span className="flex items-center gap-2">
+          <Meter love={p.love} className="h-2 flex-1" />
+          <span className="shrink-0 text-[11px] font-semibold text-pink-200">{favorStage(p.love).name}</span>
+        </span>
       </button>
       <span className="flex-1" />
       <MusicButton on={p.musicOn} onClick={p.onMusic} className="w-14" />
@@ -143,12 +151,13 @@ function Desktop(p: Props & { onFold: () => void }) {
 }
 
 /** 地点 + 第几天·时间（两行；长地名截断） */
-function Where({ place, call, day, time, large = false }: { place: PlaceId; call: string; day: number; time: string; large?: boolean }) {
+function Where({ place, call, day, time, weather, large = false }: { place: PlaceId; call: string; day: number; time: string; weather: string; large?: boolean }) {
   return (
     <div className="min-w-0">
       <div className={`truncate leading-tight font-semibold ${large ? 'text-[15px]' : 'text-sm'}`}>📍 {placeName(place, call)}</div>
       <div className={`truncate leading-tight text-white/75 ${large ? 'text-xs' : 'text-[11px]'}`}>
         第 {day} 天{time ? ` · ${time}` : ''}
+        {weather && ` · ${weatherIcon(weather)}${weather}`}
       </div>
     </div>
   )

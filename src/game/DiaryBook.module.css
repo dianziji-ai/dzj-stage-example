@@ -1,0 +1,107 @@
+/* 日志 log.txt：她电脑里一个记事本窗口（深紫底、等宽字、行号、闪烁光标）。只动 transform / opacity。 */
+.root {
+  background:
+    radial-gradient(80% 60% at 50% 0%, rgb(255 95 162 / 0.16), transparent 70%),
+    rgb(10 6 20 / 0.86);
+}
+.win {
+  --ink: #f3eaff;
+  --dim: #8f82ad;
+  --gutter: #5c5078;
+  --pink: #ff7eb6;
+  --yellow: #ffd23f;
+  --lh: 1.85em;
+  background: linear-gradient(180deg, #221a3a, #1a1430);
+  color: var(--ink);
+  box-shadow:
+    0 0 0 1px rgb(255 255 255 / 0.08),
+    0 0 0 4px rgb(255 126 182 / 0.18),
+    0 30px 80px -20px rgb(0 0 0 / 0.7);
+  animation: win-in 0.32s cubic-bezier(0.2, 0.9, 0.3, 1) both;
+}
+.bar {
+  background: linear-gradient(180deg, #2f2550, #282046);
+  border-bottom: 1px solid rgb(255 255 255 / 0.06);
+}
+.dot {
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 50%;
+}
+.mono {
+  font-family: ui-monospace, 'SF Mono', Menlo, Consolas, 'PingFang SC', 'Microsoft YaHei', monospace;
+}
+.file {
+  color: var(--dim);
+}
+.file[data-on] {
+  color: var(--ink);
+  background: rgb(255 126 182 / 0.14);
+  box-shadow: inset 2px 0 0 var(--pink);
+}
+/* 一行：左边行号（不可选），右边正文；正文长了自动折行，行号只在第一行 */
+.line {
+  display: grid;
+  grid-template-columns: 2.4em 1fr;
+  gap: 0.9em;
+  line-height: var(--lh);
+}
+.line > i {
+  font-style: normal;
+  text-align: right;
+  color: var(--gutter);
+  user-select: none;
+}
+.comment {
+  color: var(--yellow);
+}
+.key {
+  color: var(--pink);
+}
+.cursor {
+  display: inline-block;
+  width: 0.55em;
+  height: 1.1em;
+  margin-left: 1px;
+  vertical-align: -0.18em;
+  background: var(--pink);
+  animation: blink 1s steps(1) infinite;
+}
+/* 删掉的那一行：打字 / 退格时是亮粉；撤销（Ctrl+Z）找回来以后是划掉的灰字 */
+.ghost {
+  color: var(--pink);
+}
+.restored {
+  color: var(--dim);
+  text-decoration: line-through;
+  text-decoration-color: rgb(255 126 182 / 0.6);
+}
+.page {
+  animation: page-in 0.28s ease-out both;
+}
+
+@keyframes win-in {
+  0% { opacity: 0; transform: translateY(1rem) scale(0.97); }
+  100% { opacity: 1; transform: none; }
+}
+@keyframes page-in {
+  0% { opacity: 0; transform: translateY(0.4rem); }
+  100% { opacity: 1; transform: none; }
+}
+@keyframes blink {
+  50% { opacity: 0; }
+}
+:global(html[data-dzj-motion='reduced']) .win,
+:global(html[data-dzj-motion='reduced']) .page {
+  animation: none;
+}
+:global(html[data-dzj-motion='reduced']) .cursor {
+  animation: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .win,
+  .page,
+  .cursor {
+    animation: none;
+  }
+}

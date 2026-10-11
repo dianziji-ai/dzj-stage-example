@@ -17,15 +17,24 @@ import TabBar, { type Tab } from './game/TabBar'
 import TipHost from './game/Tip'
 import GameMenu from './game/GameMenu'
 import ChangelogSheet from './game/ChangelogSheet'
+import DiaryBook from './game/DiaryBook'
+import DiaryButton from './game/DiaryButton'
+import { hasUnread } from './game/diary'
+import DiceButton from './game/DiceButton'
+import DiceSheet from './game/DiceSheet'
+import FavorBurst from './game/FavorBurst'
+import StatusSheet from './game/StatusSheet'
+import ThinkingBubble from './game/ThinkingBubble'
 import { CHANGELOG } from './game/changelog'
 import { showTip } from './game/tipStore'
 import { usePlayGestures } from './game/gestures'
-import { useGame, usePack, useThought } from './game/useGame'
+import { useDiary, useGame, usePack, useThought } from './game/useGame'
 import { useOnline } from './game/useOnline'
 import { stage } from './stage'
 import type { StageImage } from '@dianziji/stage'
 import { SaveIndicator, StageToaster } from '@dianziji/stage/react'
 import { useSettingsRoot } from '@dianziji/stage-settings'
+import { useSfxRoot } from '@dianziji/stage-sfx'
 import { openStagePanel, StagePanel } from '@dianziji/stage-panel'
 
 type PageId = 'play' | 'map' | 'gallery' | 'claw'
@@ -49,6 +58,8 @@ const TABS: Tab[] = [
  */
 export default function App() {
   useSettingsRoot() // 播放设置里的字号 / 动效写到 <html> 上（对话字号乘 --dzj-font-scale）
+  // 界面音效（@dianziji/stage-sfx）：看起来能点的都自动有声——悬停「嘀」、点击「嗒」；要特别的声音在按钮上写 data-sfx（open / cancel / confirm …）
+  useSfxRoot()
   const g = useGame()
   const thought = useThought() // 状态说明里显示（一轮才变一次）
   const [look, setLook] = useState<Look>(NO_LOOK) // 对话框正在播的那一句她的样子
@@ -123,23 +134,27 @@ export default function App() {
   const arcade = PLACES.find((p) => p.id === 'arcade')!
   const clawHint = g.busy ? '等她说完' : g.location === 'arcade' ? null : `先去地图 · ${arcade.name}`
 
-  // 状态说明（点顶栏的好感框）：每一项是什么、怎么获得
-  const showStatus = useCallback(
-    () =>
-      showTip({
-        image: sprite,
-        title: '和电子姬的状态',
-        text: thought ? `💭 ${thought}` : undefined,
-        rows: [
-          { icon: '♥', label: '好感', value: `${g.status.好感} / 100`, desc: '温柔陪伴、认真夸她会涨，敷衍冷落会降（每轮最多 ±5）。越高她越黏人；80 以上，在星空天台说出心意时会解锁告白回忆。' },
-          { icon: '🪙', label: '硬币', value: `${g.save.claw.coins} 枚`, desc: `电玩城的小鸡抓抓乐，一局 1 枚。开局送 5 枚；聊天里她想请你玩时会送你硬币（每次最多 3 枚）。` },
-          { icon: '😊', label: '心情', value: g.status.心情, desc: '她此刻的心情，跟着剧情变。' },
-          { icon: '📅', label: '天数', value: `第 ${g.status.天数} 天`, desc: '一起生活的第几天，过了午夜算新的一天。' },
-          { icon: '🖼️', label: '回忆', value: `${g.save.unlockedCg.length} / 8`, desc: '剧情走到特别的时刻会解锁回忆 CG，在「图册」里看。' },
-        ],
-        dismiss: '好的',
-      }),
-    [g.status, g.save, sprite, thought],
+  // 状态弹窗（点顶栏的好感框）：好感和阶段、今天、系统后台（StatusSheet）
+  const [statusOpen, setStatusOpen] = useState(false)
+  const showStatus = useCallback(() => setStatusOpen(true), [])
+  // 掷骰检定：掷完把这句行动连同检定结果发出去（检定附在 <dj_state> 里，见 useGame 的 send）
+  const [dice, setDice] = useState(false)
+  // 日志 log.txt：从历史里取（不存档）；最新一页的 id 比本机记的大＝有新页，入口亮「新」
+  const diary = useDiary()
+  const [diaryOpen, setDiaryOpen] = useState(false)
+  const [diarySeen, setDiarySeen] = useState(() => Number(readLocal(DIARY_KEY)) || 0)
+  const diaryNew = hasUnread(diary.pages, diarySeen)
+  const openDiary = useCallback(() => {
+    const id = diary.pages.at(-1)?.id ?? 0
+    setDiaryOpen(true)
+    setDiarySeen(id)
+    writeLocal(DIARY_KEY, String(id))
+  }, [diary.pages])
+  const side = (
+    <>
+      <DiceButton onClick={() => setDice(true)} disabled={g.busy} />
+      <DiaryButton unread={diaryNew} onClick={openDiary} />
+    </>
   )
 
   const showMap = (id: PlaceId) => {
@@ -168,7 +183,7 @@ export default function App() {
 
   // 鼠标手势：右键藏起全部界面（只看背景和立绘）/ 再右键回来；左键点空白处翻下一句（对话框把它的「下一句」交上来）
   const advance = useRef<() => void>(() => {})
-  const gestures = usePlayGestures({ enabled: page === 'play' && !menu && !logOpen && view === null && egg === null, advance: () => advance.current() })
+  const gestures = usePlayGestures({ enabled: page === 'play' && !menu && !logOpen && !statusOpen && !dice && !diaryOpen && view === null && egg === null, advance: () => advance.current() })
 
   return (
     <div className="fixed inset-0 overflow-hidden bg-black text-white select-none" onClick={gestures.onClick} onContextMenu={gestures.onContextMenu}>
@@ -176,9 +191,10 @@ export default function App() {
         <Scene bg={bg} sprite={sprite} preload={sprites} talking={g.busy} />
         {/* 背景立绘以外的界面都在这一层：右键藏起来时整层淡出、不接点击 */}
         <div className={`absolute inset-0 transition-opacity duration-300 ${gestures.bare ? 'pointer-events-none opacity-0' : ''}`}>
-        {/* 心声：她没说出口的那句，写完才浮出来 */}
+        {/* 心声：她没说出口的那句，写完才浮出来；刚发出去、她还没开口时是「在想」的三个点 */}
         {atEnd && <ThoughtBubble />}
-        <Hud user={hudUser} place={g.location} call={g.player.call} time={g.time} love={g.status.好感} loveTick={g.loveTick} mood={g.status.心情} day={g.status.天数} coins={g.save.claw.coins} onStatus={showStatus} actions={actions} onMore={openMenu} musicOn={music.on} onMusic={toggleMusic} />
+        <ThinkingBubble />
+        <Hud user={hudUser} place={g.location} call={g.player.call} time={g.time} weather={g.weather} love={g.status.好感} loveTick={g.loveTick} mood={g.status.心情} day={g.status.天数} coins={g.save.claw.coins} onStatus={showStatus} actions={actions} onMore={openMenu} musicOn={music.on} onMusic={toggleMusic} />
         {/* 手机：右侧细竖栏（顶栏下面 10px）——抓娃娃小圆钮 + 存档时才冒的小图标；立绘在中间，右边本来就空 */}
         <div className="pointer-events-none absolute inset-x-0 top-[calc(var(--safe-top)+60px)] z-20 px-safe transition-[top] duration-300 lg:hidden [html[data-hud-folded='1']_&]:top-[calc(var(--safe-top)+8px)]">
           {/* 和顶栏同一列（平板上不贴屏幕边、角标不被裁），右边缘对齐细胶囊。
@@ -186,14 +202,18 @@ export default function App() {
                 顶栏收起后这一列挪到最顶上，跟左上角的圆头像同一行，整行接点击就把头像盖住、点了展不开（实拍） */}
           <div className="pointer-events-none mx-auto flex max-w-2xl flex-col items-end gap-2.5 px-3 pt-1 pr-4 [&>*]:pointer-events-auto">
             <EntryButton variant="rail" coins={g.save.claw.coins} hint={clawHint} onOpen={() => setPage('claw')} onLocked={clawLocked} />
+            {/* 检定骰子 + 日志：手机上缩到 80%，右边缘对齐 */}
+            <span className="flex origin-top-right scale-[0.8] flex-col items-center gap-1.5">{side}</span>
             <SaveIndicator quiet className="glass text-white" />
           </div>
         </div>
         {/* 电脑：顶栏下面，左边保存按钮、右边街机招牌（和顶栏同一个布局容器，左右边缘对齐） */}
         <div className="pointer-events-none absolute inset-x-0 top-[calc(var(--safe-top)+80px)] z-20 hidden px-safe lg:block">
           <div className="mx-auto flex max-w-6xl items-start justify-between px-5">
-            <span className="pointer-events-auto">
+            {/* 保存 + 检定骰子 + 日志：一列靠左（右边是招牌、中间是她） */}
+            <span className="pointer-events-auto flex flex-col items-start gap-4">
               <SaveIndicator className="glass text-white" />
+              <span className="flex flex-col items-center gap-4 pl-1">{side}</span>
             </span>
             {/* 顶栏收起时招牌挪到右上角（和左上角头像同一行）；保存按钮留在头像下面不动 */}
             <span className="pointer-events-auto transition-transform duration-300 [html[data-hud-folded='1']_&]:-translate-y-16">
@@ -215,6 +235,23 @@ export default function App() {
         </div>
       )}
 
+      {/* 好感变了：画面正中一段演出（约 2.5 秒，不挡点击）。一直挂着：只在新的一次结算时播，切页回来不重播 */}
+      <FavorBurst tick={g.loveTick} favor={g.status.好感} />
+      {statusOpen && (
+        <StatusSheet sprite={sprite} love={g.status.好感} mood={g.status.心情} day={g.status.天数} time={g.time} weather={g.weather} plan={g.plan} coins={g.save.claw.coins} cgCount={g.save.unlockedCg.length} thought={thought} onClose={() => setStatusOpen(false)} />
+      )}
+      {dice && (
+        <DiceSheet
+          favor={g.status.好感}
+          onClose={() => setDice(false)}
+          onRoll={(c) => {
+            setDice(false)
+            setPage('play')
+            void g.send(c.action, c)
+          }}
+        />
+      )}
+      {diaryOpen && <DiaryBook pages={diary.pages} hasOlder={diary.hasOlder} loadOlder={diary.loadOlder} onClose={() => setDiaryOpen(false)} />}
       <GameMenu open={menu} onClose={closeMenu} go={go} musicOn={music.on} onMusic={toggleMusic} onLog={openLog} logNew={logNew} />
       {logOpen && <ChangelogSheet onClose={() => setLogOpen(false)} />}
       <TipHost />
@@ -242,6 +279,7 @@ export default function App() {
 
 /** 本机偏好（「看过了」这类）：读写包 try，隐私模式会抛 */
 const LOG_KEY = 'gal-changelog-seen'
+const DIARY_KEY = 'gal-diary-seen'
 function readLocal(k: string): string {
   try {
     return localStorage.getItem(k) ?? ''

@@ -45,3 +45,15 @@ export const LOGO_URL = `${import.meta.env.BASE_URL}brand/logo.webp`
 
 /** 8 张回忆 CG 的名字（图册里显示；编号＝配图库 n） */
 export const CG_NAMES = ['初遇', '电玩城对决', '啊——张嘴', '樱花下', '雨中共伞', '星空', '睡着了', '告白']
+
+/**
+ * 好感五阶段（和卡里「好感五阶段」那段提示词一一对应；舞台每轮把阶段名附给 AI，见 logic.ts 的 stateForAi）。
+ * min＝到这个好感才算进这一阶段；hint＝状态弹窗里的一句说明。
+ */
+export const FAVOR_STAGES = [
+  { min: 0, name: '好奇的新室友', hint: '对现实世界和你都好奇，还有点拘谨' },
+  { min: 20, name: '熟悉的同居人', hint: '习惯了一起生活，会撒娇、会耍小脾气' },
+  { min: 40, name: '心跳加速', hint: '开始在意你，靠近就脸红，嘴上还不承认' },
+  { min: 60, name: '想一直在一起', hint: '黏着你，怕被丢下，偷偷想要更多' },
+  { min: 80, name: '心意相通', hint: '不用说也懂彼此，可以说出真心话了' },
+] as const

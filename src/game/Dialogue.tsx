@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState, type RefObject } from 'react'
 import { useTurnCursor, useTurnProgress } from '@dianziji/stage/react'
 import { useAutoPlay, useTypewriter } from '@dianziji/stage-settings'
+import { sfx } from '@dianziji/stage-sfx'
 import { Icon } from '../components/icons'
 import InputSheet from '../components/InputSheet'
 import SendButton from '../components/SendButton'
 import BeatText from './BeatText'
+import CheckCard from './CheckCard'
 import { NO_LOOK, sameLook, toneOf, type Look } from './art'
 import { lastLook, lookAt, type Beat } from './beats'
 import Choices from './Choices'
@@ -15,7 +17,7 @@ import ErrorNotice, { type NoticeError } from './ErrorNotice'
 import ReviewBar from './ReviewBar'
 import PlayControl from './PlayControl'
 import ShortcutTray from './ShortcutTray'
-import { useBeats, useChoices, useSaid, useShortcuts } from './useGame'
+import { useBeats, useCheck, useChoices, useSaid, useShortcuts } from './useGame'
 import { usePref } from './usePref'
 import d from './Dialogue.module.css'
 
@@ -28,6 +30,7 @@ import d from './Dialogue.module.css'
  *  · 手机：底下不常驻输入栏，标题栏右边一颗气泡点开全屏输入（InputSheet）；她在写时底下浮一条细进度。
  *    电脑：底下一行输入框。
  *  · ⚡ 快捷指令：卡上配了才出（ShortcutTray）；填进输入框或直接发，看作者设的 mode。
+ *  · 这一轮掷了骰（check 区写了）：对话框上方一张检定卡（CheckCard）。
  *  · 可以整个隐藏（只留左下角小胶囊，看立绘和场景），记在本机；新一轮开始时自动恢复。
  * ★性能：对话框自己按区订阅旁白 / 对话 / 选项（useBeats / useChoices），AI 写字时只有它重画，App 不动。
  */
@@ -54,6 +57,7 @@ export default function Dialogue({ me, call, busy, error, topupUrl, onSend, onDi
   const beats = useBeats()
   const said = useSaid()
   const choices = useChoices()
+  const check = useCheck()
   const cursor = useTurnCursor()
   const [text, setText] = useState('')
   const [sheet, setSheet] = useState(false)
@@ -97,6 +101,10 @@ export default function Dialogue({ me, call, busy, error, topupUrl, onSend, onDi
   })
   const auto = useAutoPlay({ text: beat?.text ?? '', canAdvance: idx < last, onNext: () => go(idx + 1), ready: tw.done, paused: !active || sheet || tray || cursor.viewing || mode === 'hidden' || !!error })
   const [askChoice, setAskChoice] = useState<string | null>(null) // 点了选项、等确认的那一句
+  // 发话 / 生成出错：低沉两下（界面音效）；错误本身由 ErrorNotice 讲
+  useEffect(() => {
+    if (error) sfx('error')
+  }, [error])
 
   // 立绘：这一句她的样子；这一轮她还没开口（刚发出去 / 一轮开头全是旁白且她没说话）就停在上一轮最后的样子
   const [held, setHeld] = useState<Look>(NO_LOOK)
@@ -158,6 +166,7 @@ export default function Dialogue({ me, call, busy, error, topupUrl, onSend, onDi
     <div className="absolute inset-x-0 bottom-0 z-20 flex max-h-[calc(100dvh-var(--safe-top)-148px)] flex-col justify-end px-safe pb-composer">
       <div className={d.veil} aria-hidden />
       <div className="mx-auto flex min-h-0 w-full max-w-2xl flex-col px-4 lg:max-w-3xl lg:px-6">
+        {check && <CheckCard check={check} />}
         {cursor.viewing && <ReviewBar back={cursor.back} said={cursor.said} me={me} onLatest={cursor.latest} />}
         {/* 选项只在读到最后一句时出：话还没听完，不急着做选择 */}
         {idx === last && <Choices choices={choices} call={call} busy={busy || cursor.viewing} onPick={pick} onTalk={talk} />}

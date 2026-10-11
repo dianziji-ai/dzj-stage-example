@@ -1,0 +1,96 @@
+/* 「日志」徽章：一张斜放的小文件图标（折角 + 「.txt」+ 几道字行），下面一枚「日志」小牌；有新页时角上「新」、文件微微发光 */
+.btn {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  -webkit-tap-highlight-color: transparent;
+}
+.file {
+  position: relative;
+  width: 2.15rem;
+  height: 2.6rem;
+  border-radius: 0.3rem;
+  transform: rotate(8deg);
+  background: linear-gradient(160deg, #2f2550, #1d1636);
+  clip-path: polygon(0 0, 70% 0, 100% 24%, 100% 100%, 0 100%);
+  box-shadow: 0 8px 18px rgb(0 0 0 / 0.4);
+  transition: transform 0.25s cubic-bezier(0.3, 1.6, 0.5, 1);
+}
+/* 折角 */
+.file::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 30%;
+  height: 24%;
+  background: linear-gradient(225deg, transparent 50%, #ff7eb6 50%);
+}
+/* 字行 */
+.file::after {
+  content: '';
+  position: absolute;
+  left: 18%;
+  right: 18%;
+  top: 34%;
+  height: 40%;
+  background: repeating-linear-gradient(to bottom, rgb(243 234 255 / 0.55) 0 2px, transparent 2px 6px);
+}
+.ext {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 9%;
+  text-align: center;
+  font: 800 0.48rem/1 ui-monospace, Menlo, monospace;
+  color: #ffd23f;
+}
+.tag {
+  border-radius: 999px;
+  padding: 0.05rem 0.45rem;
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.15em;
+  color: #fff;
+  background: linear-gradient(90deg, #6d5bd0, #9b7bff);
+  box-shadow: 0 2px 8px rgb(0 0 0 / 0.3), inset 0 0 0 1px rgb(255 255 255 / 0.5);
+}
+.new {
+  position: absolute;
+  top: -0.35rem;
+  right: -0.45rem;
+  z-index: 1;
+  border-radius: 999px;
+  padding: 0.05rem 0.3rem;
+  font-size: 0.56rem;
+  font-weight: 800;
+  line-height: 1.3;
+  color: #fff;
+  background: #ff5fa2;
+  box-shadow: 0 0 0 2px #fff, 0 0 10px #ff5fa2;
+}
+.unread .file {
+  animation: glow 2.4s ease-in-out infinite;
+}
+@keyframes glow {
+  50% {
+    transform: rotate(8deg) translateY(-2px);
+    opacity: 0.85;
+  }
+}
+.btn:hover .file { transform: rotate(2deg) translateY(-2px) scale(1.04); }
+.btn:active .file { transform: rotate(-6deg) scale(0.94); }
+:global(html[data-dzj-motion='reduced']) .unread .file {
+  animation: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .file { transition: none; }
+  .unread .file { animation: none; }
+}
+@media (min-width: 1024px) {
+  .file { width: 2.55rem; height: 3.1rem; }
+  .ext { font-size: 0.56rem; }
+  .tag { padding: 0.1rem 0.55rem; font-size: 0.68rem; }
+}
