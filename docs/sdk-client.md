@@ -29,7 +29,8 @@ const snap = await stage.ready()                     // 等网站给第一份快
 stage.snapshot()                                     // 现在的快照（本地镜像，不走网络）；还没连上＝null
 const off = stage.subscribe((snap, changed) => {})   // 网站推来的变化：snap＝最新整份，changed＝这次变了哪几项（init 时是全部）
 
-await stage.send('我推开门')                          // 发一句话。开始生成了就 resolve（不等写完）；没发出去（能量不够…）就 reject；之后看快照的 live / history / error
+await stage.send('我推开门')                          // 发一句话。
+await stage.send('睡了', { zones: ['scene', 'diary'] })  // 0.6.0：本轮只要这几个区（分区白名单，见下）。开始生成了就 resolve（不等写完）；没发出去（能量不够…）就 reject；之后看快照的 live / history / error
 await stage.stop()                                   // 停止生成（已经写出来的字保留）
 await stage.regenerate()                             // 重新生成最后一条 AI 回复（消耗能量）
 await stage.older()                                  // 读更早的历史：读到的随快照的 history 推过来
@@ -42,6 +43,7 @@ stage.dispose()                                      // 不用了：摘掉监听
 ```
 
 - 每个请求 15 秒没回应 → `StageError('network')`；失败一律抛 `StageError`（`err.code` / `err.retryable` / `err.retryAfter`），同时广播一次 `{ type: 'error' }`。
+- `send(text, { zones })`（0.6.0）：`zones` 是本轮分区白名单（区 id）。网站拼提示词时只拼这几个区的说明和骨架，其余区整段不拼、模型写不出来——舞台按玩家所在的场景 / 幕决定这一轮要哪些区（白天不写日记、情愫低不写心声、直播中只要直播区），不用在提示词里绕。不传＝全部区；写错的 id 网站忽略，一个都对不上按全部区走。没写的区在舞台这边就是「没写」：`hold` 的区沿用上一轮，`zoneNum` / `zoneText` 返回 null / 空。
 - `send` 的 `text` 原样发出去，SDK 不往里加任何东西；想让 AI 知道「此刻状态」先用 `withState(话, 状态)` 拼好（见 [state.md](state.md#附给-ai-的此刻状态)）。
 - 生成中、写完、失败都在快照里：`live`（`{ said, text, reasoning }`，没在生成＝`null`）、`history`、`error`。一轮从 `live` 有值开始、`live` 变回 `null` 结束，谁发起的都一样（舞台、网站输入框、重生）。快照字段全表见 [bridge.md](bridge.md#快照字段)。
 - `stage.report(op, error)`：SDK 之外的代码（会话、组件）也走同一条失败广播（会话引擎用它报 `onTurn` 出错）。

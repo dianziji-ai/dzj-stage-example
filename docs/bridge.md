@@ -79,7 +79,7 @@ const her = characters.find((c) => c.names.includes('柳月儿'))      // 角色
 
 | `method` | `args` | 回的 `data` | 网站怎么做 | SDK |
 |---|---|---|---|---|
-| `send` | `{ text }` | — | 当成玩家说的一句话发出去（和网站输入框发的一样）。**开始生成了就回（「在生成」的 `live` 已经推到舞台），不等写完**；之后的流式、写完、失败都通过快照的 `live` / `history` / `error` 推过去。没开始就失败了（能量不够这类）＝直接回失败，带错误码。`text` 原样发：要附「此刻状态」，舞台事先用 `withState` 拼进 `text`（见 [state.md](state.md#附给-ai-的此刻状态)） | `stage.send(text)` |
+| `send` | `{ text, zones? }` | — | 当成玩家说的一句话发出去（和网站输入框发的一样）。`zones`（0.6.0，可选）＝本轮分区白名单（区 id）：网站只拼这几个区的说明和骨架、模型只写这几个区；不传＝全部；写错的忽略，一个都对不上按全部走。**开始生成了就回（「在生成」的 `live` 已经推到舞台），不等写完**；之后的流式、写完、失败都通过快照的 `live` / `history` / `error` 推过去。没开始就失败了（能量不够这类）＝直接回失败，带错误码。`text` 原样发：要附「此刻状态」，舞台事先用 `withState` 拼进 `text`（见 [state.md](state.md#附给-ai-的此刻状态)） | `stage.send(text)` |
 | `stop` | — | — | 停止生成（已经写出来的字保留） | `stage.stop()` |
 | `regenerate` | — | — | 重新生成最后一条 AI 回复（消耗能量） | `stage.regenerate()` |
 | `older` | — | — | 读更早的一页历史；读到的拼进 `history`，和 `has_more` 一起用 `update` 推过去 | `stage.older()` |
